@@ -13,7 +13,8 @@
     "include": [
         "index.ts",
         "abis.ts",
-        "skills.ts"
+        "skills.ts",
+        "bot.ts"
     ],
     "exclude": [
         "node_modules"

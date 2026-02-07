@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  opbutler:
+    build: .
+    container_name: opbutler_agent
+    restart: unless-stopped
+    volumes:
+      - ./strategies.json:/app/strategies.json
+    environment:
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      # - RPC_URL=${RPC_URL}

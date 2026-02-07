@@ -1,5 +1,5 @@
 {
-  "name": "opbutler",
+  "name": "contracts",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,12 +10,10 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "dependencies": {
-    "@types/node": "^25.2.1",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@openzeppelin/contracts": "^5.4.0",
     "dotenv": "^17.2.4",
-    "grammy": "^1.39.3",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
-    "viem": "^2.45.1"
+    "hardhat": "^2.22.0"
   }
 }
