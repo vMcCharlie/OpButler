@@ -19,12 +19,12 @@ export function Navbar() {
         <nav className="fixed top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-lg shadow-black/5">
             <div className="container flex h-20 max-w-screen-2xl items-center justify-between px-8 md:px-16">
                 <Link href="/" className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity">
-                    <div className="relative h-12 w-12 overflow-hidden rounded-xl border border-border shadow-sm bg-card">
+                    <div className="relative h-12 w-12">
                         <Image
                             src="/OpButler.png"
                             alt="OpButler Logo"
                             fill
-                            className="object-cover"
+                            className="object-contain"
                         />
                     </div>
                     <span className="font-outfit font-bold text-2xl tracking-wide text-foreground drop-shadow-md">OpButler</span>

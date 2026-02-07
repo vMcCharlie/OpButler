@@ -7,7 +7,46 @@ import { useAccount, useWriteContract } from 'wagmi';
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { useYields } from "@/hooks/useYields";
-import { ArrowRight, RefreshCw, AlertTriangle, TrendingUp, Layers } from 'lucide-react';
+import { ArrowRight, RefreshCw, AlertTriangle, TrendingUp, Layers, Check, ChevronDown } from 'lucide-react';
+
+// Custom Dropdown Component for Theme Consistency
+function AssetSelect({ value, options, onChange }: { value: string, options: string[], onChange: (val: string) => void }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setOpen(!open)}
+                className="w-full h-12 pl-3 pr-3 rounded-lg border border-input bg-card flex items-center justify-between hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+                <div className="flex items-center gap-2">
+                    <AssetIcon symbol={value} size={24} />
+                    <span className="font-bold">{value}</span>
+                </div>
+                <ChevronDown size={16} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpen(false)}></div>
+                    <div className="absolute top-full left-0 w-full mt-1 bg-popover border border-border rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                        {options.map((opt) => (
+                            <div
+                                key={opt}
+                                className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${value === opt ? 'bg-accent/50' : ''}`}
+                                onClick={() => { onChange(opt); setOpen(false); }}
+                            >
+                                <AssetIcon symbol={opt} size={20} />
+                                <span className={`flex-1 ${value === opt ? 'font-bold' : ''}`}>{opt}</span>
+                                {value === opt && <Check size={14} className="text-primary" />}
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
 
 export function StrategyBuilder() {
     const { address } = useAccount();
@@ -147,6 +186,7 @@ export function StrategyBuilder() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* ... (Existing Supply/Borrow Inputs) ... */}
                             {/* Left: Supply Config */}
+                            {/* Left: Supply Config */}
                             <div className="space-y-4">
                                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -154,22 +194,15 @@ export function StrategyBuilder() {
                                 </label>
 
                                 <div className="flex gap-2">
-                                    <div className="relative w-1/3 min-w-[120px]">
-                                        <select
-                                            className="w-full h-12 pl-10 pr-4 appearance-none rounded-lg border border-input bg-background/50 focus:ring-1 focus:ring-primary/50 outline-none font-bold"
+                                    <div className="relative w-1/3 min-w-[140px] z-20">
+                                        <AssetSelect
                                             value={supplyAsset}
-                                            onChange={(e) => setSupplyAsset(e.target.value)}
-                                        >
-                                            {Array.from(new Set(protocolAssets.map(p => p.symbol))).map(s => (
-                                                <option key={s} value={s}>{s}</option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                            <AssetIcon symbol={supplyAsset} size={20} />
-                                        </div>
+                                            options={Array.from(new Set(protocolAssets.map(p => p.symbol)))}
+                                            onChange={setSupplyAsset}
+                                        />
                                     </div>
 
-                                    <div className="relative flex-1">
+                                    <div className="relative flex-1 z-10">
                                         <input
                                             type="number"
                                             placeholder="0.00"
@@ -194,19 +227,12 @@ export function StrategyBuilder() {
                                     You Borrow (Loop Asset)
                                 </label>
 
-                                <div className="relative">
-                                    <select
-                                        className="w-full h-12 pl-12 pr-4 appearance-none rounded-lg border border-input bg-background/50 focus:ring-1 focus:ring-primary/50 outline-none font-bold"
+                                <div className="relative z-20">
+                                    <AssetSelect
                                         value={borrowAsset}
-                                        onChange={(e) => setBorrowAsset(e.target.value)}
-                                    >
-                                        {Array.from(new Set(protocolAssets.map(p => p.symbol))).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <AssetIcon symbol={borrowAsset} size={24} />
-                                    </div>
+                                        options={Array.from(new Set(protocolAssets.map(p => p.symbol)))}
+                                        onChange={setBorrowAsset}
+                                    />
                                 </div>
 
                                 <div className="flex justify-between text-xs px-1">
@@ -338,19 +364,12 @@ export function StrategyBuilder() {
                             </label>
 
                             <div className="flex gap-2">
-                                <div className="relative w-1/3 min-w-[120px]">
-                                    <select
-                                        className="w-full h-12 pl-10 pr-4 appearance-none rounded-lg border border-input bg-background/50 focus:ring-1 focus:ring-red-500/50 outline-none font-bold"
+                                <div className="relative w-1/3 min-w-[140px] z-20">
+                                    <AssetSelect
                                         value={borrowAsset}
-                                        onChange={(e) => setBorrowAsset(e.target.value)}
-                                    >
-                                        {Array.from(new Set(protocolAssets.map(p => p.symbol))).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <AssetIcon symbol={borrowAsset} size={20} />
-                                    </div>
+                                        options={Array.from(new Set(protocolAssets.map(p => p.symbol)))}
+                                        onChange={setBorrowAsset}
+                                    />
                                 </div>
 
                                 <div className="relative flex-1">
