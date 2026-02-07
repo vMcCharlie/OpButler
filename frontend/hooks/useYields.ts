@@ -47,22 +47,35 @@ export function useYields() {
                     pool.project === 'radiant-v2';
 
                 // We do NOT filter by asset symbol anymore. We want ALL assets.
-                // Just exclude very low TVL dust if needed? 
-                // Let's filter minimal TVL to avoid noise (e.g. < $10k)
                 const isViable = pool.tvlUsd > 10000;
 
                 return isBSC && isProject && isViable;
-            }).map(pool => ({
-                ...pool,
-                symbol: NORMALIZE_SYMBOL[pool.symbol] || pool.symbol,
-                project: pool.project.includes('venus') ? 'venus' : pool.project,
-                // Fallback Estimation for visual demo purposes if API doesn't provide it
-                apyBaseBorrow: pool.apyBaseBorrow || (pool.apyBase ? pool.apyBase * 1.5 : 0),
-                apyRewardBorrow: pool.apyRewardBorrow || 0,
-                totalSupplyUsd: pool.totalSupplyUsd || pool.tvlUsd,
-                // Estimate Borrowed amount from TVL if missing (assuming ~40% utilization of supplied capital)
-                totalBorrowUsd: pool.totalBorrowUsd || (pool.tvlUsd ? pool.tvlUsd * 0.4 : 0)
-            }));
+            }).map(pool => {
+                // Determine Fallback LTV based on asset type
+                // Stables: 80% (0.8) -> Max Lev 5x
+                // Majors (BNB, ETH, BTC): 75% (0.75) -> Max Lev 4x
+                // Others: 60% (0.6) -> Max Lev 2.5x
+                let fallbackLtv = 0.6;
+                const symbolUpper = pool.symbol.toUpperCase();
+                if (['USDT', 'USDC', 'FDUSD', 'DAI', 'BUSD'].includes(symbolUpper)) {
+                    fallbackLtv = 0.8;
+                } else if (['BNB', 'WBNB', 'ETH', 'WETH', 'BTC', 'BTCB', 'WBTC', 'SOLVBTC'].includes(symbolUpper)) {
+                    fallbackLtv = 0.75;
+                }
+
+                return {
+                    ...pool,
+                    symbol: NORMALIZE_SYMBOL[pool.symbol] || pool.symbol,
+                    project: pool.project.includes('venus') ? 'venus' : pool.project,
+                    // Fallback Estimation for visual demo purposes if API doesn't provide it
+                    apyBaseBorrow: pool.apyBaseBorrow || (pool.apyBase ? pool.apyBase * 1.5 : 0),
+                    apyRewardBorrow: pool.apyRewardBorrow || 0,
+                    totalSupplyUsd: pool.totalSupplyUsd || pool.tvlUsd,
+                    // Estimate Borrowed amount from TVL if missing (assuming ~40% utilization of supplied capital)
+                    totalBorrowUsd: pool.totalBorrowUsd || (pool.tvlUsd ? pool.tvlUsd * 0.4 : 0),
+                    ltv: pool.ltv || fallbackLtv // Use API LTV if available, otherwise fallback
+                };
+            });
         },
     });
 }

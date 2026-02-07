@@ -2,11 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Markets } from "@/components/Markets"
-import { StrategyBuilder } from "@/components/StrategyBuilder"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAccount, useReadContract } from 'wagmi';
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
-import { useVenusHealth } from "@/hooks/useVenusData";
+import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 
 const chartData = [
     { name: 'Mon', value: 1000 },
@@ -34,8 +34,9 @@ export function Dashboard() {
         ? walletAddressRaw
         : undefined;
 
-    // 2. Fetch Health Data for that Wallet
-    const { safeLimitUSD, dangerAmountUSD, isSafe, formattedLiquidity, formattedShortfall } = useVenusHealth(walletAddress as `0x${string}` | undefined);
+    // 2. Fetch Aggregated Health Data
+    const healthData = useAggregatedHealth(walletAddress as `0x${string}` | undefined);
+    const isLoading = healthData.isLoading;
 
     return (
         <div className="container py-12 space-y-8 max-w-screen-2xl mx-auto px-8 md:px-16">
@@ -44,138 +45,160 @@ export function Dashboard() {
                 <div className="text-sm text-muted-foreground">Welcome back, Strategist.</div>
             </div>
 
-            {/* Top Stats */}
+            {/* Top Stats: Aggregated Financials */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-
-                {/* Stat 1: Net APY (Placeholder) */}
-                <Card className="border-l-4 border-l-primary/80">
+                {/* Total Net Worth */}
+                <Card className="border-l-4 border-l-primary/80 bg-gradient-to-br from-primary/5 via-card to-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Net APY</CardTitle>
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            className="h-4 w-4 text-primary drop-shadow-[0_0_5px_rgba(240,185,11,0.5)]"
-                        >
-                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                        </svg>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Net Worth</CardTitle>
+                        <div className="p-2 bg-primary/10 rounded-full">
+                            <span className="text-primary font-bold">$</span>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">--%</div>
-                        <p className="text-xs text-primary/80 mt-1">
-                            Select a strategy to see details
+                        <div className="text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
+                            ${isLoading ? '...' : (healthData?.totalNetWorthUSD || 0).toFixed(2)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Across Venus, Kinza, Radiant
                         </p>
                     </CardContent>
                 </Card>
 
-                {/* Stat 2: Active Health Factor / Liquidity */}
-                <Card className={`border-l-4 ${!isSafe ? 'border-l-destructive' : 'border-l-emerald-500/80'}`}>
+                {/* Total Supply */}
+                <Card className="border-l-4 border-l-emerald-500/80">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            {walletAddress ? 'Account Liquidity' : 'Wallet Status'}
-                        </CardTitle>
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            className={`h-4 w-4 ${!isSafe ? 'text-destructive' : 'text-emerald-500'}`}
-                        >
-                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                        </svg>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Supplied</CardTitle>
+                        <div className="p-2 bg-emerald-500/10 rounded-full">
+                            <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        {walletAddress ? (
-                            <>
-                                <div className={`text-3xl font-bold ${!isSafe ? 'text-destructive' : 'text-foreground'}`}>
-                                    ${!isSafe ? formattedShortfall : formattedLiquidity}
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {!isSafe ? '⚠️ AT RISK OF LIQUIDATION' : 'Safe Access Liquidity'}
-                                </p>
-                            </>
-                        ) : (
-                            <>
-                                <div className="text-xl font-bold text-muted-foreground">No Proxy</div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Deploy OpButler Wallet first
-                                </p>
-                            </>
-                        )}
+                        <div className="text-3xl font-bold text-emerald-500">
+                            {/* Mock Aggregate for Demo as hooks return Health mainly */}
+                            ${isLoading ? '...' : ((healthData?.radiant?.totalCollateral || 0) + (healthData?.venus?.liquidity || 0) + (healthData?.kinza?.liquidity || 0)).toFixed(2)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Collateral & Liquidity
+                        </p>
                     </CardContent>
                 </Card>
 
-                <Card className="col-span-2 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[50px] rounded-full pointer-events-none"></div>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Portfolio Performance (Simulated)</CardTitle>
+                {/* Total Debt */}
+                <Card className="border-l-4 border-l-red-500/80">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Borrowed</CardTitle>
+                        <div className="p-2 bg-red-500/10 rounded-full">
+                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                        </div>
                     </CardHeader>
-                    <CardContent className="h-[120px] p-0 w-full relative">
+                    <CardContent>
+                        <div className="text-3xl font-bold text-red-500">
+                            ${isLoading ? '...' : ((healthData?.radiant?.totalDebt || 0) + (healthData?.venus?.shortfall || 0) + (healthData?.kinza?.shortfall || 0)).toFixed(2)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Global Borrowed Amount
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* Simulated Chart (Kept) */}
+                <Card className="relative overflow-hidden bg-card/50">
+                    <CardContent className="p-0 h-[120px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData}>
                                 <defs>
                                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#F0B90B" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#F0B90B" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
-                                    itemStyle={{ color: '#F0B90B' }}
-                                    cursor={{ stroke: '#F0B90B', strokeWidth: 1, strokeDasharray: '3 3' }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke="#F0B90B"
-                                    strokeWidth={2}
-                                    fillOpacity={1}
-                                    fill="url(#colorValue)"
-                                />
+                                <Area type="monotone" dataKey="value" stroke="#8884d8" fillOpacity={1} fill="url(#colorValue)" />
                             </AreaChart>
                         </ResponsiveContainer>
+                        <div className="absolute bottom-2 left-4 text-xs font-bold text-muted-foreground">
+                            7D Trend
+                        </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Main Content Area */}
-            <div className="grid gap-8 lg:grid-cols-3">
-                {/* Left Column: Markets & Positions */}
-                <div className="lg:col-span-2 space-y-8">
-                    <Markets />
+            {/* Protocol Health Matrix */}
+            <div className="grid gap-4 md:grid-cols-3">
+                {/* Venus */}
+                <Card className="bg-card/50 border-input">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
+                            </div>
+                            Venus Protocol
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1">
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Available Credit</span> <span className="font-mono">${healthData?.venus?.liquidity?.toFixed(2) || '0.00'}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Debt Risk</span> <span className="font-mono text-red-400">${healthData?.venus?.shortfall?.toFixed(2) || '0.00'}</span></div>
+                        <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
+                            <span className="text-xs font-bold uppercase text-muted-foreground">Health Score</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(healthData?.venus?.isHealthy ?? true) ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                                {(healthData?.venus?.isHealthy ?? true) ? 'Safe' : 'Risk'}
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <div className="grid gap-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Active Positions</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {walletAddress ? (
-                                    <p className="text-muted-foreground text-center py-8">
-                                        Smart Wallet deployed at <span className="text-primary font-mono text-xs mx-1">{String(walletAddress)}</span>
-                                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" alt="BNB Chain" className="w-4 h-4 inline-block align-middle ml-1" title="BNB Chain" />.
-                                        <br />No active strategies detected.
-                                    </p>
-                                ) : (
-                                    <p className="text-muted-foreground text-center py-8">No active strategies via Smart Wallet Proxy.</p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                {/* Kinza */}
+                <Card className="bg-card/50 border-input">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
+                            </div>
+                            Kinza Finance
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1">
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Available Credit</span> <span className="font-mono">${healthData?.kinza?.liquidity?.toFixed(2) || '0.00'}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Debt Risk</span> <span className="font-mono text-red-400">${healthData?.kinza?.shortfall?.toFixed(2) || '0.00'}</span></div>
+                        <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
+                            <span className="text-xs font-bold uppercase text-muted-foreground">Health Score</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(healthData?.kinza?.isHealthy ?? true) ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                                {(healthData?.kinza?.isHealthy ?? true) ? 'Safe' : 'Risk'}
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                {/* Right Column: Strategy Builder */}
-                <div>
-                    <StrategyBuilder />
-                </div>
+                {/* Radiant */}
+                <Card className="bg-card/50 border-input">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
+                            </div>
+                            Radiant V2
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1">
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Supplied</span> <span className="font-mono">${healthData?.radiant?.totalCollateral?.toFixed(2) || '0.00'}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Borrowed</span> <span className="font-mono text-red-400">${healthData?.radiant?.totalDebt?.toFixed(2) || '0.00'}</span></div>
+                        <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
+                            <span className="text-xs font-bold uppercase text-muted-foreground">Health Score</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(!healthData?.radiant?.healthFactor || healthData.radiant.healthFactor > 1.1) ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                                {(!healthData?.radiant?.healthFactor || healthData.radiant.healthFactor > 100) ? 'Safe' : healthData.radiant.healthFactor.toFixed(2)}
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
+
+            {/* Main Content Area: Markets Only */}
+            <Card className="col-span-full border-none shadow-none bg-transparent">
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold tracking-tight">Market Opportunities</h2>
+                    <Markets />
+                </div>
+            </Card>
         </div>
     )
 }

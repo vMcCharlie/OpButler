@@ -111,20 +111,46 @@ export function Markets() {
                         <thead className="[&_tr]:border-b">
                             <tr className="border-border text-muted-foreground uppercase tracking-wider text-[10px]">
                                 <th className="h-12 px-4 align-middle font-medium min-w-[220px]">Asset</th>
-                                <th className="h-12 px-4 align-middle font-medium text-center">Venus</th>
-                                <th className="h-12 px-4 align-middle font-medium text-center">Kinza</th>
-                                <th className="h-12 px-4 align-middle font-medium text-center">Radiant</th>
+                                <th className="h-12 px-4 align-middle font-medium text-center">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                        <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
+                                            <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
+                                        </div>
+                                        Venus
+                                    </div>
+                                </th>
+                                <th className="h-12 px-4 align-middle font-medium text-center">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                        <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
+                                            <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
+                                        </div>
+                                        Kinza
+                                    </div>
+                                </th>
+                                <th className="h-12 px-4 align-middle font-medium text-center">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                        <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
+                                            <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
+                                        </div>
+                                        Radiant
+                                    </div>
+                                </th>
                                 <th className="h-12 px-4 align-middle font-medium text-right min-w-[160px]">Action</th>
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
                             {marketData.map(asset => {
-                                // Helper to render cell
-                                const renderCell = (data?: { s: number, b: number }) => {
+                                const renderCell = (data?: { s: number, b: number }, isBest?: boolean) => {
                                     if (!data) return <span className="text-muted-foreground/20">-</span>;
+                                    const showBest = isBest && data.s >= 0.01; // Only show if APY >= 0.01%
                                     return (
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-emerald-400 font-bold font-mono text-xs">
+                                        <div className="flex flex-col items-center relative">
+                                            {showBest && (
+                                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-500/20 text-yellow-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 whitespace-nowrap shadow-[0_0_10px_rgba(234,179,8,0.3)] animate-pulse">
+                                                    🏆 Best Vibe
+                                                </div>
+                                            )}
+                                            <span className={`font-bold font-mono text-xs ${showBest ? 'text-yellow-400 scale-110 transition-transform' : 'text-emerald-400'}`}>
                                                 +{data.s.toFixed(2)}%
                                             </span>
                                             <span className="text-red-400/80 font-mono text-[10px]">
@@ -135,7 +161,7 @@ export function Markets() {
                                 };
 
                                 return (
-                                    <tr key={asset.symbol} className="border-b border-border transition-colors hover:bg-muted/50 group">
+                                    <tr key={asset.symbol} className={`border-b border-border transition-colors hover:bg-muted/50 group ${asset.maxAPY === marketData[0].maxAPY && sortBy === 'apy' ? 'bg-yellow-500/5' : ''}`}>
                                         <td className="p-4 align-middle font-bold flex items-center gap-3">
                                             <AssetIcon symbol={asset.symbol} size={40} />
                                             <div className="flex flex-col">
@@ -150,13 +176,13 @@ export function Markets() {
                                             </div>
                                         </td>
                                         <td className="p-4 align-middle text-center border-l border-border bg-muted/20 group-hover:bg-transparent transition-colors">
-                                            {renderCell(asset.venus)}
+                                            {renderCell(asset.venus, asset.maxAPY === asset.venus?.s)}
                                         </td>
                                         <td className="p-4 align-middle text-center border-l border-border bg-muted/20 group-hover:bg-transparent transition-colors">
-                                            {renderCell(asset.kinza)}
+                                            {renderCell(asset.kinza, asset.maxAPY === asset.kinza?.s)}
                                         </td>
                                         <td className="p-4 align-middle text-center border-l border-border bg-muted/20 group-hover:bg-transparent transition-colors">
-                                            {renderCell(asset.radiant)}
+                                            {renderCell(asset.radiant, asset.maxAPY === asset.radiant?.s)}
                                         </td>
                                         <td className="p-4 align-middle text-right border-l border-border">
                                             <div className="flex items-center justify-end gap-2">

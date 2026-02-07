@@ -11,8 +11,8 @@ export function Navbar() {
 
     const navLinks = [
         { name: 'Dashboard', href: '/dashboard' },
+        { name: 'Strategy Management', href: '/strategy' },
         { name: 'Portfolio', href: '/portfolio' },
-        // { name: 'Strategies', href: '/strategies' }, // Future: Dedicated strategies page
     ];
 
     return (
@@ -31,19 +31,21 @@ export function Navbar() {
                 </Link>
 
                 <div className="flex items-center gap-8">
-                    {/* Navigation Links */}
-                    <div className="hidden md:flex gap-6">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.name}
-                                href={link.href}
-                                className={`text-sm font-medium transition-colors hover:text-primary ${pathname === link.href ? 'text-primary' : 'text-muted-foreground'
-                                    }`}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
-                    </div>
+                    {/* Navigation Links - Only show inside the app (not on landing page) */}
+                    {pathname !== '/' && (
+                        <div className="hidden md:flex gap-6">
+                            {navLinks.map((link) => (
+                                <Link
+                                    key={link.name}
+                                    href={link.href}
+                                    className={`text-sm font-medium transition-colors hover:text-primary ${pathname === link.href ? 'text-primary' : 'text-muted-foreground'
+                                        }`}
+                                >
+                                    {link.name}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Notification Bell */}
                     <div className="relative cursor-pointer group">
