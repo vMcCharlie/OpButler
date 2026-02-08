@@ -161,52 +161,48 @@ export class StrategyManager {
                 args: [account]
             }) as Address[];
 
-            // 3. For each market, get supply and borrow balances
-            for (const vToken of assetsIn) {
+            // Get underlying price from Oracle (once)
+            const oracle = await this.publicClient.readContract({
+                address: VENUS_COMPTROLLER,
+                abi: COMPTROLLER_ABI,
+                functionName: 'oracle',
+                args: []
+            }) as Address;
+
+            // 3. For each market, get supply and borrow balances in parallel
+            await Promise.all(assetsIn.map(async (vToken) => {
                 try {
-                    // Get underlying balance (in underlying token units)
-                    const snapshot: [bigint, bigint, bigint, bigint] = await this.publicClient.readContract({
-                        address: vToken,
-                        abi: VTOKEN_ABI,
-                        functionName: 'getAccountSnapshot',
-                        args: [account]
-                    });
+                    const [snapshot, underlyingPrice]: [any, bigint] = await Promise.all([
+                        this.publicClient.readContract({
+                            address: vToken,
+                            abi: VTOKEN_ABI,
+                            functionName: 'getAccountSnapshot',
+                            args: [account]
+                        }),
+                        this.publicClient.readContract({
+                            address: oracle,
+                            abi: ORACLE_ABI,
+                            functionName: 'getUnderlyingPrice',
+                            args: [vToken]
+                        })
+                    ]);
 
                     // snapshot = [error, vTokenBalance, borrowBalance, exchangeRateMantissa]
                     const vTokenBalance = snapshot[1];
                     const borrowBalance = snapshot[2];
                     const exchangeRate = snapshot[3];
 
-                    // Get underlying price from Oracle
-                    const oracle = await this.publicClient.readContract({
-                        address: VENUS_COMPTROLLER,
-                        abi: COMPTROLLER_ABI,
-                        functionName: 'oracle',
-                        args: []
-                    }) as Address;
-
-                    const underlyingPrice = await this.publicClient.readContract({
-                        address: oracle,
-                        abi: ORACLE_ABI,
-                        functionName: 'getUnderlyingPrice',
-                        args: [vToken]
-                    }) as bigint;
-
                     // Calculate USD values
-                    // Supply Value = (vTokenBalance * exchangeRate / 1e18) * (underlyingPrice / 1e18)
                     const supplyBalanceUnderlying = (vTokenBalance * exchangeRate) / BigInt(1e18);
                     const supplyUSD = Number(supplyBalanceUnderlying) * Number(underlyingPrice) / 1e36;
-
-                    // Borrow Value = borrowBalance * (underlyingPrice / 1e18)
                     const borrowUSD = Number(borrowBalance) * Number(underlyingPrice) / 1e36;
 
                     totalCollateralUSD += supplyUSD;
                     totalDebtUSD += borrowUSD;
                 } catch (e) {
-                    // Skip if vToken query fails
                     console.warn(`Failed to query vToken ${vToken}:`, e);
                 }
-            }
+            }));
         } catch (e) {
             console.warn('Failed to get user markets:', e);
         }

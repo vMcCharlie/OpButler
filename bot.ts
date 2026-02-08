@@ -418,8 +418,8 @@ bot.command("status", async (ctx) => {
 });
 
 // --- Smart Polling Background Job ---
-// Runs every minute, but only checks users whose interval has passed
-const POLLING_CHECK_INTERVAL = 60 * 1000; // Check every minute
+// Runs every 5 seconds to ensure high responsiveness
+const POLLING_CHECK_INTERVAL = 5 * 1000; // Fast 5s heartbeat
 
 setInterval(async () => {
     const now = new Date();
