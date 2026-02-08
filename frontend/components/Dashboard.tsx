@@ -106,23 +106,31 @@ export function Dashboard() {
                     </CardContent>
                 </Card>
 
-                {/* Simulated Chart (Kept) */}
-                <Card className="relative overflow-hidden bg-card/50">
-                    <CardContent className="p-0 h-[120px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData}>
-                                <defs>
-                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <Area type="monotone" dataKey="value" stroke="#8884d8" fillOpacity={1} fill="url(#colorValue)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                        <div className="absolute bottom-2 left-4 text-xs font-bold text-muted-foreground">
-                            7D Trend
+                {/* Aggregated Health Status */}
+                <Card className="border-l-4 border-l-blue-500/80">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Health Status</CardTitle>
+                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            (healthData?.radiant?.healthFactor || 999) > 1.5 
+                                ? 'bg-emerald-500/20 text-emerald-500' 
+                                : (healthData?.radiant?.healthFactor || 999) > 1.1 
+                                    ? 'bg-amber-500/20 text-amber-500' 
+                                    : 'bg-red-500/20 text-red-500'
+                        }`}>
+                            {(healthData?.radiant?.healthFactor || 999) > 1.5 ? 'Safe' : 
+                             (healthData?.radiant?.healthFactor || 999) > 1.1 ? 'Warning' : 'Critical'}
                         </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-blue-400">
+                            {isLoading ? '...' : 
+                                healthData?.radiant?.healthFactor && healthData.radiant.healthFactor < 100 
+                                    ? healthData.radiant.healthFactor.toFixed(2) 
+                                    : '∞'}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Aggregate Health Factor
+                        </p>
                     </CardContent>
                 </Card>
             </div>
