@@ -154,21 +154,37 @@ bot.command("risk", async (ctx) => {
 
     await ctx.reply("🔍 Checking Health Factor...");
     try {
-        const { healthFactor, shortfall } = await manager.getAccountHealth(user.wallet_address as Address);
+        const health = await manager.getAccountHealth(user.wallet_address as Address);
 
         let status = "Unknown";
-        if (healthFactor > 2) status = "🟢 Safe";
-        else if (healthFactor > 1.1) status = "🟡 Warning";
+        if (health.healthFactor > 2) status = "🟢 Safe";
+        else if (health.healthFactor > 1.1) status = "🟡 Warning";
         else status = "🔴 CRITICAL";
 
-        await ctx.reply(
-            `📊 **Risk Report**\n\n` +
+        let message = `📊 **Risk Report**\n\n` +
             `Wallet: \`${user.wallet_address.substring(0, 6)}...${user.wallet_address.substring(38)}\`\n` +
-            `Health Factor: **${healthFactor.toFixed(2)}**\n` +
-            `Status: ${status}\n` +
-            `Shortfall: $${shortfall.toFixed(2)}`,
-            { parse_mode: "Markdown" }
-        );
+            `Health Factor: **${health.healthFactor.toFixed(2)}**\n` +
+            `Status: ${status}\n\n`;
+
+        // Add position details if available
+        if (health.totalCollateralUSD > 0 || health.totalDebtUSD > 0) {
+            message += `💰 **Position:**\n` +
+                `• Collateral: $${health.totalCollateralUSD.toLocaleString()}\n` +
+                `• Debt: $${health.totalDebtUSD.toLocaleString()}\n\n`;
+        }
+
+        // Add suggestions if HF is low
+        if (health.suggestions) {
+            message += `💡 **Suggestions to reach HF ${health.suggestions.targetHF}:**\n`;
+            if (health.suggestions.repayAmount > 0) {
+                message += `• Repay ~$${health.suggestions.repayAmount.toLocaleString()} debt\n`;
+            }
+            if (health.suggestions.addCollateralAmount > 0) {
+                message += `• Add ~$${health.suggestions.addCollateralAmount.toLocaleString()} collateral\n`;
+            }
+        }
+
+        await ctx.reply(message, { parse_mode: "Markdown" });
     } catch (e: any) {
         await ctx.reply(`Error fetching data: ${e.message}`);
     }
@@ -209,16 +225,38 @@ setInterval(async () => {
 
     for (const user of users) {
         try {
-            const { healthFactor } = await manager.getAccountHealth(user.wallet_address as Address);
-            if (healthFactor < user.alert_threshold) {
+            const health = await manager.getAccountHealth(user.wallet_address as Address);
+
+            if (health.healthFactor < user.alert_threshold) {
+                // Build alert message with suggestions
+                let alertMessage = `🚨 **LIQUIDATION ALERT** 🚨\n\n` +
+                    `Your Health Factor has dropped to **${health.healthFactor.toFixed(2)}**!\n` +
+                    `Alert Threshold: ${user.alert_threshold}\n\n`;
+
+                // Add position details if available
+                if (health.totalCollateralUSD > 0 || health.totalDebtUSD > 0) {
+                    alertMessage += `📊 **Position Summary:**\n` +
+                        `• Collateral: $${health.totalCollateralUSD.toLocaleString()}\n` +
+                        `• Debt: $${health.totalDebtUSD.toLocaleString()}\n\n`;
+                }
+
+                // Add actionable suggestions
+                if (health.suggestions) {
+                    alertMessage += `💡 **To reach a safe HF of ${health.suggestions.targetHF}:**\n`;
+
+                    if (health.suggestions.repayAmount > 0) {
+                        alertMessage += `• **Option A:** Repay ~$${health.suggestions.repayAmount.toLocaleString()} of debt\n`;
+                    }
+                    if (health.suggestions.addCollateralAmount > 0) {
+                        alertMessage += `• **Option B:** Add ~$${health.suggestions.addCollateralAmount.toLocaleString()} collateral\n`;
+                    }
+                    alertMessage += `\n`;
+                }
+
+                alertMessage += `⚠️ Act now to avoid liquidation!`;
+
                 // Send Alert
-                await bot.api.sendMessage(
-                    user.chat_id,
-                    `🚨 **LIQUIDATION ALERT** 🚨\n\n` +
-                    `Your Health Factor has dropped to **${healthFactor.toFixed(2)}**!\n` +
-                    `Threshold: ${user.alert_threshold}\n\n` +
-                    `Please repay debt or add collateral immediately to avoid liquidation.`
-                );
+                await bot.api.sendMessage(user.chat_id, alertMessage, { parse_mode: "Markdown" });
             }
         } catch (e) {
             console.error(`Error monitoring user ${user.chat_id}:`, e);

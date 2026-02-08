@@ -122,8 +122,23 @@ export class StrategyManager {
         return { projectedAPY: netAPY, healthFactor, canExecute: true };
     }
 
-    // --- Helper: Get Account Health ---
-    async getAccountHealth(account: Address): Promise<{ healthFactor: number, liquidity: number, shortfall: number }> {
+    // --- Helper: Get Account Health with Detailed Breakdown ---
+    async getAccountHealth(account: Address): Promise<{
+        healthFactor: number;
+        liquidity: number;
+        shortfall: number;
+        totalCollateralUSD: number;
+        totalDebtUSD: number;
+        suggestions: {
+            repayAmount: number;
+            addCollateralAmount: number;
+            targetHF: number;
+        } | null;
+    }> {
+        const TARGET_HF = 1.5; // Safe target Health Factor
+        const AVG_COLLATERAL_FACTOR = 0.75; // Average CF for Venus assets (75%)
+
+        // 1. Get basic liquidity data
         const [err, liquidity, shortfall] = await this.publicClient.readContract({
             address: VENUS_COMPTROLLER,
             abi: COMPTROLLER_ABI,
@@ -134,19 +149,108 @@ export class StrategyManager {
         const liqNum = Number(formatEther(liquidity));
         const shortNum = Number(formatEther(shortfall));
 
-        // HF estimation from Net Liquidity is hard without Total Debt.
-        // But we can return status.
-        // If shortfall > 0, HF < 1.
-        // If liquidity > 0, HF > 1.
-        // Exact HF = (Limit / Borrow). Limit = Liquidity + Borrow.
-        // So HF = (Liquidity + Borrow) / Borrow = 1 + (Liquidity / Borrow).
-        // We don't have Borrow here easily without querying all markets.
-        // For now, we return a "Safe/Unsafe" status or huge number if safe.
+        // 2. Get markets the user is in
+        let totalCollateralUSD = 0;
+        let totalDebtUSD = 0;
 
-        let hf = 999;
-        if (shortNum > 0) hf = 0.5; // Danger
+        try {
+            const assetsIn = await this.publicClient.readContract({
+                address: VENUS_COMPTROLLER,
+                abi: COMPTROLLER_ABI,
+                functionName: 'getAssetsIn',
+                args: [account]
+            }) as Address[];
 
-        return { healthFactor: hf, liquidity: liqNum, shortfall: shortNum };
+            // 3. For each market, get supply and borrow balances
+            for (const vToken of assetsIn) {
+                try {
+                    // Get underlying balance (in underlying token units)
+                    const snapshot: [bigint, bigint, bigint, bigint] = await this.publicClient.readContract({
+                        address: vToken,
+                        abi: VTOKEN_ABI,
+                        functionName: 'getAccountSnapshot',
+                        args: [account]
+                    });
+
+                    // snapshot = [error, vTokenBalance, borrowBalance, exchangeRateMantissa]
+                    const vTokenBalance = snapshot[1];
+                    const borrowBalance = snapshot[2];
+                    const exchangeRate = snapshot[3];
+
+                    // Get underlying price from Oracle
+                    const oracle = await this.publicClient.readContract({
+                        address: VENUS_COMPTROLLER,
+                        abi: COMPTROLLER_ABI,
+                        functionName: 'oracle',
+                        args: []
+                    }) as Address;
+
+                    const underlyingPrice = await this.publicClient.readContract({
+                        address: oracle,
+                        abi: ORACLE_ABI,
+                        functionName: 'getUnderlyingPrice',
+                        args: [vToken]
+                    }) as bigint;
+
+                    // Calculate USD values
+                    // Supply Value = (vTokenBalance * exchangeRate / 1e18) * (underlyingPrice / 1e18)
+                    const supplyBalanceUnderlying = (vTokenBalance * exchangeRate) / BigInt(1e18);
+                    const supplyUSD = Number(supplyBalanceUnderlying) * Number(underlyingPrice) / 1e36;
+
+                    // Borrow Value = borrowBalance * (underlyingPrice / 1e18)
+                    const borrowUSD = Number(borrowBalance) * Number(underlyingPrice) / 1e36;
+
+                    totalCollateralUSD += supplyUSD;
+                    totalDebtUSD += borrowUSD;
+                } catch (e) {
+                    // Skip if vToken query fails
+                    console.warn(`Failed to query vToken ${vToken}:`, e);
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to get user markets:', e);
+        }
+
+        // 4. Calculate Health Factor
+        // HF = (Collateral * CF) / Debt
+        const borrowLimit = totalCollateralUSD * AVG_COLLATERAL_FACTOR;
+        let healthFactor = totalDebtUSD > 0 ? borrowLimit / totalDebtUSD : 999;
+
+        // If we couldn't get detailed data, fall back to simple logic
+        if (totalCollateralUSD === 0 && totalDebtUSD === 0) {
+            if (shortNum > 0) healthFactor = 0.5;
+            else if (liqNum > 0) healthFactor = 999;
+        }
+
+        // 5. Calculate Suggestions (only if HF < TARGET_HF and user has debt)
+        let suggestions = null;
+        if (healthFactor < TARGET_HF && totalDebtUSD > 0) {
+            // To reach TARGET_HF:
+            // TARGET_HF = (Collateral * CF) / NewDebt  =>  NewDebt = (Collateral * CF) / TARGET_HF
+            // AmountToRepay = CurrentDebt - NewDebt
+            const newDebtForTarget = (totalCollateralUSD * AVG_COLLATERAL_FACTOR) / TARGET_HF;
+            const repayAmount = Math.max(0, totalDebtUSD - newDebtForTarget);
+
+            // Or: TARGET_HF = (NewCollateral * CF) / Debt  =>  NewCollateral = (TARGET_HF * Debt) / CF
+            // AmountToAdd = NewCollateral - CurrentCollateral
+            const newCollateralForTarget = (TARGET_HF * totalDebtUSD) / AVG_COLLATERAL_FACTOR;
+            const addCollateralAmount = Math.max(0, newCollateralForTarget - totalCollateralUSD);
+
+            suggestions = {
+                repayAmount: Math.round(repayAmount * 100) / 100,
+                addCollateralAmount: Math.round(addCollateralAmount * 100) / 100,
+                targetHF: TARGET_HF
+            };
+        }
+
+        return {
+            healthFactor: Math.round(healthFactor * 100) / 100,
+            liquidity: liqNum,
+            shortfall: shortNum,
+            totalCollateralUSD: Math.round(totalCollateralUSD * 100) / 100,
+            totalDebtUSD: Math.round(totalDebtUSD * 100) / 100,
+            suggestions
+        };
     }
 
     // --- 2. Execution (The Looper) ---
