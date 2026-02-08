@@ -96,7 +96,9 @@ export function RiskMonitor({
                         />
                     </svg>
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center">
-                        <div className="text-3xl font-bold font-mono text-white tracking-tighter">{healthFactor.toFixed(2)}</div>
+                        <div className="text-3xl font-bold font-mono text-white tracking-tighter">
+                            {healthFactor >= 999 ? '∞' : healthFactor.toFixed(2)}
+                        </div>
                         <div className={`text-[10px] font-bold uppercase tracking-widest ${isSafe ? 'text-emerald-500' : isModerate ? 'text-amber-500' : 'text-red-500'}`}>
                             {isSafe ? 'Safe' : isModerate ? 'Moderate' : 'Critical'}
                         </div>

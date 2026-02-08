@@ -96,6 +96,10 @@ function formatUSD(value: number): string {
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatHF(hf: number): string {
+    return hf >= 999 ? "∞" : hf.toFixed(2);
+}
+
 function getUtilization(collateral: number, debt: number): number {
     if (collateral === 0) return 0;
     return (debt / collateral) * 100;
@@ -214,7 +218,7 @@ bot.command("positions", async (ctx) => {
 
         let message = `📊 **Portfolio Overview**\n\n`;
         message += `🔗 Wallet: \`${user.wallet_address.substring(0, 6)}...${user.wallet_address.substring(38)}\`\n\n`;
-        
+
         message += `━━━━━━━━━━━━━━━━━\n`;
         message += `💰 **Total Collateral:** $${formatUSD(collateral)}\n`;
         message += `💳 **Total Debt:** $${formatUSD(debt)}\n`;
@@ -222,7 +226,7 @@ bot.command("positions", async (ctx) => {
         message += `💵 **Available to Borrow:** $${formatUSD(availableBorrow)}\n`;
         message += `━━━━━━━━━━━━━━━━━\n\n`;
 
-        message += `${statusEmoji} **Health Factor:** ${health.healthFactor.toFixed(2)} (${statusText})\n\n`;
+        message += `${statusEmoji} **Health Factor:** ${formatHF(health.healthFactor)} (${statusText})\n\n`;
 
         // Add suggestions if HF is concerning
         if (health.suggestions) {
@@ -271,7 +275,7 @@ bot.command("risk", async (ctx) => {
 
         await ctx.reply(
             `⚡ **Quick Risk Check**\n\n` +
-            `Health Factor: **${health.healthFactor.toFixed(2)}**\n` +
+            `Health Factor: **${formatHF(health.healthFactor)}**\n` +
             `Status: ${status}\n\n` +
             `Use /positions for detailed view.`,
             { parse_mode: "Markdown" }
@@ -333,7 +337,7 @@ bot.callbackQuery(/^interval_(\d+)$/, async (ctx) => {
 
     const { error } = await supabase
         .from('users')
-        .update({ 
+        .update({
             polling_interval: interval,
             updated_at: new Date().toISOString()
         })
@@ -354,7 +358,7 @@ bot.callbackQuery(/^interval_(\d+)$/, async (ctx) => {
 // /setalert - Set alert threshold
 bot.command("setalert", async (ctx) => {
     const value = parseFloat(ctx.match);
-    
+
     if (isNaN(value) || value < 1.0 || value > 2.0) {
         return ctx.reply(
             "⚠️ Please provide a valid threshold between 1.0 and 2.0.\n\n" +
@@ -365,7 +369,7 @@ bot.command("setalert", async (ctx) => {
 
     const { error } = await supabase
         .from('users')
-        .update({ 
+        .update({
             alert_threshold: value,
             updated_at: new Date().toISOString()
         })
@@ -394,14 +398,14 @@ bot.command("togglealerts", async (ctx) => {
 
     await supabase
         .from('users')
-        .update({ 
+        .update({
             alerts_enabled: newState,
             updated_at: new Date().toISOString()
         })
         .eq('chat_id', ctx.from?.id);
 
     await ctx.reply(
-        newState 
+        newState
             ? "🔔 **Alerts Enabled**\nYou will receive liquidation warnings."
             : "🔕 **Alerts Disabled**\nYou won't receive automatic alerts.",
         { parse_mode: "Markdown" }
@@ -419,7 +423,7 @@ const POLLING_CHECK_INTERVAL = 60 * 1000; // Check every minute
 
 setInterval(async () => {
     const now = new Date();
-    
+
     // Fetch users who need to be checked
     const { data: users, error } = await supabase
         .from('users')
@@ -461,8 +465,8 @@ setInterval(async () => {
                 const utilization = getUtilization(collateral, debt);
 
                 let alertMessage = `🚨 **LIQUIDATION ALERT** 🚨\n\n`;
-                alertMessage += `Your Health Factor has dropped to **${health.healthFactor.toFixed(2)}**!\n\n`;
-                
+                alertMessage += `Your Health Factor has dropped to **${formatHF(health.healthFactor)}**!\n\n`;
+
                 alertMessage += `📊 **Position Summary:**\n`;
                 alertMessage += `• Collateral: $${formatUSD(collateral)}\n`;
                 alertMessage += `• Debt: $${formatUSD(debt)}\n`;
@@ -484,7 +488,7 @@ setInterval(async () => {
                 const keyboard = new InlineKeyboard()
                     .url("Open Dashboard", `${DASHBOARD_URL}/dashboard`);
 
-                await bot.api.sendMessage(user.chat_id, alertMessage, { 
+                await bot.api.sendMessage(user.chat_id, alertMessage, {
                     parse_mode: "Markdown",
                     reply_markup: keyboard
                 });

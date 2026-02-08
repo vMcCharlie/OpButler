@@ -164,8 +164,8 @@ export function StrategyBuilder() {
         ? (totalExposureValueUSD * liquidationThreshold) / flashLoanValueUSD
         : 999;
 
-    const safetyScoreLabel = healthFactor > 2 ? 'Excellent' : healthFactor > 1.5 ? 'Good' : healthFactor > 1.1 ? 'Risky' : 'Danger';
-    const hfColor = healthFactor < 1.1 ? 'text-red-500' : healthFactor < 1.5 ? 'text-yellow-500' : 'text-emerald-500';
+    const safetyScoreLabel = healthFactor >= 999 ? 'Perfect' : healthFactor > 2 ? 'Excellent' : healthFactor > 1.5 ? 'Good' : healthFactor > 1.1 ? 'Risky' : 'Danger';
+    const hfColor = healthFactor >= 999 ? 'text-blue-400' : healthFactor < 1.1 ? 'text-red-500' : healthFactor < 1.5 ? 'text-yellow-500' : 'text-emerald-500';
 
     // -- Actions --
     const handleExecute = () => {

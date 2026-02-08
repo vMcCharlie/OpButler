@@ -110,22 +110,21 @@ export function Dashboard() {
                 <Card className="border-l-4 border-l-blue-500/80">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Health Status</CardTitle>
-                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            (healthData?.radiant?.healthFactor || 999) > 1.5 
-                                ? 'bg-emerald-500/20 text-emerald-500' 
-                                : (healthData?.radiant?.healthFactor || 999) > 1.1 
-                                    ? 'bg-amber-500/20 text-amber-500' 
+                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${(healthData?.radiant?.healthFactor || 999) > 1.5
+                                ? 'bg-emerald-500/20 text-emerald-500'
+                                : (healthData?.radiant?.healthFactor || 999) > 1.1
+                                    ? 'bg-amber-500/20 text-amber-500'
                                     : 'bg-red-500/20 text-red-500'
-                        }`}>
-                            {(healthData?.radiant?.healthFactor || 999) > 1.5 ? 'Safe' : 
-                             (healthData?.radiant?.healthFactor || 999) > 1.1 ? 'Warning' : 'Critical'}
+                            }`}>
+                            {(healthData?.radiant?.healthFactor || 999) > 1.5 ? 'Safe' :
+                                (healthData?.radiant?.healthFactor || 999) > 1.1 ? 'Warning' : 'Critical'}
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-blue-400">
-                            {isLoading ? '...' : 
-                                healthData?.radiant?.healthFactor && healthData.radiant.healthFactor < 100 
-                                    ? healthData.radiant.healthFactor.toFixed(2) 
+                            {isLoading ? '...' :
+                                (healthData?.radiant?.healthFactor && healthData.radiant.healthFactor < 999)
+                                    ? healthData.radiant.healthFactor.toFixed(2)
                                     : '∞'}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -197,7 +196,7 @@ export function Dashboard() {
                         <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
                             <span className="text-xs font-bold uppercase text-muted-foreground">Health Score</span>
                             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(!healthData?.radiant?.healthFactor || healthData.radiant.healthFactor > 1.1) ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                                {(!healthData?.radiant?.healthFactor || healthData.radiant.healthFactor > 100) ? 'Safe' : healthData.radiant.healthFactor.toFixed(2)}
+                                {(!healthData?.radiant?.healthFactor || healthData.radiant.healthFactor >= 999) ? '∞' : healthData.radiant.healthFactor.toFixed(2)}
                             </span>
                         </div>
                     </CardContent>
