@@ -253,7 +253,8 @@ setInterval(async () => {
                     alertMessage += `\n`;
                 }
 
-                alertMessage += `⚠️ Act now to avoid liquidation!`;
+                alertMessage += `⚠️ Act now to avoid liquidation!\n\n` +
+                    `👉 [Open OpButler Dashboard](https://opbutler.vercel.app/dashboard)`;
 
                 // Send Alert
                 await bot.api.sendMessage(user.chat_id, alertMessage, { parse_mode: "Markdown" });
