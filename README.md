@@ -1,26 +1,61 @@
-# OpButler - DeFi Automation & Risk Management for Venus Protocol (BSC)
+# OpButler - Multi-Protocol DeFi Risk Management (BNB Chain)
 
-**OpButler** is a comprehensive DeFi assistant designed to help users manage leverage, assess risk, and automate lending strategies on the Venus Protocol (BNB Chain). It consists of a modern web dashboard and a Telegram bot for on-the-go management.
+**OpButler** is a comprehensive DeFi risk management and strategy automation platform for BNB Chain. It aggregates positions across **Venus Protocol**, **Kinza Finance**, and **Radiant V2**, providing a unified dashboard, real-time risk alerts via Telegram, and on-chain execution through smart contracts.
 
 ## 🌟 Features
 
-*   **Strategy Builder (Web):** Visual interface to simulate "Looping" (Leveraged Supply) strategies.
-    *   **Real-time Risk Monitor:** Dynamic Health Factor tracking with "Long" (Price Drop) and "Short" (Price Rise) liquidation warnings.
-    *   **USD-Based Calculations:** Accurate borrowing power estimations based on real-time token prices.
-    *   **Cross-Asset Support:** Simulate borrowing volatile assets (e.g., BTCB) against stablecoins (e.g., FDUSD).
-*   **Telegram Bot:** Automate strategy execution and monitoring directly from Telegram.
-    *   Balance checking.
-    *   One-click execution of pre-defined strategies (Safe/Degen Loops).
-*   **Smart Interactions:** Direct integration with Venus Protocol contracts (Comptroller, vTokens) and PancakeSwap (for swaps).
+### 📊 Unified Dashboard
+- **Multi-Protocol Aggregation:** View your Net Worth, Total Supplied, and Total Borrowed across Venus, Kinza, and Radiant in one place.
+- **Per-Protocol Health:** Monitor Available Credit, Debt Risk, and Health Score for each lending protocol.
+- **Real-time Updates:** Positions refresh automatically every 10 seconds.
+
+### ⚙️ Strategy Builder
+- **Looping Strategies:** Simulate leveraged supply positions with visual risk analysis.
+- **Cross-Asset Support:** Borrow volatile assets (BTCB, ETH) against stablecoins (USDT, FDUSD).
+- **USD-Based Calculations:** Accurate borrow power based on real-time prices.
+- **Risk Warnings:** Dynamic liquidation price alerts for both Long and Short scenarios.
+
+### 🔔 Telegram Alerts (Read-Only)
+- **Liquidation Warnings:** Receive alerts when your Health Factor drops below your threshold.
+- **Actionable Suggestions:** Each alert includes how much to repay or add as collateral to reach a safe HF.
+- **Links to Dashboard:** Alerts include a link to the OpButler website where you can execute transactions securely.
+- **No Execution via Bot:** All sensitive operations happen through the web dashboard via smart contracts—never through Telegram.
+
+### 🔐 Smart Contract Execution
+- **OpButlerWallet:** User-owned smart contract wallet for executing strategies.
+- **OpButlerVault:** Aggregated vault for yield optimization.
+- **OpButlerFactory:** Factory contract for deploying user wallets.
+- **On-Chain Safety:** All transactions are signed and executed by the user through the web interface.
 
 ---
 
 ## 🏗 Project Structure
 
-*   **`frontend/`**: Next.js 14 Web Application (React, TailwindCSS, RainbowKit, Wagmi).
-*   **`contracts/`**: Hardhat project for any custom adapter contracts (if needed).
-*   **`bot.ts`**: Telegram Bot logic using `grammy` framework.
-*   **`index.ts`**: Core Strategy Engine (Business Logic for simulations & execution) using `viem`.
+```
+OpButler/
+├── frontend/               # Next.js 15 Web Application
+│   ├── app/                # App Router pages
+│   ├── components/         # React components (Dashboard, StrategyBuilder, Settings)
+│   ├── hooks/              # Custom hooks (useAggregatedHealth, useTokenPrices)
+│   └── contracts/          # Contract ABIs for frontend
+├── contracts/              # Solidity Smart Contracts (Hardhat)
+│   ├── OpButlerWallet.sol  # User wallet for strategy execution
+│   ├── OpButlerVault.sol   # Yield aggregation vault
+│   └── OpButlerFactory.sol # Factory for wallet deployment
+├── bot.ts                  # Telegram Bot (Alerts Only)
+├── index.ts                # Core Strategy Engine (viem)
+└── supabase_schema.sql     # Database schema for user settings
+```
+
+---
+
+## 🔗 Supported Protocols
+
+| Protocol | Type | Address |
+|----------|------|---------|
+| **Venus Protocol** | Compound V2 Fork | `0xfD36E2c2a6789Db23113685031d7F16329158384` |
+| **Kinza Finance** | Compound V2 Fork | `0xcB0620b181140e57D1C0D8b724cde623cA963c8C` |
+| **Radiant V2** | Aave V2 Fork | `0xd50Cf00b6e600Dd036Ba8eF475677d816d6c4281` |
 
 ---
 
@@ -28,156 +63,152 @@
 
 ### Prerequisites
 
-*   **Node.js** (v18 or higher)
-*   **NPM** or **Yarn**
-*   **Metamask** (or any Web3 Wallet)
-*   **BSC RPC URL** (Private RPC recommended for reliability)
-*   **Telegram Bot Token** (for Bot usage)
+- **Node.js** (v18+)
+- **Metamask** or any Web3 wallet
+- **Telegram Bot Token** (from @BotFather)
+- **Supabase Account** (for user data storage)
+- **WalletConnect Project ID** (for frontend wallet connections)
 
 ### 1. Installation
 
-Clone the repository and install dependencies for both the root (Bot/Backend) and the Frontend.
-
 ```bash
-# 1. Install Root Dependencies (Bot & Core Logic)
+# Root dependencies (Bot & Core Logic)
 npm install
 
-# 2. Install Frontend Dependencies
+# Frontend dependencies
 cd frontend
 npm install
-cd ..
 ```
 
 ### 2. Environment Configuration
 
-This project has two deployable parts with separate environment variables:
-
-#### 📦 Root (`.env`) - For Telegram Bot (Railway)
-
-Create a `.env` file in the **root directory**. See `.env.example` for all options.
+#### 📦 Root (`.env`) - Telegram Bot (Deploy to Railway)
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `PRIVATE_KEY` | Wallet private key (for reading blockchain state) | ✅ |
+| `PRIVATE_KEY` | Read-only wallet key (for querying blockchain) | ✅ |
 | `RPC_URL` | BSC RPC endpoint | ✅ |
-| `TELEGRAM_BOT_TOKEN` | Get from @BotFather | ✅ |
-| `SUPABASE_URL` | Your Supabase project URL | ✅ |
-| `SUPABASE_KEY` | Supabase `service_role` key | ✅ |
-| `ALLOWED_USER_ID` | Admin Telegram ID (optional) | ❌ |
+| `TELEGRAM_BOT_TOKEN` | From @BotFather | ✅ |
+| `SUPABASE_URL` | Supabase project URL | ✅ |
+| `SUPABASE_KEY` | Supabase service_role key | ✅ |
 
-#### 🌐 Frontend (`frontend/.env`) - For Web Dashboard (Vercel)
-
-Create a `.env` file in the **frontend directory**. See `frontend/.env.example` for all options.
+#### 🌐 Frontend (`frontend/.env`) - Web Dashboard (Deploy to Vercel)
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Get from [WalletConnect Cloud](https://cloud.walletconnect.com/) | ✅ |
-| `NEXT_PUBLIC_RPC_URL` | Custom RPC (optional) | ❌ |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | From [WalletConnect Cloud](https://cloud.walletconnect.com/) | ✅ |
 
-> **⚠️ Security Warning:** Never commit your `.env` files or Private Keys to version control! The `.gitignore` is already configured to exclude them.
+> ⚠️ **Security:** Never commit `.env` files. They are already in `.gitignore`.
 
 ---
 
 ## 🏃‍♂️ Usage
 
-### Running the Web Dashboard (Frontend)
-
-The frontend provides the visual Strategy Builder and Risk Monitor.
+### Running the Frontend
 
 ```bash
 cd frontend
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000)
 
-### Running the Telegram Bot
-
-The bot allows you to interact with OpButler logic via chat.
+### Running the Telegram Bot (Locally)
 
 ```bash
-# Run locally
 npm run dev
 ```
 
-### 🚄 Deploying Bot to Railway (with Supabase)
+---
 
-To run this bot 24/7 on Railway with a persistent database:
+## 🚄 Deployment
 
-#### 1. Set up Supabase Database
-1.  Sign up at [Supabase.com](https://supabase.com/) and create a new project.
-2.  Go to the **SQL Editor** in your Supabase dashboard.
-3.  Copy and paste the contents of `supabase_schema.sql` from this repo into the editor and run it. This creates the `users` table.
-4.  Go to **Project Settings > API**.
-5.  Copy the `Project URL` and `service_role` secret (or `anon` public key, though service_role is easier for backend bots).
+### Telegram Bot → Railway
 
-#### 2. Deploy to Railway
-1.  **Fork/Clone** this repo to your GitHub.
-2.  Login to [Railway.app](https://railway.app/).
-3.  Create a **New Project** > **Deploy from GitHub repo**.
-4.  Select your `OpButler` repo.
-5.  **Variables:** Add the following Environment Variables in Railway:
-    *   `TELEGRAM_BOT_TOKEN`
-    *   `PRIVATE_KEY`
-    *   `RPC_URL` (Use a public BSC RPC if needed: `https://bsc-dataseed.binance.org/`)
-    *   `SUPABASE_URL`: Your Supabase Project URL.
-    *   `SUPABASE_KEY`: Your Supabase `service_role` key (or `anon` key if RLS allows).
-6.  **Root Directory:** Set the Root Directory to `/` (default).
-7.  **Build Command:** `npm run build` (This runs `tsc` to compile TypeScript).
-8.  **Start Command:** `npm run start` (This runs `node dist/bot.js`).
-
-Railway will automatically detect the `package.json` in the root and start the bot.
+1. Set up **Supabase**: Run `supabase_schema.sql` in the SQL Editor.
+2. Deploy to **Railway**:
+   - Root directory: `/`
+   - Build: `npm run build`
+   - Start: `npm run start`
+   - Add all environment variables from the table above.
 
 **Bot Commands:**
-*   `/start` - Initialize and get instructions.
-*   `/verify <signature>` - Link your wallet to receive alerts.
-*   `/risk` - Check your current Health Factor.
-*   `/status` - See your linked wallet and settings.
+| Command | Description |
+|---------|-------------|
+| `/start` | Get setup instructions |
+| `/verify <signature>` | Link your wallet (sign message on website first) |
+| `/risk` | Check your Health Factor with suggestions |
+| `/status` | View linked wallet info |
 
-### 🚀 Deploying Frontend to Vercel
+### Frontend → Vercel
 
-To deploy the web dashboard to Vercel:
-
-1.  **Fork/Clone** this repo to your GitHub.
-2.  Login to [Vercel.com](https://vercel.com/).
-3.  Click **Add New** > **Project** > **Import from GitHub**.
-4.  Select your `OpButler` repo.
-5.  **Root Directory:** Set to `frontend`.
-6.  **Framework Preset:** Next.js (auto-detected).
-7.  **Environment Variables:** Add:
-    *   `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`: Your WalletConnect Project ID.
-8.  Click **Deploy**!
-
-Vercel will automatically build and deploy your Next.js frontend.
+1. Import repo to Vercel
+2. Set root directory to `frontend`
+3. Add `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+4. Deploy!
 
 ---
 
-## 🛠️ Configuration & APIs
+## 🔐 How It Works
 
-### Supported Assets (Venus Protocol)
-The application is pre-configured with Venus Protocol contract addresses on **BNB Chain Mainnet**.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         USER FLOW                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. User connects wallet on OpButler Website                    │
+│                           ↓                                     │
+│  2. Dashboard shows positions across Venus, Kinza, Radiant      │
+│                           ↓                                     │
+│  3. User links Telegram via Settings (signature verification)   │
+│                           ↓                                     │
+│  4. Bot monitors Health Factor every 5 minutes                  │
+│                           ↓                                     │
+│  5. If HF < threshold → Bot sends alert with:                   │
+│     • Current HF & Position Summary                             │
+│     • Suggestions (Repay $X OR Add $Y collateral)               │
+│     • Link to OpButler dashboard                                │
+│                           ↓                                     │
+│  6. User clicks link → Opens website → Executes via wallet      │
+│     (All transactions signed by user, executed via contracts)   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-*   **Comptroller:** `0xfD36E2c2a6789Db23113685031d7F16329158384`
-*   **Router (PancakeSwap):** `0x13f4EA83D0bd40E75C8222255bc855a974568Dd4`
+**Key Security Points:**
+- Telegram bot is **read-only** (alerts only, no execution)
+- All transactions require **wallet signature** on the website
+- Smart contracts handle execution with proper access control
 
-### Modifying Assets
-To add or remove supported assets, check `frontend/lib/constants.ts` (or equivalent) and ensuring the `strategies.json` logic in `index.ts` handles the new token addresses.
+---
+
+## 🛠️ Technical Details
 
 ### Price Feeds
-*   **Frontend:** Uses Binance Public API for real-time price data in the Strategy Builder.
-*   **Contracts:** Uses On-Chain Oracles (Venus Oracle) for execution safety.
+- **Frontend:** Binance Public API for real-time prices
+- **Contracts:** On-chain oracles (Venus Oracle, Chainlink)
+
+### Health Factor Calculation
+```
+HF = (Total Collateral × Collateral Factor) / Total Debt
+```
+
+### Alert Suggestions
+When HF drops below threshold, the bot calculates:
+- **Option A:** Amount of debt to repay to reach HF 1.5
+- **Option B:** Amount of collateral to add to reach HF 1.5
 
 ---
 
 ## 🤝 Contributing
 
-1.  Fork the repository.
-2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the branch (`git push origin feature/AmazingFeature`).
-5.  Open a Pull Request.
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+MIT License - see `LICENSE` for details.
