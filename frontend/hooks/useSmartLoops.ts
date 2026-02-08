@@ -90,12 +90,12 @@ function isStablePair(supply: string, borrow: string): boolean {
  * Calculate max leverage from LTV using geometric series formula
  * MaxLeverage = 1 / (1 - LTV)
  * Example: LTV 75% = 0.75 -> MaxLev = 1 / (1 - 0.75) = 4x
- * Example: LTV 80% = 0.80 -> MaxLev = 1 / (1 - 0.80) = 5x
+ * Capped at 4x for sensible risk management
  */
 function getMaxLeverage(ltv: number): number {
-    if (ltv >= 0.95) return 10; // Cap at 10x
+    if (ltv >= 0.80) return 4; // Cap at 4x
     if (ltv <= 0) return 1;
-    return Math.min(10, 1 / (1 - ltv));
+    return Math.min(4, 1 / (1 - ltv));
 }
 
 /**
