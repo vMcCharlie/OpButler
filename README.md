@@ -86,13 +86,33 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 The bot allows you to interact with OpButler logic via chat.
 
 ```bash
-# Run from the root directory
-npx ts-node bot.ts
+# Run locally
+npm run dev
 ```
 
+### 🚄 Deploying Bot to Railway
+
+To run this bot 24/7 on Railway:
+
+1.  **Fork/Clone** this repo to your GitHub.
+2.  Login to [Railway.app](https://railway.app/).
+3.  Create a **New Project** > **Deploy from GitHub repo**.
+4.  Select your `OpButler` repo.
+5.  **Variables:** Add the following Environment Variables in Railway:
+    *   `TELEGRAM_BOT_TOKEN`
+    *   `PRIVATE_KEY`
+    *   `RPC_URL` (Use a public BSC RPC if needed: `https://bsc-dataseed.binance.org/`)
+6.  **Root Directory:** Set the Root Directory to `/` (default).
+7.  **Build Command:** `npm run build` (This runs `tsc` to compile TypeScript).
+8.  **Start Command:** `npm run start` (This runs `node dist/bot.js`).
+
+Railway will automatically detect the `package.json` in the root and start the bot.
+
 **Bot Commands:**
-*   `/start` - Open the main menu.
-*   `/id` - Get your Telegram User ID (to add to `.env`).
+*   `/start` - Initialize and get instructions.
+*   `/verify <signature>` - Link your wallet to receive alerts.
+*   `/risk` - Check your current Health Factor.
+*   `/status` - See your linked wallet and settings.
 
 ---
 

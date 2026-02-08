@@ -13,6 +13,7 @@ export function Navbar() {
         { name: 'Dashboard', href: '/dashboard' },
         { name: 'Lend', href: '/strategy' },
         { name: 'Portfolio', href: '/portfolio' },
+        { name: 'Settings', href: '/settings' },
     ];
 
     return (

@@ -7,8 +7,11 @@ import { bsc } from "viem/chains";
 import "dotenv/config";
 
 // --- Configuration & Security ---
+
+// --- Configuration & Security ---
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const ALLOWED_USER_ID = process.env.ALLOWED_USER_ID ? parseInt(process.env.ALLOWED_USER_ID) : null;
+// ALLOWED_USER_ID is now optional, used for Admin commands only if needed
+const ADMIN_ID = process.env.ALLOWED_USER_ID ? parseInt(process.env.ALLOWED_USER_ID) : null;
 const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
 
 if (!BOT_TOKEN) {
@@ -23,11 +26,38 @@ if (!PRIVATE_KEY || !PRIVATE_KEY.startsWith("0x") || PRIVATE_KEY.length !== 66) 
 
 // --- Initialization ---
 let manager: StrategyManager;
-import { Account, PublicClient, WalletClient, Transport, Chain } from "viem";
+import { Account, PublicClient, WalletClient, Transport, Chain, verifyMessage } from "viem";
+import * as fs from 'fs';
+import * as path from 'path';
 
 let account: Account;
 let publicClient: PublicClient<Transport, Chain>;
 let client: WalletClient<Transport, Chain, Account>;
+
+// Data Store for Users
+const USERS_FILE = path.join(__dirname, 'users.json');
+interface UserData {
+    chatId: number;
+    username?: string;
+    walletAddress: Address;
+    alertThreshold: number; // e.g. 1.1
+}
+
+function getUsers(): UserData[] {
+    if (!fs.existsSync(USERS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+}
+
+function saveUser(user: UserData) {
+    const users = getUsers();
+    const existingIndex = users.findIndex(u => u.chatId === user.chatId);
+    if (existingIndex >= 0) {
+        users[existingIndex] = user;
+    } else {
+        users.push(user);
+    }
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
 try {
     account = privateKeyToAccount(PRIVATE_KEY);
@@ -50,49 +80,19 @@ try {
 // Initialize Bot
 const bot = new Bot(BOT_TOKEN);
 
-// --- Middleware: Security Check ---
-bot.use(async (ctx, next) => {
-    if (ALLOWED_USER_ID && ctx.from?.id !== ALLOWED_USER_ID) {
-        console.warn(`⚠️ Unauthorized access attempt from User ID: ${ctx.from?.id}`);
-        return ctx.reply("⛔ Access Denied. You are not the authorized owner of this agent.");
-    }
-    await next();
-});
-
-// --- Helpers ---
-async function getWalletBalance() {
-    try {
-        const balance = await publicClient.getBalance({ address: account.address });
-        return `${formatEther(balance)} BNB`;
-    } catch (e) {
-        return "Error fetching balance";
-    }
-}
-
-// --- Menus ---
-const mainKeyboard = new InlineKeyboard()
-    .text("💰 Check Balance", "balance")
-    .text("📜 Active Strategies", "history")
-    .row()
-    .text("🚀 Execute Strategy", "exec_menu")
-    .text("🛑 Unwind Strategy", "unwind_menu");
-
-const execKeyboard = new InlineKeyboard()
-    .text("Safe Loop (2x)", "exec_safe")
-    .text("Degen Loop (3x)", "exec_degen")
-    .row()
-    .text("🔙 Back", "main_menu");
-
 // --- Commands ---
 
 bot.command("start", async (ctx) => {
-    const balance = await getWalletBalance();
     await ctx.reply(
-        `🤖 **OpButler Online**\n\n` +
-        `👤 **Owner**: \`${account.address}\`\n` +
-        `💰 **Balance**: ${balance}\n\n` +
-        `Select an action below:`,
-        { reply_markup: mainKeyboard, parse_mode: "Markdown" }
+        `🤖 **Welcome to OpButler!**\n\n` +
+        `I can monitor your Venus Protocol positions and alert you of liquidation risks.\n\n` +
+        `**To Get Started:**\n` +
+        `1. Go to the OpButler Dashboard > Settings\n` +
+        `2. Enter your Telegram ID: \`${ctx.from?.id}\`\n` +
+        `3. Sign the authentication message with your wallet.\n` +
+        `4. Paste the signature here using:\n` +
+        `\`/verify <signature>\``,
+        { parse_mode: "Markdown" }
     );
 });
 
@@ -100,82 +100,122 @@ bot.command("id", (ctx) => {
     ctx.reply(`Your User ID is: \`${ctx.from?.id}\``, { parse_mode: "Markdown" });
 });
 
-// --- Callbacks ---
-
-bot.callbackQuery("main_menu", async (ctx) => {
-    const balance = await getWalletBalance();
-    await ctx.editMessageText(
-        `🤖 **OpButler Online**\n\n` +
-        `👤 **Owner**: \`${account.address}\`\n` +
-        `💰 **Balance**: ${balance}\n\n` +
-        `Select an action below:`,
-        { reply_markup: mainKeyboard, parse_mode: "Markdown" }
-    );
-});
-
-bot.callbackQuery("balance", async (ctx) => {
-    const balance = await getWalletBalance();
-    await ctx.answerCallbackQuery({ text: `Balance: ${balance}` });
-    await ctx.reply(`💰 Current Balance: **${balance}**`, { parse_mode: "Markdown" });
-});
-
-bot.callbackQuery("history", async (ctx) => {
-    const fs = require('fs');
-    const path = require('path');
-    const strategiesFile = path.join(__dirname, 'strategies.json');
-
-    if (fs.existsSync(strategiesFile)) {
-        const strategies = JSON.parse(fs.readFileSync(strategiesFile, 'utf-8'));
-        if (strategies.length === 0) {
-            return ctx.reply("📭 No active strategies.", { reply_markup: mainKeyboard });
-        }
-
-        let msg = "📜 **Active Strategies**:\n\n";
-        strategies.forEach((s: any) => {
-            msg += `🆔 \`${s.id}\`\nType: ${s.type}\nDebt: ${s.debtAmount}\n\n`;
-        });
-        await ctx.reply(msg, { parse_mode: "Markdown" });
-    } else {
-        await ctx.reply("📭 No strategies file found.", { reply_markup: mainKeyboard });
-    }
-    await ctx.answerCallbackQuery();
-});
-
-bot.callbackQuery("exec_menu", async (ctx) => {
-    await ctx.editMessageText("🚀 **Select Strategy Mode**\n\nChoose a leverage level for BNB Loop:", { reply_markup: execKeyboard, parse_mode: "Markdown" });
-});
-
-bot.callbackQuery(["exec_safe", "exec_degen"], async (ctx) => {
-    const leverage = ctx.callbackQuery.data === "exec_safe" ? 2 : 3;
-    const asset = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"; // WBNB
-    const vAsset = "0xA07c5b74C9B40447a954e1466938b865b6BBea36"; // vBNB
-    const debtAsset = "0x55d398326f99059fF775485246999027B3197955"; // USDT
-    const vDebtAsset = "0xfD5840Cd36d94D7229439859C0112a4185BC0255"; // vUSDT
-    // Safe default amount: 0.01 BNB (Verify user has this!)
-    const amount = 10000000000000000n; // 0.01 BNB
-
-    // Balance Check
-    const balance = await publicClient.getBalance({ address: account.address });
-    if (balance < amount) {
-        return ctx.reply(`❌ **Insufficient Balance**\nRequired: 0.01 BNB\nHas: ${formatEther(balance)} BNB`, { parse_mode: "Markdown" });
+bot.command("verify", async (ctx) => {
+    const signature = ctx.match;
+    if (!signature) {
+        return ctx.reply("❌ Please provide the signature.\nUsage: `/verify <signature>`", { parse_mode: "Markdown" });
     }
 
-    await ctx.reply(`🔄 **Simulating Execution**...\nLeverage: ${leverage}x\nAmount: 0.01 BNB`);
+    const chatId = ctx.from?.id;
+    if (!chatId) return;
 
     try {
-        await manager.executeLongStrategy(asset, vAsset, debtAsset, vDebtAsset, amount, leverage);
-        await ctx.reply("✅ **Strategy Executed Successfully!**");
-    } catch (error: any) {
-        console.error(error);
-        await ctx.reply(`❌ **Execution Failed**:\n${error.message}`);
+        const message = `OpButler Auth: ${chatId}`;
+        const valid = await publicClient.verifyMessage({
+            address: '0x0000000000000000000000000000000000000000', // We don't know address yet, verifyMessage handles split? No, we need recoverAddress
+            message,
+            signature: signature as `0x${string}`
+        });
+
+        // Correct way to recover address from signature using viem
+        // verifyMessage returns boolean if we provide address.
+        // We need recoverMessageAddress to find WHO signed it.
+        const { recoverMessageAddress } = require('viem');
+        const recoveredAddress = await recoverMessageAddress({
+            message,
+            signature: signature as `0x${string}`
+        });
+
+        saveUser({
+            chatId,
+            username: ctx.from?.username,
+            walletAddress: recoveredAddress,
+            alertThreshold: 1.1
+        });
+
+        await ctx.reply(
+            `✅ **Success!**\n\n` +
+            `Linked Wallet: \`${recoveredAddress}\`\n` +
+            `You will now receive alerts if your Health Factor drops below **1.1**.\n\n` +
+            `Try \`/risk\` to check your status.`,
+            { parse_mode: "Markdown" }
+        );
+
+    } catch (error) {
+        console.error("Verification failed:", error);
+        await ctx.reply("❌ Verification failed. Invalid signature or format.");
     }
-    await ctx.answerCallbackQuery();
 });
 
-bot.callbackQuery("unwind_menu", async (ctx) => {
-    await ctx.reply("To unwind, please use the command:\n`/unwind <strategy_id>`", { parse_mode: "Markdown" });
-    await ctx.answerCallbackQuery();
+bot.command("risk", async (ctx) => {
+    const users = getUsers();
+    const user = users.find(u => u.chatId === ctx.from?.id);
+
+    if (!user) {
+        return ctx.reply("⚠️ You have not linked a wallet yet. Use `/start` to begin.");
+    }
+
+    await ctx.reply("🔍 Checking Health Factor...");
+    try {
+        const { healthFactor, shortfall } = await manager.getAccountHealth(user.walletAddress);
+
+        let status = "Unknown";
+        if (healthFactor > 2) status = "🟢 Safe";
+        else if (healthFactor > 1.1) status = "🟡 Warning";
+        else status = "🔴 CRITICAL";
+
+        await ctx.reply(
+            `📊 **Risk Report**\n\n` +
+            `Wallet: \`${user.walletAddress.substring(0, 6)}...${user.walletAddress.substring(38)}\`\n` +
+            `Health Factor: **${healthFactor.toFixed(2)}**\n` +
+            `Status: ${status}\n` +
+            `Shortfall: $${shortfall.toFixed(2)}`,
+            { parse_mode: "Markdown" }
+        );
+    } catch (e: any) {
+        await ctx.reply(`Error fetching data: ${e.message}`);
+    }
 });
+
+bot.command("status", async (ctx) => {
+    const users = getUsers();
+    const user = users.find(u => u.chatId === ctx.from?.id);
+
+    if (user) {
+        await ctx.reply(
+            `👤 **Account Status**\n\n` +
+            `Linked Wallet: \`${user.walletAddress}\`\n` +
+            `Alert Threshold: HF < ${user.alertThreshold}`,
+            { parse_mode: "Markdown" }
+        );
+    } else {
+        await ctx.reply("❌ No wallet linked.");
+    }
+});
+
+// --- Background Job: Monitor Risk ---
+setInterval(async () => {
+    const users = getUsers();
+    console.log(`🔍 Monitoring ${users.length} users...`);
+
+    for (const user of users) {
+        try {
+            const { healthFactor } = await manager.getAccountHealth(user.walletAddress);
+            if (healthFactor < user.alertThreshold) {
+                // Send Alert
+                await bot.api.sendMessage(
+                    user.chatId,
+                    `🚨 **LIQUIDATION ALERT** 🚨\n\n` +
+                    `Your Health Factor has dropped to **${healthFactor.toFixed(2)}**!\n` +
+                    `Threshold: ${user.alertThreshold}\n\n` +
+                    `Please repay debt or add collateral immediately to avoid liquidation.`
+                );
+            }
+        } catch (e) {
+            console.error(`Error monitoring user ${user.chatId}:`, e);
+        }
+    }
+}, 60 * 1000 * 5); // Check every 5 minutes
 
 // Start Bot
 bot.catch((err) => {
