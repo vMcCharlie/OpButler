@@ -30,9 +30,9 @@ if (!BOT_TOKEN) {
     process.exit(1);
 }
 
-if (!PRIVATE_KEY || !PRIVATE_KEY.startsWith("0x") || PRIVATE_KEY.length !== 66) {
-    console.error("❌ Error: Invalid PRIVATE_KEY. Must start with 0x and be 66 chars long.");
-    process.exit(1);
+// PRIVATE_KEY is now optional - needed only for bot-initiated transactions (not currently used)
+if (PRIVATE_KEY && (!PRIVATE_KEY.startsWith("0x") || PRIVATE_KEY.length !== 66)) {
+    console.warn("⚠️ Warning: Invalid PRIVATE_KEY format. Bot will run in read-only mode.");
 }
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -64,17 +64,24 @@ interface UserData {
 }
 
 try {
-    account = privateKeyToAccount(PRIVATE_KEY);
-    client = createWalletClient({
-        account,
-        chain: bsc,
-        transport: http()
-    });
     publicClient = createPublicClient({
         chain: bsc,
         transport: http()
     });
-    manager = new StrategyManager(client, publicClient);
+
+    if (PRIVATE_KEY && PRIVATE_KEY.startsWith("0x") && PRIVATE_KEY.length === 66) {
+        account = privateKeyToAccount(PRIVATE_KEY);
+        client = createWalletClient({
+            account,
+            chain: bsc,
+            transport: http()
+        });
+        manager = new StrategyManager(publicClient, client);
+        console.log("✅ OpButler Core Initialized (Full Access)");
+    } else {
+        manager = new StrategyManager(publicClient);
+        console.log("ℹ️ OpButler Core Initialized (Read-Only Mode)");
+    }
     console.log("✅ OpButler Core Initialized");
 } catch (error: any) {
     console.error(`❌ Critical Initialization Error: ${error.message}`);

@@ -40,13 +40,13 @@ interface Strategy {
 }
 
 export class StrategyManager {
-    private client: WalletClient<Transport, Chain, Account>;
+    private client?: WalletClient<Transport, Chain, Account>;
     private publicClient: PublicClient<Transport, Chain>;
     private strategiesFile = path.join(__dirname, 'strategies.json');
 
     constructor(
-        client: WalletClient<Transport, Chain, Account>,
-        publicClient: PublicClient<Transport, Chain>
+        publicClient: PublicClient<Transport, Chain>,
+        client?: WalletClient<Transport, Chain, Account>
     ) {
         this.client = client;
         this.publicClient = publicClient;
