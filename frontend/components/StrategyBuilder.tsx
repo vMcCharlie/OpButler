@@ -208,7 +208,7 @@ export function StrategyBuilder() {
     };
 
     return (
-        <Card className="w-full max-w-2xl mx-auto shadow-2xl relative overflow-hidden h-full border-border bg-card transition-all duration-500">
+        <Card id="strategy-builder" className="w-full max-w-2xl mx-auto shadow-2xl relative overflow-hidden h-full border-border bg-card transition-all duration-500 scroll-mt-32">
             {/* Header / Protocol Selector */}
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${mode === 'loop' ? 'from-transparent via-primary to-transparent' : mode === 'refinance' ? 'from-transparent via-blue-500 to-transparent' : 'from-transparent via-red-500 to-transparent'} opacity-50 transition-colors duration-500`}></div>
 

@@ -22,16 +22,26 @@ export interface SmartLoop {
     risk: 'Low' | 'Medium' | 'High';
     isStable: boolean;
     tvlUsd: number;
+    ltv: number;
     pair: string;
 }
 
-// Protocol display names
+// Protocol display names and normalized keys
 const PROTOCOL_DISPLAY: Record<string, string> = {
     'venus': 'Venus',
     'venus-core-pool': 'Venus',
     'venus-isolated-pool': 'Venus',
     'kinza-finance': 'Kinza',
     'radiant-v2': 'Radiant'
+};
+
+// Normalize protocol name for URL params
+const PROTOCOL_NORMALIZE: Record<string, string> = {
+    'venus': 'venus',
+    'venus-core-pool': 'venus',
+    'venus-isolated-pool': 'venus',
+    'kinza-finance': 'kinza',
+    'radiant-v2': 'radiant'
 };
 
 /**
@@ -77,20 +87,35 @@ function isStablePair(supply: string, borrow: string): boolean {
 }
 
 /**
- * Calculate max leverage from LTV
- * MaxLev = 1 / (1 - LTV)
+ * Calculate max leverage from LTV using geometric series formula
+ * MaxLeverage = 1 / (1 - LTV)
+ * Example: LTV 75% = 0.75 -> MaxLev = 1 / (1 - 0.75) = 4x
+ * Example: LTV 80% = 0.80 -> MaxLev = 1 / (1 - 0.80) = 5x
  */
 function getMaxLeverage(ltv: number): number {
-    if (ltv >= 1) return 1;
+    if (ltv >= 0.95) return 10; // Cap at 10x
+    if (ltv <= 0) return 1;
     return Math.min(10, 1 / (1 - ltv));
 }
 
 /**
- * Calculate leveraged APY
- * LeveragedAPY = SupplyAPY * leverage - BorrowAPY * (leverage - 1)
+ * Calculate leveraged APY using proper geometric series
+ * When you loop with LTV:
+ * - Loop 1: Supply $1000, borrow $750 (at 75% LTV), supply again
+ * - Loop 2: Supply $750, borrow $562.50, supply again
+ * - And so on...
+ * 
+ * Total effective supply = 1 + LTV + LTV^2 + ... = 1 / (1 - LTV) = MaxLeverage
+ * Total borrowed = LTV + LTV^2 + ... = LTV / (1 - LTV) = MaxLeverage - 1
+ * 
+ * LeveragedAPY = SupplyAPY * MaxLeverage - BorrowAPY * (MaxLeverage - 1)
  */
-function getLeveragedApy(supplyApy: number, borrowApy: number, leverage: number): number {
-    return supplyApy * leverage - borrowApy * (leverage - 1);
+function getLeveragedApy(supplyApy: number, borrowApy: number, ltv: number): number {
+    const maxLeverage = getMaxLeverage(ltv);
+    const totalSupplyMultiplier = maxLeverage;
+    const totalBorrowMultiplier = maxLeverage - 1;
+
+    return supplyApy * totalSupplyMultiplier - borrowApy * totalBorrowMultiplier;
 }
 
 export function useSmartLoops() {
@@ -112,18 +137,23 @@ export function useSmartLoops() {
 
         // For each project, find optimal supply/borrow pairs
         Object.entries(yieldsByProject).forEach(([project, projectYields]) => {
-            // Sort by supply APY descending for supply candidates
-            const sortedBySupply = [...projectYields].sort((a, b) => b.apy - a.apy);
+            // Filter for pools with positive supply APY for supply candidates
+            const supplyPools = projectYields.filter(p => (p.apy || 0) > 0);
 
-            // Sort by borrow APY ascending for borrow candidates
-            const sortedByBorrow = [...projectYields].sort((a, b) =>
+            // For borrow, we want low borrow APY - all pools are candidates
+            const borrowPools = projectYields;
+
+            // Sort by supply APY descending
+            const sortedBySupply = [...supplyPools].sort((a, b) => (b.apy || 0) - (a.apy || 0));
+
+            // Sort by borrow APY ascending (cheapest to borrow)
+            const sortedByBorrow = [...borrowPools].sort((a, b) =>
                 (a.apyBaseBorrow || 0) - (b.apyBaseBorrow || 0)
             );
 
-            // Generate pairs: each high-supply with low-borrow
-            // Limit to top 5 supply and top 5 borrow to avoid explosion
-            const topSupply = sortedBySupply.slice(0, 8);
-            const topBorrow = sortedByBorrow.slice(0, 8);
+            // Generate pairs
+            const topSupply = sortedBySupply.slice(0, 10);
+            const topBorrow = sortedByBorrow.slice(0, 10);
 
             topSupply.forEach(supply => {
                 topBorrow.forEach(borrow => {
@@ -133,10 +163,14 @@ export function useSmartLoops() {
 
                     const supplyApy = supply.apy || 0;
                     const borrowApy = borrow.apyBaseBorrow || 0;
-                    const netApy = supplyApy - borrowApy;
+                    const ltv = supply.ltv || 0.75;
 
-                    // Skip if net APY is negative (unprofitable)
-                    if (netApy < 0) return;
+                    // Calculate leveraged APY properly
+                    const leveragedApy = getLeveragedApy(supplyApy, borrowApy, ltv);
+                    const netApy = supplyApy - borrowApy; // Simple 1x net
+
+                    // Skip if leveraged APY is too low or negative
+                    if (leveragedApy < 1) return;
 
                     // Calculate safety based on the riskier asset
                     const supplySafety = getAssetSafetyScore(supply.symbol, supply.tvlUsd);
@@ -146,28 +180,24 @@ export function useSmartLoops() {
                     // Skip very low safety altcoins with low TVL
                     if (combinedSafety < 30 && Math.min(supply.tvlUsd, borrow.tvlUsd) < 100000) return;
 
-                    const ltv = supply.ltv || 0.75;
                     const maxLev = getMaxLeverage(ltv);
-                    const leveragedApy = getLeveragedApy(supplyApy, borrowApy, maxLev);
-
-                    // Skip same asset pairs with low APY
-                    if (supply.symbol === borrow.symbol && leveragedApy < 5) return;
 
                     loops.push({
                         id: pairKey,
                         supplyAsset: supply.symbol,
                         borrowAsset: borrow.symbol,
-                        protocol: project,
+                        protocol: PROTOCOL_NORMALIZE[project] || project,
                         protocolDisplay: PROTOCOL_DISPLAY[project] || project,
-                        netApy,
-                        supplyApy,
-                        borrowApy,
+                        netApy: Math.round(netApy * 10) / 10,
+                        supplyApy: Math.round(supplyApy * 10) / 10,
+                        borrowApy: Math.round(borrowApy * 10) / 10,
                         maxLeverage: Math.round(maxLev * 10) / 10,
                         leveragedApy: Math.round(leveragedApy * 10) / 10,
                         safetyScore: combinedSafety,
                         risk: getRiskLevel(combinedSafety),
                         isStable: isStablePair(supply.symbol, borrow.symbol),
                         tvlUsd: Math.min(supply.tvlUsd, borrow.tvlUsd),
+                        ltv: Math.round(ltv * 100),
                         pair: `${supply.symbol} / ${borrow.symbol}`
                     });
                 });
@@ -175,7 +205,6 @@ export function useSmartLoops() {
         });
 
         // Sort by a combined score: leveraged APY * safety factor
-        // This prioritizes high yields but penalizes risky pairs
         return loops.sort((a, b) => {
             const scoreA = a.leveragedApy * (a.safetyScore / 100);
             const scoreB = b.leveragedApy * (b.safetyScore / 100);

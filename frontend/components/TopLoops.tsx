@@ -47,7 +47,8 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
     const displayLoops = filteredLoops.slice(0, maxItems);
 
     const handleMultiply = (loop: SmartLoop) => {
-        router.push(`/strategies?supply=${loop.supplyAsset}&borrow=${loop.borrowAsset}&protocol=${loop.protocol}`);
+        // Navigate with params and hash for auto-scroll
+        router.push(`/strategy?supply=${loop.supplyAsset}&borrow=${loop.borrowAsset}&protocol=${loop.protocol}#strategy-builder`);
     };
 
     if (isLoading) {
@@ -84,8 +85,8 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
                                 key={f.key}
                                 onClick={() => setFilter(f.key as FilterType)}
                                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filter === f.key
-                                        ? 'bg-[#CEFF00] text-black shadow-lg'
-                                        : 'text-muted-foreground hover:text-white'
+                                    ? 'bg-[#CEFF00] text-black shadow-lg'
+                                    : 'text-muted-foreground hover:text-white'
                                     }`}
                             >
                                 {f.label}
@@ -97,8 +98,8 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
 
             {/* Grid */}
             <div className={`grid gap-4 ${compact
-                    ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
-                    : 'md:grid-cols-2 lg:grid-cols-4 gap-6'
+                ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
+                : 'md:grid-cols-2 lg:grid-cols-4 gap-6'
                 }`}>
                 {displayLoops.map((loop) => (
                     <div
@@ -140,10 +141,10 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
                             <Badge
                                 variant="secondary"
                                 className={`text-[9px] border-none ${loop.risk === 'Low'
-                                        ? 'bg-emerald-500/10 text-emerald-400'
-                                        : loop.risk === 'Medium'
-                                            ? 'bg-amber-500/10 text-amber-400'
-                                            : 'bg-red-500/10 text-red-400'
+                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                    : loop.risk === 'Medium'
+                                        ? 'bg-amber-500/10 text-amber-400'
+                                        : 'bg-red-500/10 text-red-400'
                                     }`}
                             >
                                 {loop.risk} Risk
