@@ -18,10 +18,10 @@ interface RiskMonitorProps {
 export function RiskMonitor({
     healthFactor: propHealthFactor,
     liquidationThreshold,
-    liquidationPrice: propLiqPrice = 0,
-    currentPrice: propCurrentPrice = 0,
+    liquidationPrice: propLiqPrice = 485.50,
+    currentPrice: propCurrentPrice = 612.30,
     pairName = 'BNB/USD',
-    projectedDrop: propDrop = 0,
+    projectedDrop: propDrop = -20.7,
     dropLabel = 'Projected Drop'
 }: RiskMonitorProps) {
     // Simulated health factor oscillating slightly (fallback)

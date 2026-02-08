@@ -91,14 +91,7 @@ export default function LandingPage() {
           {/* New Interactive Section (Strategy Builder & Top Loops) */}
           <div className="space-y-24 mb-32">
 
-            {/* Strategy Builder */}
-            <div>
-              <div className="text-center max-w-2xl mx-auto mb-12">
-                <h2 className="text-3xl font-bold font-outfit mb-4">Build Your Strategy</h2>
-                <p className="text-muted-foreground">Advanced loop simulation with real-time risk analysis.</p>
-              </div>
-              <LoopSelector />
-            </div>
+            {/* Top Loops Section */}
 
 
             {/* Top Loops */}
@@ -121,8 +114,8 @@ export default function LandingPage() {
                 <ul className="space-y-4 pt-4">
                   {[
                     'Real-time Health Factor monitoring across chains',
-                    'Automated "Panic Exit" to stablecoins',
-                    'SMS & Telegram Liquidation Alerts',
+                    'One-Click "Panic Exit" to stablecoins',
+                    'Telegram Liquidation Alerts',
                     'Simulation mode to stress-test your strategy'
                   ].map((item, i) => (
                     <li key={i} className="flex items-center gap-3 font-bold text-white/80">
@@ -209,9 +202,9 @@ export default function LandingPage() {
                 <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-[#CEFF00] to-transparent md:hidden"></div>
 
                 {[
-                  { step: '01', title: 'Connect Wallet', desc: 'Link your MetaMask or TrustWallet securely.' },
-                  { step: '02', title: 'Deposit & Enable Smart Account', desc: 'Deploy your personal proxy wallet for advanced strategies.' },
-                  { step: '03', title: 'Select Strategy', desc: 'Choose a high-yield loop and let OpButler optimize your returns.' }
+                  { step: '01', title: 'Connect Wallet', desc: 'Link your MetaMask, TrustWallet, or any Web3 wallet securely.' },
+                  { step: '02', title: 'Link Telegram', desc: 'Set up alerts to get notified when your Health Factor drops.' },
+                  { step: '03', title: 'Monitor & Manage', desc: 'Track positions across Venus, Kinza, and Radiant. Take action when needed.' }
                 ].map((s, i) => (
                   <div key={i} className="flex gap-8 items-start relative">
                     <div className="h-14 w-14 shrink-0 rounded-full bg-[#CEFF00] text-black font-bold text-xl flex items-center justify-center shadow-[0_0_15px_rgba(206,255,0,0.5)] z-10">
