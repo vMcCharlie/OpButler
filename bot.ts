@@ -435,19 +435,15 @@ setInterval(async () => {
         return;
     }
 
-    let checkedCount = 0;
-
-    for (const user of users) {
+    const checkResults = await Promise.allSettled(users.map(async (user) => {
         // Calculate if it's time to check this user
         const lastChecked = new Date(user.last_checked);
         const intervalMs = user.polling_interval * 60 * 1000;
         const timeSinceLastCheck = now.getTime() - lastChecked.getTime();
 
         if (timeSinceLastCheck < intervalMs) {
-            continue; // Not time to check yet
+            return false; // Not time to check yet
         }
-
-        checkedCount++;
 
         try {
             const health = await manager.getAccountHealth(user.wallet_address as Address);
@@ -493,10 +489,14 @@ setInterval(async () => {
                     reply_markup: keyboard
                 });
             }
+            return true;
         } catch (e) {
             console.error(`Error checking user ${user.chat_id}:`, e);
+            return false;
         }
-    }
+    }));
+
+    const checkedCount = checkResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
 
     if (checkedCount > 0) {
         console.log(`🔍 Checked ${checkedCount} users at ${now.toLocaleTimeString()}`);
