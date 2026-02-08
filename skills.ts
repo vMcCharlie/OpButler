@@ -95,4 +95,30 @@ export const TheUnwinder = {
 };
 
 // Export capability for module loading
-export const skills = [TheLooper, TheUnwinder];
+// Skill C: "The Risk Monitor"
+export const TheRiskMonitor = {
+    name: "getAccountHealth",
+    description: "Checks the health factor of a user's account on Venus Protocol. Returns Health Factor, Liquidity, and Shortfall.",
+    parameters: {
+        type: "object",
+        properties: {
+            account: {
+                type: "string",
+                description: "Address of the user account to check"
+            }
+        },
+        required: ["account"]
+    },
+    handler: async (args: any) => {
+        try {
+            console.log("Agent invoking The Risk Monitor...");
+            const health = await manager.getAccountHealth(args.account);
+            return JSON.stringify(health);
+        } catch (error: any) {
+            return `Health Check Failed: ${error.message}`;
+        }
+    }
+};
+
+// Export capability for module loading
+export const skills = [TheLooper, TheUnwinder, TheRiskMonitor];

@@ -16,6 +16,7 @@ export interface YieldData {
     totalBorrowUsd?: number;
     ltv?: number;
     pool: string;
+    underlyingTokens?: string[];
 }
 
 // Minimal normalization
@@ -47,7 +48,7 @@ export function useYields() {
                     pool.project === 'radiant-v2';
 
                 // We do NOT filter by asset symbol anymore. We want ALL assets.
-                const isViable = pool.tvlUsd > 10000;
+                const isViable = pool.tvlUsd > 10000 && pool.apy > 0;
 
                 return isBSC && isProject && isViable;
             }).map(pool => {
