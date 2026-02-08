@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LandingCTA } from "@/components/LandingCTA";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { ArrowRight, BarChart3, ShieldCheck, Zap } from 'lucide-react';
@@ -40,14 +41,7 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/dashboard">
-                  <Button className="h-14 px-8 text-lg font-bold bg-[#CEFF00] text-black hover:bg-[#b8e600] rounded-full shadow-[0_0_20px_rgba(206,255,0,0.3)] transition-all hover:scale-105">
-                    Launch App
-                  </Button>
-                </Link>
-                <Button variant="outline" className="h-14 px-8 text-lg font-bold border-white/10 hover:bg-white/5 rounded-full text-white">
-                  View Strategies
-                </Button>
+                <LandingCTA />
               </div>
 
               <div className="pt-8 flex items-center gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">

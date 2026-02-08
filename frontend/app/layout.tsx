@@ -6,12 +6,13 @@ import { Providers } from './providers';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Navbar } from "@/components/Navbar";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
 export const metadata: Metadata = {
-  title: 'OpButler - Sphere UI',
+  title: 'OpButler',
   description: 'Automated DeFi strategies on BNB Chain.',
   icons: {
     icon: '/OpButler.png',
@@ -29,6 +30,7 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           {children}
+          <Toaster />
         </Providers>
       </body>
     </html>
