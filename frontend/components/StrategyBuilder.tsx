@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
@@ -61,6 +62,7 @@ export function StrategyBuilder() {
     const getPrice = priceData?.getPrice || ((_s: string) => 0);
     const { toast } = useToast();
     const { openConnectModal } = useConnectModal();
+    const searchParams = useSearchParams();
 
     // -- State --
     const [selectedProtocol, setSelectedProtocol] = useState<'venus' | 'kinza' | 'radiant'>('venus');
@@ -71,6 +73,22 @@ export function StrategyBuilder() {
     const [amount, setAmount] = useState<string>('');
     const [leverage, setLeverage] = useState(1.5);
     const [mode, setMode] = useState<'loop' | 'unwind' | 'refinance'>('loop');
+
+    // -- Read URL params for preselection --
+    useEffect(() => {
+        const supplyParam = searchParams.get('supply');
+        const borrowParam = searchParams.get('borrow');
+        const protocolParam = searchParams.get('protocol');
+
+        if (supplyParam) setSupplyAsset(supplyParam.toUpperCase());
+        if (borrowParam) setBorrowAsset(borrowParam.toUpperCase());
+        if (protocolParam) {
+            const p = protocolParam.toLowerCase();
+            if (p === 'venus' || p === 'kinza' || p === 'radiant') {
+                setSelectedProtocol(p);
+            }
+        }
+    }, [searchParams]);
 
     // -- Effects for Toast --
     useEffect(() => {
