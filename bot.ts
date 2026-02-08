@@ -1,21 +1,29 @@
 
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { StrategyManager } from "./index";
-import { createWalletClient, createPublicClient, http, Address, formatEther } from "viem";
+import { createWalletClient, createPublicClient, http, Address, formatEther, formatUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { bsc } from "viem/chains";
 import "dotenv/config";
 
 // --- Configuration & Security ---
-
-
-// --- Configuration & Security ---
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-// ALLOWED_USER_ID is now optional, used for Admin commands only if needed
 const ADMIN_ID = process.env.ALLOWED_USER_ID ? parseInt(process.env.ALLOWED_USER_ID) : null;
 const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const DASHBOARD_URL = process.env.DASHBOARD_URL || "https://opbutler.vercel.app";
+
+// Polling intervals in minutes
+const VALID_INTERVALS = [60, 120, 360, 720, 960, 1440];
+const INTERVAL_LABELS: Record<number, string> = {
+    60: "1 hour",
+    120: "2 hours",
+    360: "6 hours",
+    720: "12 hours",
+    960: "16 hours",
+    1440: "24 hours"
+};
 
 if (!BOT_TOKEN) {
     console.error("❌ Error: TELEGRAM_BOT_TOKEN is required in .env");
@@ -34,7 +42,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 // --- Initialization ---
 let manager: StrategyManager;
-import { Account, PublicClient, WalletClient, Transport, Chain, verifyMessage, recoverMessageAddress } from "viem";
+import { Account, PublicClient, WalletClient, Transport, Chain, recoverMessageAddress } from "viem";
 import { createClient } from '@supabase/supabase-js';
 
 let account: Account;
@@ -45,10 +53,14 @@ let client: WalletClient<Transport, Chain, Account>;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 interface UserData {
+    id: string;
     chat_id: number;
     username?: string;
-    wallet_address: Address;
-    alert_threshold: number; // e.g. 1.1
+    wallet_address: string;
+    alert_threshold: number;
+    polling_interval: number;
+    last_checked: string;
+    alerts_enabled: boolean;
 }
 
 try {
@@ -72,24 +84,41 @@ try {
 // Initialize Bot
 const bot = new Bot(BOT_TOKEN);
 
+// --- Helper Functions ---
+function formatUSD(value: number): string {
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getUtilization(collateral: number, debt: number): number {
+    if (collateral === 0) return 0;
+    return (debt / collateral) * 100;
+}
+
 // --- Commands ---
 
 bot.command("start", async (ctx) => {
+    const keyboard = new InlineKeyboard()
+        .url("Open Dashboard", `${DASHBOARD_URL}/settings`);
+
     await ctx.reply(
         `🤖 **Welcome to OpButler!**\n\n` +
-        `I can monitor your Venus Protocol positions and alert you of liquidation risks.\n\n` +
-        `**To Get Started:**\n` +
-        `1. Go to the OpButler Dashboard > Settings\n` +
+        `I monitor your DeFi positions across **Venus**, **Kinza**, and **Radiant** on BNB Chain.\n\n` +
+        `**Commands:**\n` +
+        `• /positions - View your full portfolio\n` +
+        `• /risk - Quick health factor check\n` +
+        `• /settings - View/update alert settings\n` +
+        `• /setinterval - Change polling frequency\n\n` +
+        `**Setup:**\n` +
+        `1. Open Dashboard > Settings\n` +
         `2. Enter your Telegram ID: \`${ctx.from?.id}\`\n` +
-        `3. Sign the authentication message with your wallet.\n` +
-        `4. Paste the signature here using:\n` +
+        `3. Sign the message & verify with:\n` +
         `\`/verify <signature>\``,
-        { parse_mode: "Markdown" }
+        { parse_mode: "Markdown", reply_markup: keyboard }
     );
 });
 
 bot.command("id", (ctx) => {
-    ctx.reply(`Your User ID is: \`${ctx.from?.id}\``, { parse_mode: "Markdown" });
+    ctx.reply(`Your Telegram ID is: \`${ctx.from?.id}\`\n\nUse this when linking your wallet on the dashboard.`, { parse_mode: "Markdown" });
 });
 
 bot.command("verify", async (ctx) => {
@@ -103,21 +132,23 @@ bot.command("verify", async (ctx) => {
 
     try {
         const message = `OpButler Auth: ${chatId}`;
-
-        // Correct way to recover address from signature using viem
         const recoveredAddress = await recoverMessageAddress({
             message,
             signature: signature as `0x${string}`
         });
 
-        // Upsert User into Supabase
+        // Upsert User into Supabase with default settings
         const { error } = await supabase
             .from('users')
             .upsert({
                 chat_id: chatId,
                 username: ctx.from?.username,
                 wallet_address: recoveredAddress,
-                alert_threshold: 1.1
+                alert_threshold: 1.1,
+                polling_interval: 60, // Default: 1 hour
+                alerts_enabled: true,
+                last_checked: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             }, {
                 onConflict: 'chat_id'
             });
@@ -128,10 +159,11 @@ bot.command("verify", async (ctx) => {
         }
 
         await ctx.reply(
-            `✅ **Success!**\n\n` +
-            `Linked Wallet: \`${recoveredAddress}\`\n` +
-            `You will now receive alerts if your Health Factor drops below **1.1**.\n\n` +
-            `Try \`/risk\` to check your status.`,
+            `✅ **Wallet Linked Successfully!**\n\n` +
+            `🔗 Wallet: \`${recoveredAddress}\`\n` +
+            `⏰ Polling: Every 1 hour\n` +
+            `⚠️ Alert when HF < 1.1\n\n` +
+            `Use /positions to see your full portfolio!`,
             { parse_mode: "Markdown" }
         );
 
@@ -141,6 +173,76 @@ bot.command("verify", async (ctx) => {
     }
 });
 
+// Enhanced /positions command - Full portfolio view
+bot.command("positions", async (ctx) => {
+    const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('chat_id', ctx.from?.id)
+        .single();
+
+    if (error || !user) {
+        return ctx.reply("⚠️ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
+    }
+
+    await ctx.reply("📊 Fetching your positions across all protocols...");
+
+    try {
+        const health = await manager.getAccountHealth(user.wallet_address as Address);
+
+        const collateral = health.totalCollateralUSD;
+        const debt = health.totalDebtUSD;
+        const utilization = getUtilization(collateral, debt);
+        const availableBorrow = Math.max(0, (collateral * 0.75) - debt); // Assuming 75% CF
+
+        let statusEmoji = "🟢";
+        let statusText = "Safe";
+        if (health.healthFactor < 1.1) {
+            statusEmoji = "🔴";
+            statusText = "CRITICAL";
+        } else if (health.healthFactor < 1.5) {
+            statusEmoji = "🟡";
+            statusText = "Warning";
+        }
+
+        let message = `📊 **Portfolio Overview**\n\n`;
+        message += `🔗 Wallet: \`${user.wallet_address.substring(0, 6)}...${user.wallet_address.substring(38)}\`\n\n`;
+        
+        message += `━━━━━━━━━━━━━━━━━\n`;
+        message += `💰 **Total Collateral:** $${formatUSD(collateral)}\n`;
+        message += `💳 **Total Debt:** $${formatUSD(debt)}\n`;
+        message += `📈 **Utilization:** ${utilization.toFixed(1)}%\n`;
+        message += `💵 **Available to Borrow:** $${formatUSD(availableBorrow)}\n`;
+        message += `━━━━━━━━━━━━━━━━━\n\n`;
+
+        message += `${statusEmoji} **Health Factor:** ${health.healthFactor.toFixed(2)} (${statusText})\n\n`;
+
+        // Add suggestions if HF is concerning
+        if (health.suggestions) {
+            message += `💡 **Recommendations:**\n`;
+            if (health.suggestions.repayAmount > 0) {
+                message += `• Repay ~$${formatUSD(health.suggestions.repayAmount)} to reach HF ${health.suggestions.targetHF}\n`;
+            }
+            if (health.suggestions.addCollateralAmount > 0) {
+                message += `• Add ~$${formatUSD(health.suggestions.addCollateralAmount)} collateral\n`;
+            }
+            message += `\n`;
+        }
+
+        message += `_Last updated: ${new Date().toLocaleTimeString()}_`;
+
+        const keyboard = new InlineKeyboard()
+            .url("Open Dashboard", `${DASHBOARD_URL}/dashboard`);
+
+        await ctx.reply(message, { parse_mode: "Markdown", reply_markup: keyboard });
+
+    } catch (e: any) {
+        console.error("Error fetching positions:", e);
+        await ctx.reply(`❌ Error fetching positions: ${e.message}`);
+    }
+});
+
+// /risk - Quick health check
 bot.command("risk", async (ctx) => {
     const { data: user, error } = await supabase
         .from('users')
@@ -149,126 +251,252 @@ bot.command("risk", async (ctx) => {
         .single();
 
     if (error || !user) {
-        return ctx.reply("⚠️ You have not linked a wallet yet. Use `/start` to begin.");
+        return ctx.reply("⚠️ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
     }
 
-    await ctx.reply("🔍 Checking Health Factor...");
     try {
         const health = await manager.getAccountHealth(user.wallet_address as Address);
 
-        let status = "Unknown";
-        if (health.healthFactor > 2) status = "🟢 Safe";
-        else if (health.healthFactor > 1.1) status = "🟡 Warning";
-        else status = "🔴 CRITICAL";
+        let status = "🟢 Safe";
+        if (health.healthFactor < 1.1) status = "🔴 CRITICAL";
+        else if (health.healthFactor < 1.5) status = "🟡 Warning";
+        else if (health.healthFactor < 2) status = "🟢 Moderate";
 
-        let message = `📊 **Risk Report**\n\n` +
-            `Wallet: \`${user.wallet_address.substring(0, 6)}...${user.wallet_address.substring(38)}\`\n` +
+        await ctx.reply(
+            `⚡ **Quick Risk Check**\n\n` +
             `Health Factor: **${health.healthFactor.toFixed(2)}**\n` +
-            `Status: ${status}\n\n`;
-
-        // Add position details if available
-        if (health.totalCollateralUSD > 0 || health.totalDebtUSD > 0) {
-            message += `💰 **Position:**\n` +
-                `• Collateral: $${health.totalCollateralUSD.toLocaleString()}\n` +
-                `• Debt: $${health.totalDebtUSD.toLocaleString()}\n\n`;
-        }
-
-        // Add suggestions if HF is low
-        if (health.suggestions) {
-            message += `💡 **Suggestions to reach HF ${health.suggestions.targetHF}:**\n`;
-            if (health.suggestions.repayAmount > 0) {
-                message += `• Repay ~$${health.suggestions.repayAmount.toLocaleString()} debt\n`;
-            }
-            if (health.suggestions.addCollateralAmount > 0) {
-                message += `• Add ~$${health.suggestions.addCollateralAmount.toLocaleString()} collateral\n`;
-            }
-        }
-
-        await ctx.reply(message, { parse_mode: "Markdown" });
+            `Status: ${status}\n\n` +
+            `Use /positions for detailed view.`,
+            { parse_mode: "Markdown" }
+        );
     } catch (e: any) {
-        await ctx.reply(`Error fetching data: ${e.message}`);
+        await ctx.reply(`❌ Error: ${e.message}`);
     }
 });
 
-bot.command("status", async (ctx) => {
+// /settings - View current settings
+bot.command("settings", async (ctx) => {
     const { data: user } = await supabase
         .from('users')
         .select('*')
         .eq('chat_id', ctx.from?.id)
         .single();
 
-    if (user) {
-        await ctx.reply(
-            `👤 **Account Status**\n\n` +
-            `Linked Wallet: \`${user.wallet_address}\`\n` +
-            `Alert Threshold: HF < ${user.alert_threshold}`,
-            { parse_mode: "Markdown" }
-        );
-    } else {
-        await ctx.reply("❌ No wallet linked.");
+    if (!user) {
+        return ctx.reply("❌ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
     }
+
+    const intervalLabel = INTERVAL_LABELS[user.polling_interval] || `${user.polling_interval} min`;
+
+    await ctx.reply(
+        `⚙️ **Your Settings**\n\n` +
+        `🔗 Wallet: \`${user.wallet_address}\`\n` +
+        `⏰ Polling Interval: **${intervalLabel}**\n` +
+        `⚠️ Alert Threshold: HF < **${user.alert_threshold}**\n` +
+        `🔔 Alerts: ${user.alerts_enabled ? "✅ Enabled" : "❌ Disabled"}\n\n` +
+        `**Commands:**\n` +
+        `• /setinterval - Change polling frequency\n` +
+        `• /setalert <value> - Change HF threshold\n` +
+        `• /togglealerts - Enable/disable alerts`,
+        { parse_mode: "Markdown" }
+    );
 });
 
-// --- Background Job: Monitor Risk ---
-setInterval(async () => {
-    // Fetch all users
-    const { data: users, error } = await supabase
+// /setinterval - Change polling interval with inline keyboard
+bot.command("setinterval", async (ctx) => {
+    const keyboard = new InlineKeyboard()
+        .text("1 hour", "interval_60").text("2 hours", "interval_120").row()
+        .text("6 hours", "interval_360").text("12 hours", "interval_720").row()
+        .text("16 hours", "interval_960").text("24 hours", "interval_1440");
+
+    await ctx.reply(
+        "⏰ **Select Polling Interval**\n\n" +
+        "How often should I check your positions?",
+        { parse_mode: "Markdown", reply_markup: keyboard }
+    );
+});
+
+// Handle interval selection callbacks
+bot.callbackQuery(/^interval_(\d+)$/, async (ctx) => {
+    const interval = parseInt(ctx.match![1]);
+
+    if (!VALID_INTERVALS.includes(interval)) {
+        return ctx.answerCallbackQuery({ text: "Invalid interval", show_alert: true });
+    }
+
+    const { error } = await supabase
         .from('users')
-        .select('*');
+        .update({ 
+            polling_interval: interval,
+            updated_at: new Date().toISOString()
+        })
+        .eq('chat_id', ctx.from.id);
 
     if (error) {
-        console.error("Error fetching users for monitoring:", error);
+        return ctx.answerCallbackQuery({ text: "Failed to update", show_alert: true });
+    }
+
+    await ctx.answerCallbackQuery({ text: `Updated to ${INTERVAL_LABELS[interval]}` });
+    await ctx.editMessageText(
+        `✅ **Polling Interval Updated**\n\n` +
+        `Your positions will now be checked every **${INTERVAL_LABELS[interval]}**.`,
+        { parse_mode: "Markdown" }
+    );
+});
+
+// /setalert - Set alert threshold
+bot.command("setalert", async (ctx) => {
+    const value = parseFloat(ctx.match);
+    
+    if (isNaN(value) || value < 1.0 || value > 2.0) {
+        return ctx.reply(
+            "⚠️ Please provide a valid threshold between 1.0 and 2.0.\n\n" +
+            "Example: `/setalert 1.2`",
+            { parse_mode: "Markdown" }
+        );
+    }
+
+    const { error } = await supabase
+        .from('users')
+        .update({ 
+            alert_threshold: value,
+            updated_at: new Date().toISOString()
+        })
+        .eq('chat_id', ctx.from?.id);
+
+    if (error) {
+        return ctx.reply("❌ Failed to update threshold.");
+    }
+
+    await ctx.reply(`✅ Alert threshold set to HF < **${value}**`, { parse_mode: "Markdown" });
+});
+
+// /togglealerts - Enable/disable alerts
+bot.command("togglealerts", async (ctx) => {
+    const { data: user } = await supabase
+        .from('users')
+        .select('alerts_enabled')
+        .eq('chat_id', ctx.from?.id)
+        .single();
+
+    if (!user) {
+        return ctx.reply("❌ No wallet linked.");
+    }
+
+    const newState = !user.alerts_enabled;
+
+    await supabase
+        .from('users')
+        .update({ 
+            alerts_enabled: newState,
+            updated_at: new Date().toISOString()
+        })
+        .eq('chat_id', ctx.from?.id);
+
+    await ctx.reply(
+        newState 
+            ? "🔔 **Alerts Enabled**\nYou will receive liquidation warnings."
+            : "🔕 **Alerts Disabled**\nYou won't receive automatic alerts.",
+        { parse_mode: "Markdown" }
+    );
+});
+
+// /status - Account status (alias for settings)
+bot.command("status", async (ctx) => {
+    return ctx.reply("Use /settings to view your account status, or /positions for portfolio view.");
+});
+
+// --- Smart Polling Background Job ---
+// Runs every minute, but only checks users whose interval has passed
+const POLLING_CHECK_INTERVAL = 60 * 1000; // Check every minute
+
+setInterval(async () => {
+    const now = new Date();
+    
+    // Fetch users who need to be checked
+    const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('alerts_enabled', true);
+
+    if (error || !users) {
+        console.error("Error fetching users:", error);
         return;
     }
 
-    console.log(`🔍 Monitoring ${users.length} users...`);
+    let checkedCount = 0;
 
     for (const user of users) {
+        // Calculate if it's time to check this user
+        const lastChecked = new Date(user.last_checked);
+        const intervalMs = user.polling_interval * 60 * 1000;
+        const timeSinceLastCheck = now.getTime() - lastChecked.getTime();
+
+        if (timeSinceLastCheck < intervalMs) {
+            continue; // Not time to check yet
+        }
+
+        checkedCount++;
+
         try {
             const health = await manager.getAccountHealth(user.wallet_address as Address);
 
+            // Update last_checked timestamp
+            await supabase
+                .from('users')
+                .update({ last_checked: now.toISOString() })
+                .eq('chat_id', user.chat_id);
+
+            // Check if alert needed
             if (health.healthFactor < user.alert_threshold) {
-                // Build alert message with suggestions
-                let alertMessage = `🚨 **LIQUIDATION ALERT** 🚨\n\n` +
-                    `Your Health Factor has dropped to **${health.healthFactor.toFixed(2)}**!\n` +
-                    `Alert Threshold: ${user.alert_threshold}\n\n`;
+                const collateral = health.totalCollateralUSD;
+                const debt = health.totalDebtUSD;
+                const utilization = getUtilization(collateral, debt);
 
-                // Add position details if available
-                if (health.totalCollateralUSD > 0 || health.totalDebtUSD > 0) {
-                    alertMessage += `📊 **Position Summary:**\n` +
-                        `• Collateral: $${health.totalCollateralUSD.toLocaleString()}\n` +
-                        `• Debt: $${health.totalDebtUSD.toLocaleString()}\n\n`;
-                }
+                let alertMessage = `🚨 **LIQUIDATION ALERT** 🚨\n\n`;
+                alertMessage += `Your Health Factor has dropped to **${health.healthFactor.toFixed(2)}**!\n\n`;
+                
+                alertMessage += `📊 **Position Summary:**\n`;
+                alertMessage += `• Collateral: $${formatUSD(collateral)}\n`;
+                alertMessage += `• Debt: $${formatUSD(debt)}\n`;
+                alertMessage += `• Utilization: ${utilization.toFixed(1)}%\n\n`;
 
-                // Add actionable suggestions
                 if (health.suggestions) {
-                    alertMessage += `💡 **To reach a safe HF of ${health.suggestions.targetHF}:**\n`;
-
+                    alertMessage += `💡 **To reach HF ${health.suggestions.targetHF}:**\n`;
                     if (health.suggestions.repayAmount > 0) {
-                        alertMessage += `• **Option A:** Repay ~$${health.suggestions.repayAmount.toLocaleString()} of debt\n`;
+                        alertMessage += `• Repay ~$${formatUSD(health.suggestions.repayAmount)} debt\n`;
                     }
                     if (health.suggestions.addCollateralAmount > 0) {
-                        alertMessage += `• **Option B:** Add ~$${health.suggestions.addCollateralAmount.toLocaleString()} collateral\n`;
+                        alertMessage += `• Add ~$${formatUSD(health.suggestions.addCollateralAmount)} collateral\n`;
                     }
                     alertMessage += `\n`;
                 }
 
-                alertMessage += `⚠️ Act now to avoid liquidation!\n\n` +
-                    `👉 [Open OpButler Dashboard](https://opbutler.vercel.app/dashboard)`;
+                alertMessage += `⚠️ Act now to avoid liquidation!`;
 
-                // Send Alert
-                await bot.api.sendMessage(user.chat_id, alertMessage, { parse_mode: "Markdown" });
+                const keyboard = new InlineKeyboard()
+                    .url("Open Dashboard", `${DASHBOARD_URL}/dashboard`);
+
+                await bot.api.sendMessage(user.chat_id, alertMessage, { 
+                    parse_mode: "Markdown",
+                    reply_markup: keyboard
+                });
             }
         } catch (e) {
-            console.error(`Error monitoring user ${user.chat_id}:`, e);
+            console.error(`Error checking user ${user.chat_id}:`, e);
         }
     }
-}, 60 * 1000 * 5); // Check every 5 minutes
 
-// Start Bot
+    if (checkedCount > 0) {
+        console.log(`🔍 Checked ${checkedCount} users at ${now.toLocaleTimeString()}`);
+    }
+}, POLLING_CHECK_INTERVAL);
+
+// --- Error Handling ---
 bot.catch((err) => {
     console.error("Bot Error:", err);
 });
 
+// --- Start Bot ---
 bot.start();
-console.log("🤖 OpButler Telegram Bot (Supabase) Started!");
+console.log("🤖 OpButler Bot Started with Smart Polling!");

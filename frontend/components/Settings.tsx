@@ -7,8 +7,18 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Bell, ShieldCheck, Copy, Check, Wallet } from 'lucide-react';
+import { Bell, ShieldCheck, Copy, Check, Wallet, Clock, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+
+// Polling interval options
+const POLLING_OPTIONS = [
+    { value: 60, label: "1 hour" },
+    { value: 120, label: "2 hours" },
+    { value: 360, label: "6 hours" },
+    { value: 720, label: "12 hours" },
+    { value: 960, label: "16 hours" },
+    { value: 1440, label: "24 hours" },
+];
 
 export default function Settings() {
     const { address, isConnected } = useAccount();
@@ -19,6 +29,10 @@ export default function Settings() {
     const [signature, setSignature] = useState('');
     const [isCopied, setIsCopied] = useState(false);
     const [step, setStep] = useState(1);
+
+    // Settings state (These would ideally be fetched from Supabase via API)
+    const [pollingInterval, setPollingInterval] = useState(60);
+    const [alertThreshold, setAlertThreshold] = useState(1.1);
 
     const handleSign = async () => {
         if (!telegramId) {
@@ -92,8 +106,8 @@ export default function Settings() {
                         Settings & Alerts
                     </h1>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Telegram Application Card */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Telegram Linking Card */}
                         <Card className="glass-card">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -101,7 +115,7 @@ export default function Settings() {
                                     Telegram Notifications
                                 </CardTitle>
                                 <CardDescription>
-                                    Link your Telegram account to receive instant liquidation alerts and daily updates.
+                                    Link your Telegram account to receive instant liquidation alerts.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -124,7 +138,7 @@ export default function Settings() {
                                         </Button>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        Message <code>/id</code> to the bot to get your ID.
+                                        Message <code className="bg-secondary px-1 rounded">/id</code> to the bot to get your ID.
                                     </p>
                                 </div>
 
@@ -160,27 +174,111 @@ export default function Settings() {
                             </CardContent>
                         </Card>
 
-                        {/* Risk Thresholds (Future Feature) */}
-                        <Card className="glass-card opacity-80">
+                        {/* Polling Interval Card */}
+                        <Card className="glass-card">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <ShieldCheck className="text-orange-500" />
-                                    Risk Preferences
+                                    <Clock className="text-blue-400" />
+                                    Polling Frequency
                                 </CardTitle>
                                 <CardDescription>
-                                    Configure when you want to be alerted. (Coming Soon with Bot V2)
+                                    How often should we check your positions?
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {POLLING_OPTIONS.map((option) => (
+                                        <Button
+                                            key={option.value}
+                                            variant={pollingInterval === option.value ? "default" : "outline"}
+                                            className={`${pollingInterval === option.value
+                                                ? "bg-primary text-black"
+                                                : "hover:bg-secondary"}`}
+                                            onClick={() => {
+                                                setPollingInterval(option.value);
+                                                toast({
+                                                    title: "Interval Updated",
+                                                    description: `Polling set to ${option.label}. Update this in Telegram with /setinterval after linking.`,
+                                                });
+                                            }}
+                                        >
+                                            {option.label}
+                                        </Button>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-3">
+                                    ⚠️ After linking your Telegram, use <code className="bg-secondary px-1 rounded">/setinterval</code> in the bot to apply this.
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        {/* Alert Threshold Card */}
+                        <Card className="glass-card">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="text-orange-500" />
+                                    Alert Threshold
+                                </CardTitle>
+                                <CardDescription>
+                                    Receive alerts when Health Factor drops below this value.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    <div className="flex justify-between items-center p-3 rounded-lg bg-secondary/30">
-                                        <span className="text-sm">Liquidation Alert Threshold</span>
-                                        <span className="font-mono text-orange-500 font-bold">HF &lt; 1.1</span>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm text-muted-foreground">Health Factor &lt;</span>
+                                        <div className="flex-1">
+                                            <input
+                                                type="range"
+                                                min="1.0"
+                                                max="2.0"
+                                                step="0.1"
+                                                value={alertThreshold}
+                                                onChange={(e) => setAlertThreshold(parseFloat(e.target.value))}
+                                                className="w-full accent-primary"
+                                            />
+                                        </div>
+                                        <span className="text-2xl font-mono font-bold text-orange-500 min-w-[60px] text-right">
+                                            {alertThreshold.toFixed(1)}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between items-center p-3 rounded-lg bg-secondary/30">
-                                        <span className="text-sm">Target Health Factor</span>
-                                        <span className="font-mono text-emerald-500 font-bold">HF &gt; 1.5</span>
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>1.0 (Risky)</span>
+                                        <span>1.5 (Moderate)</span>
+                                        <span>2.0 (Safe)</span>
                                     </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Use <code className="bg-secondary px-1 rounded">/setalert {alertThreshold.toFixed(1)}</code> in the bot to apply.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Info Card */}
+                        <Card className="glass-card border-primary/20">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ShieldCheck className="text-emerald-500" />
+                                    How It Works
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm text-muted-foreground">
+                                <p>
+                                    <strong className="text-foreground">1. Link Wallet:</strong> Sign a message to prove ownership and link your Telegram.
+                                </p>
+                                <p>
+                                    <strong className="text-foreground">2. Configure Alerts:</strong> Set how often to check and when to alert.
+                                </p>
+                                <p>
+                                    <strong className="text-foreground">3. Receive Alerts:</strong> Get notified on Telegram when your Health Factor drops.
+                                </p>
+                                <p>
+                                    <strong className="text-foreground">4. Take Action:</strong> Click the link in alerts to manage positions on this dashboard.
+                                </p>
+                                <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                                    <p className="text-xs">
+                                        🔒 <strong>Security:</strong> Telegram bot is read-only. All transactions happen here via your wallet.
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
