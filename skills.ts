@@ -5,17 +5,25 @@ import { bsc } from 'viem/chains';
 import 'dotenv/config';
 
 // Initialize Manager (Singleton or per-request)
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}` || '0x0000000000000000000000000000000000000000000000000000000000000001');
-const client = createWalletClient({
-    account,
-    chain: bsc,
-    transport: http()
-});
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const publicClient = createPublicClient({
     chain: bsc,
     transport: http()
 });
-const manager = new StrategyManager(client, publicClient);
+
+let manager: StrategyManager;
+
+if (PRIVATE_KEY && PRIVATE_KEY.startsWith("0x") && PRIVATE_KEY.length === 66) {
+    const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
+    const client = createWalletClient({
+        account,
+        chain: bsc,
+        transport: http()
+    });
+    manager = new StrategyManager(publicClient, client);
+} else {
+    manager = new StrategyManager(publicClient);
+}
 
 // Skill A: "The Looper"
 export const TheLooper = {
