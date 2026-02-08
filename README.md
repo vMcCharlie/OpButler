@@ -50,22 +50,31 @@ cd ..
 
 ### 2. Environment Configuration
 
-Create a `.env` file in the **root directory** with the following variables:
+This project has two deployable parts with separate environment variables:
 
-```env
-# Blockchain
-PRIVATE_KEY=0x...                  # Your Wallet Private Key (for Bot execution)
-RPC_URL=https://bsc-dataseed.binance.org/
+#### 📦 Root (`.env`) - For Telegram Bot (Railway)
 
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=123456:ABC...   # Get from @BotFather
-ALLOWED_USER_ID=123456789          # Your Telegram User ID (for security)
+Create a `.env` file in the **root directory**. See `.env.example` for all options.
 
-# APIs (Optional)
-BINANCE_API_KEY=...                # For precise price feeds (if used)
-```
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `PRIVATE_KEY` | Wallet private key (for reading blockchain state) | ✅ |
+| `RPC_URL` | BSC RPC endpoint | ✅ |
+| `TELEGRAM_BOT_TOKEN` | Get from @BotFather | ✅ |
+| `SUPABASE_URL` | Your Supabase project URL | ✅ |
+| `SUPABASE_KEY` | Supabase `service_role` key | ✅ |
+| `ALLOWED_USER_ID` | Admin Telegram ID (optional) | ❌ |
 
-> **⚠️ Security Warning:** Never commit your `.env` file or Private Keys to version control!
+#### 🌐 Frontend (`frontend/.env`) - For Web Dashboard (Vercel)
+
+Create a `.env` file in the **frontend directory**. See `frontend/.env.example` for all options.
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Get from [WalletConnect Cloud](https://cloud.walletconnect.com/) | ✅ |
+| `NEXT_PUBLIC_RPC_URL` | Custom RPC (optional) | ❌ |
+
+> **⚠️ Security Warning:** Never commit your `.env` files or Private Keys to version control! The `.gitignore` is already configured to exclude them.
 
 ---
 
@@ -90,10 +99,18 @@ The bot allows you to interact with OpButler logic via chat.
 npm run dev
 ```
 
-### 🚄 Deploying Bot to Railway
+### 🚄 Deploying Bot to Railway (with Supabase)
 
-To run this bot 24/7 on Railway:
+To run this bot 24/7 on Railway with a persistent database:
 
+#### 1. Set up Supabase Database
+1.  Sign up at [Supabase.com](https://supabase.com/) and create a new project.
+2.  Go to the **SQL Editor** in your Supabase dashboard.
+3.  Copy and paste the contents of `supabase_schema.sql` from this repo into the editor and run it. This creates the `users` table.
+4.  Go to **Project Settings > API**.
+5.  Copy the `Project URL` and `service_role` secret (or `anon` public key, though service_role is easier for backend bots).
+
+#### 2. Deploy to Railway
 1.  **Fork/Clone** this repo to your GitHub.
 2.  Login to [Railway.app](https://railway.app/).
 3.  Create a **New Project** > **Deploy from GitHub repo**.
@@ -102,6 +119,8 @@ To run this bot 24/7 on Railway:
     *   `TELEGRAM_BOT_TOKEN`
     *   `PRIVATE_KEY`
     *   `RPC_URL` (Use a public BSC RPC if needed: `https://bsc-dataseed.binance.org/`)
+    *   `SUPABASE_URL`: Your Supabase Project URL.
+    *   `SUPABASE_KEY`: Your Supabase `service_role` key (or `anon` key if RLS allows).
 6.  **Root Directory:** Set the Root Directory to `/` (default).
 7.  **Build Command:** `npm run build` (This runs `tsc` to compile TypeScript).
 8.  **Start Command:** `npm run start` (This runs `node dist/bot.js`).
@@ -113,6 +132,22 @@ Railway will automatically detect the `package.json` in the root and start the b
 *   `/verify <signature>` - Link your wallet to receive alerts.
 *   `/risk` - Check your current Health Factor.
 *   `/status` - See your linked wallet and settings.
+
+### 🚀 Deploying Frontend to Vercel
+
+To deploy the web dashboard to Vercel:
+
+1.  **Fork/Clone** this repo to your GitHub.
+2.  Login to [Vercel.com](https://vercel.com/).
+3.  Click **Add New** > **Project** > **Import from GitHub**.
+4.  Select your `OpButler` repo.
+5.  **Root Directory:** Set to `frontend`.
+6.  **Framework Preset:** Next.js (auto-detected).
+7.  **Environment Variables:** Add:
+    *   `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`: Your WalletConnect Project ID.
+8.  Click **Deploy**!
+
+Vercel will automatically build and deploy your Next.js frontend.
 
 ---
 

@@ -8,11 +8,14 @@ import "dotenv/config";
 
 // --- Configuration & Security ---
 
+
 // --- Configuration & Security ---
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 // ALLOWED_USER_ID is now optional, used for Admin commands only if needed
 const ADMIN_ID = process.env.ALLOWED_USER_ID ? parseInt(process.env.ALLOWED_USER_ID) : null;
 const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
 if (!BOT_TOKEN) {
     console.error("❌ Error: TELEGRAM_BOT_TOKEN is required in .env");
@@ -24,39 +27,28 @@ if (!PRIVATE_KEY || !PRIVATE_KEY.startsWith("0x") || PRIVATE_KEY.length !== 66) 
     process.exit(1);
 }
 
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error("❌ Error: SUPABASE_URL and SUPABASE_KEY are required in .env");
+    process.exit(1);
+}
+
 // --- Initialization ---
 let manager: StrategyManager;
-import { Account, PublicClient, WalletClient, Transport, Chain, verifyMessage } from "viem";
-import * as fs from 'fs';
-import * as path from 'path';
+import { Account, PublicClient, WalletClient, Transport, Chain, verifyMessage, recoverMessageAddress } from "viem";
+import { createClient } from '@supabase/supabase-js';
 
 let account: Account;
 let publicClient: PublicClient<Transport, Chain>;
 let client: WalletClient<Transport, Chain, Account>;
 
-// Data Store for Users
-const USERS_FILE = path.join(__dirname, 'users.json');
+// Initialize Supabase
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 interface UserData {
-    chatId: number;
+    chat_id: number;
     username?: string;
-    walletAddress: Address;
-    alertThreshold: number; // e.g. 1.1
-}
-
-function getUsers(): UserData[] {
-    if (!fs.existsSync(USERS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
-}
-
-function saveUser(user: UserData) {
-    const users = getUsers();
-    const existingIndex = users.findIndex(u => u.chatId === user.chatId);
-    if (existingIndex >= 0) {
-        users[existingIndex] = user;
-    } else {
-        users.push(user);
-    }
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+    wallet_address: Address;
+    alert_threshold: number; // e.g. 1.1
 }
 
 try {
@@ -111,27 +103,29 @@ bot.command("verify", async (ctx) => {
 
     try {
         const message = `OpButler Auth: ${chatId}`;
-        const valid = await publicClient.verifyMessage({
-            address: '0x0000000000000000000000000000000000000000', // We don't know address yet, verifyMessage handles split? No, we need recoverAddress
-            message,
-            signature: signature as `0x${string}`
-        });
 
         // Correct way to recover address from signature using viem
-        // verifyMessage returns boolean if we provide address.
-        // We need recoverMessageAddress to find WHO signed it.
-        const { recoverMessageAddress } = require('viem');
         const recoveredAddress = await recoverMessageAddress({
             message,
             signature: signature as `0x${string}`
         });
 
-        saveUser({
-            chatId,
-            username: ctx.from?.username,
-            walletAddress: recoveredAddress,
-            alertThreshold: 1.1
-        });
+        // Upsert User into Supabase
+        const { error } = await supabase
+            .from('users')
+            .upsert({
+                chat_id: chatId,
+                username: ctx.from?.username,
+                wallet_address: recoveredAddress,
+                alert_threshold: 1.1
+            }, {
+                onConflict: 'chat_id'
+            });
+
+        if (error) {
+            console.error('Supabase Error:', error);
+            throw new Error('Database error');
+        }
 
         await ctx.reply(
             `✅ **Success!**\n\n` +
@@ -143,21 +137,24 @@ bot.command("verify", async (ctx) => {
 
     } catch (error) {
         console.error("Verification failed:", error);
-        await ctx.reply("❌ Verification failed. Invalid signature or format.");
+        await ctx.reply("❌ Verification failed. Invalid signature or database error.");
     }
 });
 
 bot.command("risk", async (ctx) => {
-    const users = getUsers();
-    const user = users.find(u => u.chatId === ctx.from?.id);
+    const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('chat_id', ctx.from?.id)
+        .single();
 
-    if (!user) {
+    if (error || !user) {
         return ctx.reply("⚠️ You have not linked a wallet yet. Use `/start` to begin.");
     }
 
     await ctx.reply("🔍 Checking Health Factor...");
     try {
-        const { healthFactor, shortfall } = await manager.getAccountHealth(user.walletAddress);
+        const { healthFactor, shortfall } = await manager.getAccountHealth(user.wallet_address as Address);
 
         let status = "Unknown";
         if (healthFactor > 2) status = "🟢 Safe";
@@ -166,7 +163,7 @@ bot.command("risk", async (ctx) => {
 
         await ctx.reply(
             `📊 **Risk Report**\n\n` +
-            `Wallet: \`${user.walletAddress.substring(0, 6)}...${user.walletAddress.substring(38)}\`\n` +
+            `Wallet: \`${user.wallet_address.substring(0, 6)}...${user.wallet_address.substring(38)}\`\n` +
             `Health Factor: **${healthFactor.toFixed(2)}**\n` +
             `Status: ${status}\n` +
             `Shortfall: $${shortfall.toFixed(2)}`,
@@ -178,14 +175,17 @@ bot.command("risk", async (ctx) => {
 });
 
 bot.command("status", async (ctx) => {
-    const users = getUsers();
-    const user = users.find(u => u.chatId === ctx.from?.id);
+    const { data: user } = await supabase
+        .from('users')
+        .select('*')
+        .eq('chat_id', ctx.from?.id)
+        .single();
 
     if (user) {
         await ctx.reply(
             `👤 **Account Status**\n\n` +
-            `Linked Wallet: \`${user.walletAddress}\`\n` +
-            `Alert Threshold: HF < ${user.alertThreshold}`,
+            `Linked Wallet: \`${user.wallet_address}\`\n` +
+            `Alert Threshold: HF < ${user.alert_threshold}`,
             { parse_mode: "Markdown" }
         );
     } else {
@@ -195,24 +195,33 @@ bot.command("status", async (ctx) => {
 
 // --- Background Job: Monitor Risk ---
 setInterval(async () => {
-    const users = getUsers();
+    // Fetch all users
+    const { data: users, error } = await supabase
+        .from('users')
+        .select('*');
+
+    if (error) {
+        console.error("Error fetching users for monitoring:", error);
+        return;
+    }
+
     console.log(`🔍 Monitoring ${users.length} users...`);
 
     for (const user of users) {
         try {
-            const { healthFactor } = await manager.getAccountHealth(user.walletAddress);
-            if (healthFactor < user.alertThreshold) {
+            const { healthFactor } = await manager.getAccountHealth(user.wallet_address as Address);
+            if (healthFactor < user.alert_threshold) {
                 // Send Alert
                 await bot.api.sendMessage(
-                    user.chatId,
+                    user.chat_id,
                     `🚨 **LIQUIDATION ALERT** 🚨\n\n` +
                     `Your Health Factor has dropped to **${healthFactor.toFixed(2)}**!\n` +
-                    `Threshold: ${user.alertThreshold}\n\n` +
+                    `Threshold: ${user.alert_threshold}\n\n` +
                     `Please repay debt or add collateral immediately to avoid liquidation.`
                 );
             }
         } catch (e) {
-            console.error(`Error monitoring user ${user.chatId}:`, e);
+            console.error(`Error monitoring user ${user.chat_id}:`, e);
         }
     }
 }, 60 * 1000 * 5); // Check every 5 minutes
@@ -223,4 +232,4 @@ bot.catch((err) => {
 });
 
 bot.start();
-console.log("🤖 OpButler Telegram Bot Started!");
+console.log("🤖 OpButler Telegram Bot (Supabase) Started!");
