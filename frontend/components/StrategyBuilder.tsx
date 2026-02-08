@@ -8,6 +8,7 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS, OpButlerWalletABI } from "@/contracts";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { useYields } from "@/hooks/useYields";
+import { useTokenPrices } from "@/hooks/useTokenPrices";
 import { ArrowRight, RefreshCw, AlertTriangle, TrendingUp, Layers, Check, ChevronDown, Banknote } from 'lucide-react';
 import { RiskMonitor } from './RiskMonitor';
 import { useToast } from "@/components/ui/use-toast";
@@ -56,6 +57,8 @@ export function StrategyBuilder() {
     const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
     const { data: yields } = useYields();
+    const { data: priceData } = useTokenPrices();
+    const getPrice = priceData?.getPrice || ((_s: string) => 0);
     const { toast } = useToast();
     const { openConnectModal } = useConnectModal();
 
@@ -95,31 +98,52 @@ export function StrategyBuilder() {
     const borrowPool = protocolAssets.find(p => p.symbol === borrowAsset);
     const targetSupplyPool = targetProtocolAssets.find(p => p.symbol === supplyAsset); // Refinance Target
 
-    // Calculation Logic
-    const principal = parseFloat(amount) || 0;
-    const totalExposure = principal * leverage;
-    const totalBorrow = totalExposure - principal;
+    // Calculation Logic (USD Based)
+    const principalAmount = parseFloat(amount) || 0;
+    const priceSupply = getPrice(supplyAsset) || 0;
+    const priceBorrow = getPrice(borrowAsset) || 0;
+
+    // 1. Calculate Principal Value in USD
+    const principalValueUSD = principalAmount * priceSupply;
+
+    // 2. Calculate Total Exposure Value in USD based on Leverage
+    // Leverage 3x means Total Exposure = 3 * Principal
+    const totalExposureValueUSD = principalValueUSD * leverage;
+
+    // 3. Calculate Flash Loan (Borrow) Value in USD
+    // Borrow = Total Exposure - Principal
+    const flashLoanValueUSD = totalExposureValueUSD - principalValueUSD;
+
+    // 4. Convert Values back to Token Amounts
+    // How much Collateral (Supply Asset) will we have total?
+    // Total Collateral Tokens = Total Exposure USD / Supply Price
+    const totalCollateralTokens = priceSupply > 0 ? totalExposureValueUSD / priceSupply : 0;
+
+    // How much Debt (Borrow Asset) will we check out?
+    // Total Debt Tokens = Flash Loan USD / Borrow Price
+    const totalDebtTokens = priceBorrow > 0 ? flashLoanValueUSD / priceBorrow : 0;
 
     // APY Rates
     const supplyAPY = supplyPool?.apy || 0;
     const borrowAPY = borrowPool?.apyBaseBorrow || 0;
 
     // Refinance Calculations
-    const currentRate = borrowPool?.apyBaseBorrow || 0;  // Old Protocol Borrow Rate
-    const newRate = targetSupplyPool?.apyBaseBorrow || 0; // New Protocol Borrow Rate (Mock: assume borrow pool same asset)
+    const currentRate = borrowPool?.apyBaseBorrow || 0;
+    const newRate = targetSupplyPool?.apyBaseBorrow || 0;
     const rateDiff = currentRate - newRate;
-    const savingsPerYear = totalBorrow * (rateDiff / 100);
+    const savingsPerYear = flashLoanValueUSD * (rateDiff / 100); // Savings on the debt value
 
     // Net APY Logic
-    const netAPY = principal > 0
-        ? ((supplyAPY * totalExposure) - (borrowAPY * totalBorrow)) / principal
+    // (Supply APY * Total Exposure USD) - (Borrow APY * Total Debt USD) / Principal USD
+    const netAPY = principalValueUSD > 0
+        ? ((supplyAPY * totalExposureValueUSD) - (borrowAPY * flashLoanValueUSD)) / principalValueUSD
         : 0;
 
     // Safety Score (Health Factor)
-    // Dynamic Liquidation Threshold from API (fallback to 0.8 if missing)
+    // HF = (Total Collateral Value USD * Liquidation Threshold) / Total Debt Value USD
     const liquidationThreshold = supplyPool?.ltv || 0.8;
-    const healthFactor = totalBorrow > 0
-        ? (totalExposure * liquidationThreshold) / totalBorrow
+    const healthFactor = flashLoanValueUSD > 0
+        ? (totalExposureValueUSD * liquidationThreshold) / flashLoanValueUSD
         : 999;
 
     const safetyScoreLabel = healthFactor > 2 ? 'Excellent' : healthFactor > 1.5 ? 'Good' : healthFactor > 1.1 ? 'Risky' : 'Danger';
@@ -129,20 +153,20 @@ export function StrategyBuilder() {
     const handleExecute = () => {
         if (!address) return;
 
-        // Mock Addresses for Demo if pools not found (Use WBNB/USDT defaults)
-        // In prod, these come from `supplyPool.address`
-        const assetAddr = supplyPool?.address || '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'; // WBNB
-        const vTokenAddr = '0xA07c5b74C9B40447a954e1466938b865b6BBe19B'; // vBNB (Mock)
-        const borrowAssetAddr = borrowPool?.address || '0x55d398326f99059fF775485246999027B3197955'; // USDT
-        const vBorrowTokenAddr = '0xfD5840Cd36d94D7229439859C0112a4185BC0255'; // vUSDT (Mock)
-        const routerAddr = '0x10ED43C718714eb63d5aA57B78B54704E256024E'; // Pancake Router
-        const comptrollerAddr = '0xfD36E2c2a6789Db23113685031d7F16329158384'; // Venus Comptroller
+        // Mock Addresses
+        const assetAddr = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+        const vTokenAddr = '0xA07c5b74C9B40447a954e1466938b865b6BBe19B';
+        const borrowAssetAddr = '0x55d398326f99059fF775485246999027B3197955';
+        const vBorrowTokenAddr = '0xfD5840Cd36d94D7229439859C0112a4185BC0255';
+        const routerAddr = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+        const comptrollerAddr = '0xfD36E2c2a6789Db23113685031d7F16329158384';
 
-        // Parse Amount to Wei (Mock 18 decimals)
-        const amountWei = BigInt(Math.floor(principal * 1e18));
+        // Parse Principal Amount to Wei
+        const amountWei = BigInt(Math.floor(principalAmount * 1e18));
 
         if (mode === 'loop') {
-            const borrowAmountWei = BigInt(Math.floor(totalBorrow * 1e18));
+            // Using totalDebtTokens as the borrow amount
+            const borrowAmountWei = BigInt(Math.floor(totalDebtTokens * 1e18));
 
             // Assume User has a wallet via Factory. We call the WALLET address, not the Factory.
             // But for this frontend, we might need to know the User's Wallet Address.
@@ -281,7 +305,7 @@ export function StrategyBuilder() {
                                 <input
                                     type="number"
                                     placeholder="0.00"
-                                    className="w-full h-12 px-4 rounded-lg border border-input bg-background/50 focus:ring-1 focus:ring-blue-500/50 outline-none font-mono text-right"
+                                    className="w-full h-12 px-4 rounded-lg border border-input bg-background/50 focus:ring-1 focus:ring-blue-500/50 outline-none font-mono text-right no-spin-button"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
                                 />
@@ -332,16 +356,21 @@ export function StrategyBuilder() {
                                         <input
                                             type="number"
                                             placeholder="0.00"
-                                            className="w-full h-12 px-4 rounded-lg border border-input bg-background/50 focus:ring-1 focus:ring-primary/50 outline-none font-mono text-right"
+                                            className="w-full h-12 px-4 rounded-lg border border-input bg-background/50 focus:ring-1 focus:ring-primary/50 outline-none font-mono text-right no-spin-button"
                                             value={amount}
                                             onChange={(e) => setAmount(e.target.value)}
                                         />
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">Amt</span>
                                     </div>
                                 </div>
-                                <div className="flex justify-between text-xs px-1">
-                                    <span className="text-muted-foreground">Supply APY:</span>
-                                    <span className="text-emerald-500 font-mono font-bold">{supplyAPY.toFixed(2)}%</span>
+                                <div className="flex justify-between text-xs px-1 mt-1">
+                                    <div className="flex flex-col">
+                                        <span className="text-muted-foreground">Supply APY:</span>
+                                        <span className="text-emerald-500 font-mono font-bold">{supplyAPY.toFixed(2)}%</span>
+                                    </div>
+                                    <div className="text-muted-foreground text-[10px] text-right">
+                                        ≈ ${(parseFloat(amount) * (getPrice(supplyAsset) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
                                 </div>
                             </div>
 
@@ -358,9 +387,14 @@ export function StrategyBuilder() {
                                         onChange={setBorrowAsset}
                                     />
                                 </div>
-                                <div className="flex justify-between text-xs px-1">
-                                    <span className="text-muted-foreground">Borrow Cost:</span>
-                                    <span className="text-red-500 font-mono font-bold">{borrowAPY.toFixed(2)}%</span>
+                                <div className="flex justify-between text-xs px-1 mt-1">
+                                    <div className="flex flex-col">
+                                        <span className="text-muted-foreground">Borrow Cost:</span>
+                                        <span className="text-red-500 font-mono font-bold">{borrowAPY.toFixed(2)}%</span>
+                                    </div>
+                                    <div className="text-muted-foreground text-[10px] text-right">
+                                        ≈ ${flashLoanValueUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -395,11 +429,79 @@ export function StrategyBuilder() {
                                         {netAPY.toFixed(2)}%
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-1">
-                                        Old: {supplyAPY.toFixed(2)}%
+                                        Base APY: {supplyAPY.toFixed(2)}%
                                     </div>
                                 </div>
 
-                                <RiskMonitor healthFactor={healthFactor} liquidationThreshold={liquidationThreshold} />
+                                <RiskMonitor
+                                    healthFactor={healthFactor}
+                                    liquidationThreshold={liquidationThreshold}
+                                    liquidationPrice={(() => {
+                                        const priceSupply = getPrice(supplyAsset) || 0;
+                                        const priceBorrow = getPrice(borrowAsset) || 0;
+                                        if (priceSupply === 0 || priceBorrow === 0) return 0;
+
+                                        // Determine if "Long" (Supply Volatile) or "Short" (Borrow Volatile)
+                                        // Simple Heuristic: If Supply is Stable (USDT/USDC/DAI/FDUSD) and Borrow is NOT, we are Shorting Borrow Asset.
+                                        // If Both Stable or Both Volatile, default to monitoring Supply Drop.
+                                        const isSupplyStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(supplyAsset);
+                                        const isBorrowStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(borrowAsset);
+
+                                        if (isSupplyStable && !isBorrowStable) {
+                                            // Short Scenario: Risk is Borrow Price Rising.
+                                            // Liq Condition: CollateralValue * LTV = DebtValue
+                                            // DebtValue = BorrowAmount * LiqPrice_Borrow
+                                            // LiqPrice_Borrow = (CollateralValue * LTV) / BorrowAmount
+
+                                            // Collateral Value is fixed (since Supply is Stable).
+                                            return totalDebtTokens > 0 ? (totalExposureValueUSD * liquidationThreshold) / totalDebtTokens : 0;
+                                        } else {
+                                            // Long Scenario (Standard): Risk is Supply Price Dropping.
+                                            // Liq Condition: CollateralAmount * LiqPrice_Supply * LTV = DebtValue
+                                            // LiqPrice_Supply = DebtValue / (CollateralAmount * LTV)
+                                            // Debt Value is fixed (since Borrow is Stable/Pegged relative to risk).
+                                            return totalCollateralTokens > 0 ? flashLoanValueUSD / (totalCollateralTokens * liquidationThreshold) : 0;
+                                        }
+                                    })()}
+                                    currentPrice={(() => {
+                                        const isSupplyStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(supplyAsset);
+                                        const isBorrowStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(borrowAsset);
+                                        if (isSupplyStable && !isBorrowStable) return getPrice(borrowAsset) || 0;
+                                        return getPrice(supplyAsset) || 0;
+                                    })()}
+                                    pairName={(() => {
+                                        const isSupplyStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(supplyAsset);
+                                        const isBorrowStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(borrowAsset);
+                                        if (isSupplyStable && !isBorrowStable) return `${borrowAsset}/USD (Max)`;
+                                        return `${supplyAsset}/USD (Min)`;
+                                    })()}
+                                    dropLabel={(() => {
+                                        const isSupplyStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(supplyAsset);
+                                        const isBorrowStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(borrowAsset);
+                                        if (isSupplyStable && !isBorrowStable) return 'Max Price Rise';
+                                        return 'Max Price Drop';
+                                    })()}
+                                    projectedDrop={(() => {
+                                        const priceSupply = getPrice(supplyAsset) || 0;
+                                        const priceBorrow = getPrice(borrowAsset) || 0;
+                                        if (priceSupply === 0 || priceBorrow === 0) return 0;
+
+                                        const isSupplyStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(supplyAsset);
+                                        const isBorrowStable = ['USDT', 'USDC', 'DAI', 'FDUSD'].includes(borrowAsset);
+
+                                        if (isSupplyStable && !isBorrowStable) {
+                                            // Short Scenario: Calculate % Rise to Liquidation
+                                            const currentP = priceBorrow;
+                                            const liqPrice = totalDebtTokens > 0 ? (totalExposureValueUSD * liquidationThreshold) / totalDebtTokens : 0;
+                                            return ((liqPrice - currentP) / currentP) * 100;
+                                        } else {
+                                            // Long Scenario: Calculate % Drop to Liquidation
+                                            const currentP = priceSupply;
+                                            const liqPrice = totalCollateralTokens > 0 ? flashLoanValueUSD / (totalCollateralTokens * liquidationThreshold) : 0;
+                                            return ((liqPrice - currentP) / currentP) * 100;
+                                        }
+                                    })()}
+                                />
                             </div>
                         )}
                     </>
@@ -460,6 +562,6 @@ export function StrategyBuilder() {
                     </Button>
                 )}
             </CardFooter>
-        </Card>
+        </Card >
     );
 }

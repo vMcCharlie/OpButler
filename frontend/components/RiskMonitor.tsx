@@ -1,76 +1,127 @@
-import { ShieldCheck, AlertTriangle, AlertCircle } from 'lucide-react';
-import { Card, CardContent } from "@/components/ui/card";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card } from "@/components/ui/card";
+import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
 
 interface RiskMonitorProps {
-    healthFactor: number;
-    liquidationThreshold: number;
+    healthFactor?: number;
+    liquidationThreshold?: number;
+    liquidationPrice?: number;
+    currentPrice?: number;
+    pairName?: string;
+    projectedDrop?: number;
+    dropLabel?: string;
 }
 
-export function RiskMonitor({ healthFactor, liquidationThreshold }: RiskMonitorProps) {
-    const isSafe = healthFactor > 1.5;
-    const isRisky = healthFactor <= 1.5 && healthFactor > 1.1;
-    const isDanger = healthFactor <= 1.1;
+export function RiskMonitor({
+    healthFactor: propHealthFactor,
+    liquidationThreshold,
+    liquidationPrice: propLiqPrice = 0,
+    currentPrice: propCurrentPrice = 0,
+    pairName = 'BNB/USD',
+    projectedDrop: propDrop = 0,
+    dropLabel = 'Projected Drop'
+}: RiskMonitorProps) {
+    // Simulated health factor oscillating slightly (fallback)
+    const [simulatedHealth, setSimulatedHealth] = useState(1.45);
 
-    const color = isSafe ? 'text-emerald-500' : isRisky ? 'text-yellow-500' : 'text-red-500';
-    const bgColor = isSafe ? 'bg-emerald-500/10' : isRisky ? 'bg-yellow-500/10' : 'bg-red-500/10';
-    const borderColor = isSafe ? 'border-emerald-500/20' : isRisky ? 'border-yellow-500/20' : 'border-red-500/20';
+    // Use props if available, otherwise simulation
+    const healthFactor = propHealthFactor ?? simulatedHealth;
+
+    // Safety thresholds
+    const isSafe = healthFactor > 1.5;
+    const isModerate = healthFactor > 1.1 && healthFactor <= 1.5;
+
+    // Animate health factor for demo effect if no props
+    useEffect(() => {
+        if (propHealthFactor !== undefined) return;
+        const interval = setInterval(() => {
+            setSimulatedHealth(prev => {
+                const noise = (Math.random() - 0.5) * 0.05;
+                return Math.max(1.0, Math.min(2.0, prev + noise));
+            });
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [propHealthFactor]);
+
+    const data = [
+        { name: 'Health', value: healthFactor, fill: isSafe ? '#10b981' : isModerate ? '#f59e0b' : '#ef4444' },
+    ];
+
+    const cx = 150;
+    const cy = 150;
+    const iR = 80;
+    const oR = 100;
+    const value = healthFactor;
+
+    // Calculate angle for needle
+    // 1.0 = 180deg (Left), 2.0 = 0deg (Right)
+    // Scale: 0 to 3
+    const startAngle = 180;
+    const endAngle = 0;
 
     return (
-        <div className={`p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-300`}>
-            <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    <ShieldCheck size={16} />
-                    Risk Monitor
-                </div>
-                {isDanger && (
-                    <div className="flex items-center gap-1 text-xs font-bold text-red-500 animate-pulse">
-                        <AlertTriangle size={14} /> LIQUIDATION RISK
+        <Card className="relative overflow-hidden border-none bg-black/40 backdrop-blur-xl h-full flex flex-col justify-between">
+            <div className={`absolute top-0 right-0 p-4 opacity-20 blur-3xl w-32 h-32 rounded-full ${isSafe ? 'bg-emerald-500' : isModerate ? 'bg-amber-500' : 'bg-red-500'}`}></div>
+
+            <div className="p-6 relative z-10 flex flex-col h-full">
+                <div className="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 className="text-lg font-bold font-outfit text-white">Risk Monitor</h3>
+                        <p className="text-xs text-muted-foreground">Real-time Health Factor tracking</p>
                     </div>
-                )}
+                    <div className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${isSafe ? 'bg-emerald-500/20 text-emerald-500' : isModerate ? 'bg-amber-500/20 text-amber-500' : 'bg-red-500/20 text-red-500'}`}>
+                        {isSafe ? <ShieldCheck size={12} /> : isModerate ? <AlertTriangle size={12} /> : <Zap size={12} />}
+                        <span>{isSafe ? 'Protected' : isModerate ? 'Attention' : 'Critical'}</span>
+                    </div>
+                </div>
+
+                {/* Simplified Gauge Visualization using CSS/SVG for cleaner look than Recharts sometimes */}
+                <div className="flex-1 flex items-center justify-center relative my-4">
+                    {/* Background Arc */}
+                    <svg viewBox="0 0 200 120" className="w-full h-32">
+                        <path d="M 40 100 A 60 60 0 0 1 160 100" fill="none" stroke="#333" strokeWidth="12" strokeLinecap="round" />
+                        {/* Value Arc */}
+                        <path
+                            d="M 40 100 A 60 60 0 0 1 160 100"
+                            fill="none"
+                            stroke={isSafe ? '#10b981' : isModerate ? '#f59e0b' : '#ef4444'}
+                            strokeWidth="12"
+                            strokeLinecap="round"
+                            strokeDasharray="188.5"
+                            strokeDashoffset={188.5 - (Math.min(healthFactor, 3) / 3) * 188.5 * 1.5} // Rough calibration
+                            className="transition-all duration-1000 ease-out"
+                        />
+                    </svg>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center">
+                        <div className="text-3xl font-bold font-mono text-white tracking-tighter">{healthFactor.toFixed(2)}</div>
+                        <div className={`text-[10px] font-bold uppercase tracking-widest ${isSafe ? 'text-emerald-500' : isModerate ? 'text-amber-500' : 'text-red-500'}`}>
+                            {isSafe ? 'Safe' : isModerate ? 'Moderate' : 'Critical'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                        <div className="text-[10px] text-muted-foreground uppercase mb-1">Liq. Price (Est.)</div>
+                        <div className="text-lg font-bold text-white">
+                            ${propLiqPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">{pairName}</div>
+                    </div>
+                    <div className="bg-white/5 p-3 rounded-lg border border-white/5 relative overflow-hidden">
+                        {Math.abs(propDrop) < 5 && <div className="absolute inset-0 bg-red-500/5 animate-pulse"></div>}
+                        <div className="text-[10px] text-muted-foreground uppercase mb-1 relative z-10">{dropLabel}</div>
+                        <div className={`text-lg font-bold relative z-10 ${Math.abs(propDrop) > 5 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {propDrop > 0 ? '+' : ''}{propDrop.toFixed(2)}%
+                        </div>
+                        <div className="text-[10px] text-muted-foreground relative z-10">to Liquidate</div>
+                    </div>
+                </div>
             </div>
-
-            <div className="flex items-end justify-between">
-                <div>
-                    <div className={`text-3xl font-bold ${color}`}>
-                        {healthFactor > 100 ? '∞' : healthFactor.toFixed(2)}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                        Health Factor (Target &gt; 1.5)
-                    </div>
-                </div>
-                <div className="text-right">
-                    <div className="text-sm font-mono font-bold text-foreground">
-                        {(liquidationThreshold * 100).toFixed(0)}%
-                    </div>
-                    <div className="text-[10px] text-muted-foreground uppercase">
-                        Collat. Factor
-                    </div>
-                </div>
-            </div>
-
-            {/* Visual Gauge */}
-            <div className="mt-3 w-full h-2 bg-background rounded-full overflow-hidden relative border border-border/50">
-                {/* Safe Zone */}
-                <div className="absolute left-0 top-0 h-full bg-red-500 w-1/3 opacity-80"></div>
-                <div className="absolute left-1/3 top-0 h-full bg-yellow-500 w-1/3 opacity-80"></div>
-                <div className="absolute left-2/3 top-0 h-full bg-emerald-500 w-1/3 opacity-80"></div>
-
-                {/* Indicator */}
-                <div
-                    className="absolute top-0 h-full w-1 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)] z-10 transition-all duration-500"
-                    style={{ left: `${Math.min(Math.max((healthFactor / 3) * 100, 0), 100)}%` }}
-                ></div>
-            </div>
-
-            {isDanger && (
-                <div className="mt-3 p-2 rounded bg-red-500/20 border border-red-500/30 text-xs text-red-200 flex gap-2 items-start">
-                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                    <span>
-                        <strong>Action Required:</strong> Your position is close to liquidation.
-                        Please <u>Repay Debt</u> or <u>Add Collateral</u> immediately.
-                    </span>
-                </div>
-            )}
-        </div>
+        </Card>
     );
 }

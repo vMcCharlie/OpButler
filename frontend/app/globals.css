@@ -59,6 +59,17 @@
   .glass-card {
     @apply bg-card border border-border;
   }
+
+  /* Hide spin button for input type="number" */
+  .no-spin-button::-webkit-outer-spin-button,
+  .no-spin-button::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .no-spin-button {
+    -moz-appearance: textfield;
+  }
 }
 
 @layer base {

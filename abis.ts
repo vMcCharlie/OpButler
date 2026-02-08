@@ -20,6 +20,19 @@ export const COMPTROLLER_ABI = [
         "payable": false,
         "stateMutability": "view",
         "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{ "name": "", "type": "address" }],
+        "name": "markets",
+        "outputs": [
+            { "name": "isListed", "type": "bool" },
+            { "name": "collateralFactorMantissa", "type": "uint256" },
+            { "name": "isComped", "type": "bool" }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
     }
 ] as const;
 
@@ -76,6 +89,24 @@ export const VTOKEN_ABI = [
         "outputs": [{ "name": "", "type": "uint256" }],
         "payable": false,
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "supplyRatePerBlock",
+        "outputs": [{ "name": "", "type": "uint256" }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "borrowRatePerBlock",
+        "outputs": [{ "name": "", "type": "uint256" }],
+        "payable": false,
+        "stateMutability": "view",
         "type": "function"
     }
 ] as const;

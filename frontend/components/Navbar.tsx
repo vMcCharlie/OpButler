@@ -4,14 +4,14 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ThemeToggle } from './theme-toggle';
+
 
 export function Navbar() {
     const pathname = usePathname();
 
     const navLinks = [
         { name: 'Dashboard', href: '/dashboard' },
-        { name: 'Strategy Management', href: '/strategy' },
+        { name: 'Lend', href: '/strategy' },
         { name: 'Portfolio', href: '/portfolio' },
     ];
 
@@ -31,21 +31,18 @@ export function Navbar() {
                 </Link>
 
                 <div className="flex items-center gap-8">
-                    {/* Navigation Links - Only show inside the app (not on landing page) */}
-                    {pathname !== '/' && (
-                        <div className="hidden md:flex gap-6">
-                            {navLinks.map((link) => (
-                                <Link
-                                    key={link.name}
-                                    href={link.href}
-                                    className={`text-sm font-medium transition-colors hover:text-primary ${pathname === link.href ? 'text-primary' : 'text-muted-foreground'
-                                        }`}
-                                >
-                                    {link.name}
-                                </Link>
-                            ))}
-                        </div>
-                    )}
+                    {/* Navigation Links */}
+                    <div className="hidden md:flex gap-6">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className={`text-sm font-medium transition-colors hover:text-primary ${pathname === link.href ? 'text-primary' : 'text-muted-foreground'}`}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                    </div>
 
                     {/* Notification Bell */}
                     <div className="relative cursor-pointer group">
@@ -72,7 +69,7 @@ export function Navbar() {
                         </div>
                     </div>
 
-                    <ThemeToggle />
+
                     <ConnectButton showBalance={false} accountStatus="address" chainStatus="icon" />
                 </div>
             </div>

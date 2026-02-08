@@ -69,19 +69,19 @@ export function useAggregatedHealth(targetAddress?: string) {
                 address: VENUS_COMPTROLLER_ADDRESS,
                 abi: KINZA_COMPTROLLER_ABI, // Compatible with Venus (Comptroller Interface)
                 functionName: 'getAccountLiquidity',
-                args: address ? [address] : undefined,
+                args: address ? [address as `0x${string}`] : undefined,
             },
             {
                 address: KINZA_COMPTROLLER_ADDRESS,
                 abi: KINZA_COMPTROLLER_ABI,
                 functionName: 'getAccountLiquidity',
-                args: address ? [address] : undefined,
+                args: address ? [address as `0x${string}`] : undefined,
             },
             {
                 address: RADIANT_LENDING_POOL_ADDRESS,
                 abi: RADIANT_LENDING_POOL_ABI,
                 functionName: 'getUserAccountData',
-                args: address ? [address] : undefined,
+                args: address ? [address as `0x${string}`] : undefined,
             },
         ],
         query: {

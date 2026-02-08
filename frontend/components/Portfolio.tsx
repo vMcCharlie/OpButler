@@ -127,7 +127,7 @@ export function Portfolio() {
                             let statusText = 'Healthy';
                             let statusColor = 'text-emerald-500';
 
-                            if (totalNetWorthUSD < 0.1) {
+                            if ((totalNetWorthUSD || 0) < 0.1) {
                                 statusText = 'Inactive';
                                 statusColor = 'text-muted-foreground';
                             } else if (!isAllSafe) {
