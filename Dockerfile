@@ -13,9 +13,10 @@ COPY package*.json ./
 RUN npm install --production
 COPY --from=builder /app/dist ./dist
 COPY strategies.json ./strategies.json
-COPY .env .env
 
-# Create empty strategies.json if valid JSON doesn't exist (handled by code logic usually, but good to have)
-# We copy existing one.
+# Note: .env is NOT copied here because:
+# 1. It's git-ignored (for security)
+# 2. Railway injects environment variables directly
+# The app reads from process.env which Railway populates
 
 CMD ["node", "dist/bot.js"]
