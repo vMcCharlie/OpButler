@@ -41,8 +41,12 @@ export function Dashboard() {
     return (
         <div className="container py-12 space-y-8 max-w-screen-2xl mx-auto px-8 md:px-16">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">My Dashboard</h1>
-                <div className="text-sm text-muted-foreground">Welcome back, Strategist.</div>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Dashboard</h1>
+                    <div className="text-sm text-muted-foreground">
+                        {address ? 'Welcome back, Strategist.' : 'Connect your wallet to view your personalized yields.'}
+                    </div>
+                </div>
             </div>
 
             {/* Top Stats: Aggregated Financials */}

@@ -23,12 +23,14 @@ export function Markets() {
             totalSupplied: number;
             totalBorrowed: number;
             maxAPY: number;
+            tokenAddress?: string;
         }> = {};
 
         yields.forEach(pool => {
             const symbol = pool.symbol;
             if (!map[symbol]) {
-                map[symbol] = { symbol, totalSupplied: 0, totalBorrowed: 0, maxAPY: 0 };
+                const tokenAddress = (pool.underlyingTokens && pool.underlyingTokens.length > 0) ? pool.underlyingTokens[0] : undefined;
+                map[symbol] = { symbol, tokenAddress, totalSupplied: 0, totalBorrowed: 0, maxAPY: 0 };
             }
 
             const data = { s: pool.apy, b: pool.apyBaseBorrow || 0, tvl: pool.tvlUsd };
@@ -110,44 +112,54 @@ export function Markets() {
                     <table className="w-full caption-bottom text-sm text-left">
                         <thead className="[&_tr]:border-b">
                             <tr className="border-border text-muted-foreground uppercase tracking-wider text-[10px]">
-                                <th className="h-12 px-4 align-middle font-medium min-w-[220px]">Asset</th>
+                                <th className="h-12 px-4 align-middle font-medium min-w-[220px]">Token Name</th>
                                 <th className="h-12 px-4 align-middle font-medium text-center">
-                                    <div className="flex items-center justify-center gap-1.5">
-                                        <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
-                                            <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
+                                                <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
+                                            </div>
+                                            Venus
                                         </div>
-                                        Venus
+                                        <span className="text-[9px] opacity-70">Earn / Pay</span>
                                     </div>
                                 </th>
                                 <th className="h-12 px-4 align-middle font-medium text-center">
-                                    <div className="flex items-center justify-center gap-1.5">
-                                        <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
-                                            <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
+                                                <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
+                                            </div>
+                                            Kinza
                                         </div>
-                                        Kinza
+                                        <span className="text-[9px] opacity-70">Earn / Pay</span>
                                     </div>
                                 </th>
                                 <th className="h-12 px-4 align-middle font-medium text-center">
-                                    <div className="flex items-center justify-center gap-1.5">
-                                        <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
-                                            <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
+                                                <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
+                                            </div>
+                                            Radiant
                                         </div>
-                                        Radiant
+                                        <span className="text-[9px] opacity-70">Earn / Pay</span>
                                     </div>
                                 </th>
-                                <th className="h-12 px-4 align-middle font-medium text-right min-w-[160px]">Action</th>
+                                <th className="h-12 px-4 align-middle font-medium text-right min-w-[160px]">Quick Trade</th>
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
                             {marketData.map(asset => {
+                                const availableProviders = [asset.venus, asset.kinza, asset.radiant].filter(Boolean).length;
                                 const renderCell = (data?: { s: number, b: number }, isBest?: boolean) => {
                                     if (!data) return <span className="text-muted-foreground/20">-</span>;
-                                    const showBest = isBest && data.s >= 0.01; // Only show if APY >= 0.01%
+                                    const showBest = isBest && data.s >= 0.01 && availableProviders > 1; // Only show if APY >= 0.01% AND multiple providers exist
                                     return (
                                         <div className="flex flex-col items-center relative">
                                             {showBest && (
                                                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-500/20 text-yellow-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 whitespace-nowrap shadow-[0_0_10px_rgba(234,179,8,0.3)] animate-pulse">
-                                                    🏆 Best Vibe
+                                                    🏆 Best Rate
                                                 </div>
                                             )}
                                             <span className={`font-bold font-mono text-xs ${showBest ? 'text-yellow-400 scale-110 transition-transform' : 'text-emerald-400'}`}>
@@ -163,15 +175,15 @@ export function Markets() {
                                 return (
                                     <tr key={asset.symbol} className={`border-b border-border transition-colors hover:bg-muted/50 group ${asset.maxAPY === marketData[0].maxAPY && sortBy === 'apy' ? 'bg-yellow-500/5' : ''}`}>
                                         <td className="p-4 align-middle font-bold flex items-center gap-3">
-                                            <AssetIcon symbol={asset.symbol} size={40} />
+                                            <AssetIcon symbol={asset.symbol} tokenAddress={asset.tokenAddress} size={40} />
                                             <div className="flex flex-col">
                                                 <span className="text-foreground text-base">{asset.symbol}</span>
                                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground mt-1">
                                                     <span>BNB Chain</span>
                                                     <span className="w-1 h-1 rounded-full bg-border"></span>
-                                                    <span className="text-emerald-500/80">Supplied: {formatMoney(asset.totalSupplied)}</span>
+                                                    <span className="text-emerald-500/80">Deposited: {formatMoney(asset.totalSupplied)}</span>
                                                     <span className="w-1 h-1 rounded-full bg-border"></span>
-                                                    <span className="text-red-500/60">Borrowed: {formatMoney(asset.totalBorrowed)}</span>
+                                                    <span className="text-red-500/60">Loaned: {formatMoney(asset.totalBorrowed)}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -188,7 +200,7 @@ export function Markets() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <Link href={`/market/${asset.symbol}?tab=lend`}>
                                                     <Button size="sm" className="h-8 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all text-xs font-bold">
-                                                        Lend
+                                                        Deposit
                                                     </Button>
                                                 </Link>
                                                 <Link href={`/market/${asset.symbol}?tab=borrow`}>

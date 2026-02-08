@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 import { useYields } from "@/hooks/useYields";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
+import { TrendingUp, AlertTriangle, ShieldCheck } from "lucide-react";
 
 export function Portfolio() {
     const { address } = useAccount();
@@ -53,33 +54,67 @@ export function Portfolio() {
 
             {/* Main Stats Grid */}
             <div className="grid gap-6 md:grid-cols-4">
-                <Card className="border-l-4 border-l-primary/80 glass-card">
-                    <CardHeader className="pb-2">
+                {/* Net Worth */}
+                <Card className="border-l-4 border-l-primary/80 bg-gradient-to-br from-primary/5 via-card to-card">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Net Worth</CardTitle>
+                        <div className="p-2 bg-primary/10 rounded-full">
+                            <span className="text-primary font-bold">$</span>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-foreground">${(totalNetWorthUSD || 0).toFixed(2)}</div>
+                        <div className="text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
+                            ${(totalNetWorthUSD || 0).toFixed(2)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Total Equity
+                        </p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-emerald-500/80 glass-card">
-                    <CardHeader className="pb-2">
+
+                {/* Total Supplied */}
+                <Card className="border-l-4 border-l-emerald-500/80">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Supplied</CardTitle>
+                        <div className="p-2 bg-emerald-500/10 rounded-full">
+                            <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-emerald-400">${totalSupplied.toFixed(2)}</div>
+                        <div className="text-3xl font-bold text-emerald-500">
+                            ${totalSupplied.toFixed(2)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Collateral & Liquidity
+                        </p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-red-500/80 glass-card">
-                    <CardHeader className="pb-2">
+
+                {/* Total Debt */}
+                <Card className="border-l-4 border-l-red-500/80">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Debt</CardTitle>
+                        <div className="p-2 bg-red-500/10 rounded-full">
+                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-400">${totalDebt.toFixed(2)}</div>
+                        <div className="text-3xl font-bold text-red-500">
+                            ${totalDebt.toFixed(2)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Global Borrowed Amount
+                        </p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-blue-500/80 glass-card">
-                    <CardHeader className="pb-2">
+
+                {/* Health Status */}
+                <Card className="border-l-4 border-l-blue-500/80">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Health Status</CardTitle>
+                        <div className="p-2 bg-blue-500/10 rounded-full">
+                            <ShieldCheck className="w-4 h-4 text-blue-500" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {(() => {
@@ -90,7 +125,7 @@ export function Portfolio() {
 
                             // Determine status: Inactive (Net Worth ~0) vs Healthy vs Risk
                             let statusText = 'Healthy';
-                            let statusColor = 'text-emerald-400';
+                            let statusColor = 'text-emerald-500';
 
                             if (totalNetWorthUSD < 0.1) {
                                 statusText = 'Inactive';
@@ -101,9 +136,14 @@ export function Portfolio() {
                             }
 
                             return (
-                                <div className={`text-2xl font-bold ${statusColor}`}>
-                                    {statusText}
-                                </div>
+                                <>
+                                    <div className={`text-3xl font-bold ${statusColor}`}>
+                                        {statusText}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Overall Account Safety
+                                    </p>
+                                </>
                             );
                         })()}
                     </CardContent>
