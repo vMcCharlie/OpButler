@@ -113,12 +113,11 @@ bot.command("start", async (ctx) => {
 
     await ctx.reply(
         `🤖 **Welcome to OpButler!**\n\n` +
-        `I monitor your DeFi positions across **Venus**, **Kinza**, and **Radiant** on BNB Chain.\n\n` +
+        `I provide **24/7 automated monitoring** for your DeFi positions on Venus, Kinza, and Radiant.\n\n` +
         `**Commands:**\n` +
-        `• /positions - View your full portfolio\n` +
-        `• /risk - Quick health factor check\n` +
         `• /settings - View/update alert settings\n` +
-        `• /setinterval - Change polling frequency\n\n` +
+        `• /setinterval - Change polling frequency\n` +
+        `• /id - Get your Telegram User ID\n\n` +
         `**Setup:**\n` +
         `1. Open Dashboard > Settings\n` +
         `2. Enter your Telegram ID: \`${ctx.from?.id}\`\n` +
@@ -154,7 +153,7 @@ bot.command("verify", async (ctx) => {
             .upsert({
                 chat_id: chatId,
                 username: ctx.from?.username,
-                wallet_address: recoveredAddress,
+                wallet_address: recoveredAddress.toLowerCase(),
                 alert_threshold: 1.1,
                 polling_interval: 60, // Default: 1 hour
                 alerts_enabled: true,
@@ -174,7 +173,7 @@ bot.command("verify", async (ctx) => {
             `🔗 Wallet: \`${recoveredAddress}\`\n` +
             `⏰ Polling: Every 1 hour\n` +
             `⚠️ Alert when HF < 1.1\n\n` +
-            `Use /positions to see your full portfolio!`,
+            `I am now monitoring your positions 24/7!`,
             { parse_mode: "Markdown" }
         );
 
@@ -184,106 +183,7 @@ bot.command("verify", async (ctx) => {
     }
 });
 
-// Enhanced /positions command - Full portfolio view
-bot.command("positions", async (ctx) => {
-    const { data: user, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('chat_id', ctx.from?.id)
-        .single();
-
-    if (error || !user) {
-        return ctx.reply("⚠️ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
-    }
-
-    await ctx.reply("📊 Fetching your positions across all protocols...");
-
-    try {
-        const health = await manager.getAccountHealth(user.wallet_address as Address);
-
-        const collateral = health.totalCollateralUSD;
-        const debt = health.totalDebtUSD;
-        const utilization = getUtilization(collateral, debt);
-        const availableBorrow = Math.max(0, (collateral * 0.75) - debt); // Assuming 75% CF
-
-        let statusEmoji = "🟢";
-        let statusText = "Safe";
-        if (health.healthFactor < 1.1) {
-            statusEmoji = "🔴";
-            statusText = "CRITICAL";
-        } else if (health.healthFactor < 1.5) {
-            statusEmoji = "🟡";
-            statusText = "Warning";
-        }
-
-        let message = `📊 **Portfolio Overview**\n\n`;
-        message += `🔗 Wallet: \`${user.wallet_address.substring(0, 6)}...${user.wallet_address.substring(38)}\`\n\n`;
-
-        message += `━━━━━━━━━━━━━━━━━\n`;
-        message += `💰 **Total Collateral:** $${formatUSD(collateral)}\n`;
-        message += `💳 **Total Debt:** $${formatUSD(debt)}\n`;
-        message += `📈 **Utilization:** ${utilization.toFixed(1)}%\n`;
-        message += `💵 **Available to Borrow:** $${formatUSD(availableBorrow)}\n`;
-        message += `━━━━━━━━━━━━━━━━━\n\n`;
-
-        message += `${statusEmoji} **Health Factor:** ${formatHF(health.healthFactor)} (${statusText})\n\n`;
-
-        // Add suggestions if HF is concerning
-        if (health.suggestions) {
-            message += `💡 **Recommendations:**\n`;
-            if (health.suggestions.repayAmount > 0) {
-                message += `• Repay ~$${formatUSD(health.suggestions.repayAmount)} to reach HF ${health.suggestions.targetHF}\n`;
-            }
-            if (health.suggestions.addCollateralAmount > 0) {
-                message += `• Add ~$${formatUSD(health.suggestions.addCollateralAmount)} collateral\n`;
-            }
-            message += `\n`;
-        }
-
-        message += `_Last updated: ${new Date().toLocaleTimeString()}_`;
-
-        const keyboard = new InlineKeyboard()
-            .url("Open Dashboard", `${DASHBOARD_URL}/dashboard`);
-
-        await ctx.reply(message, { parse_mode: "Markdown", reply_markup: keyboard });
-
-    } catch (e: any) {
-        console.error("Error fetching positions:", e);
-        await ctx.reply(`❌ Error fetching positions: ${e.message}`);
-    }
-});
-
-// /risk - Quick health check
-bot.command("risk", async (ctx) => {
-    const { data: user, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('chat_id', ctx.from?.id)
-        .single();
-
-    if (error || !user) {
-        return ctx.reply("⚠️ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
-    }
-
-    try {
-        const health = await manager.getAccountHealth(user.wallet_address as Address);
-
-        let status = "🟢 Safe";
-        if (health.healthFactor < 1.1) status = "🔴 CRITICAL";
-        else if (health.healthFactor < 1.5) status = "🟡 Warning";
-        else if (health.healthFactor < 2) status = "🟢 Moderate";
-
-        await ctx.reply(
-            `⚡ **Quick Risk Check**\n\n` +
-            `Health Factor: **${formatHF(health.healthFactor)}**\n` +
-            `Status: ${status}\n\n` +
-            `Use /positions for detailed view.`,
-            { parse_mode: "Markdown" }
-        );
-    } catch (e: any) {
-        await ctx.reply(`❌ Error: ${e.message}`);
-    }
-});
+// --- Commands Removed as per requirement (/positions, /risk) ---
 
 // /settings - View current settings
 bot.command("settings", async (ctx) => {
@@ -414,7 +314,17 @@ bot.command("togglealerts", async (ctx) => {
 
 // /status - Account status (alias for settings)
 bot.command("status", async (ctx) => {
-    return ctx.reply("Use /settings to view your account status, or /positions for portfolio view.");
+    return ctx.reply("Use /settings to view your account status and alert configuration.");
+});
+
+// --- Catch-all Handler for Invalid Commands/Messages ---
+bot.on("message", async (ctx) => {
+    await ctx.reply(
+        "🤔 **I don't recognize that command or message.**\n\n" +
+        "My goal is to monitor your DeFi positions and alert you if your Health Factor drops.\n\n" +
+        "Type /start to see available commands or link your wallet.",
+        { parse_mode: "Markdown" }
+    );
 });
 
 // --- Smart Polling Background Job ---
