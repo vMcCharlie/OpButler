@@ -8,6 +8,7 @@ import { ChevronRight, LayoutGrid, List } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from "@/components/ui/card";
 import { EarnModal } from "./EarnModal";
+import { formatMoney } from "@/lib/utils";
 
 export function EarnTable() {
     const { data: yields, isLoading } = useYields();
@@ -22,13 +23,6 @@ export function EarnTable() {
             .filter(pool => pool.apy > 0) // Only relevant earning pools
             .sort((a, b) => b.tvlUsd - a.tvlUsd); // Sort by TVL default
     }, [yields]);
-
-    const formatMoney = (num: number) => {
-        if (num >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`;
-        if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
-        if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`;
-        return `$${num.toFixed(0)}`;
-    };
 
     if (isLoading) {
         return (
