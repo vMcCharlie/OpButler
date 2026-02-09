@@ -1,103 +1,129 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Info, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Info, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { simulateLoop } from '@/lib/simulation';
-
+import { useYields, YieldData } from "@/hooks/useYields";
+import { useTokenPrices } from "@/hooks/useTokenPrices";
 
 // --- DATA DEFINITIONS ---
 
 type Protocol = 'Venus' | 'Kinza' | 'Radiant';
 
+// Internal Asset interface for Simulation
 interface Asset {
     symbol: string;
-    name: string;
-    protocol: Protocol;
-    apy: number; // Supply APY or Borrow APY
-    isStable: boolean;
-    maxLTV: number; // For collateral
-    price: number; // Mock price
+    protocol: string;
+    apy: number;
+    maxLTV: number;
+    price: number;
 }
-
-const COLLATERAL_OPTIONS: Asset[] = [
-    { symbol: 'USDT', name: 'Tether', protocol: 'Venus', apy: 8.5, isStable: true, maxLTV: 0.80, price: 1.0 },
-    { symbol: 'USDC', name: 'USDC', protocol: 'Venus', apy: 6.2, isStable: true, maxLTV: 0.82, price: 1.0 },
-    { symbol: 'BNB', name: 'BNB', protocol: 'Venus', apy: 0.5, isStable: false, maxLTV: 0.75, price: 320.0 },
-    { symbol: 'BTCB', name: 'Bitcoin BEP2', protocol: 'Venus', apy: 0.1, isStable: false, maxLTV: 0.70, price: 42000.0 },
-    { symbol: 'ETH', name: 'Ethereum', protocol: 'Venus', apy: 0.2, isStable: false, maxLTV: 0.75, price: 2300.0 },
-
-    { symbol: 'USDT', name: 'Tether', protocol: 'Kinza', apy: 12.1, isStable: true, maxLTV: 0.78, price: 1.0 },
-    { symbol: 'BTCB', name: 'Bitcoin', protocol: 'Kinza', apy: 0.05, isStable: false, maxLTV: 0.72, price: 42000.0 },
-
-    { symbol: 'USDT', name: 'Tether', protocol: 'Radiant', apy: 9.8, isStable: true, maxLTV: 0.80, price: 1.0 },
-    { symbol: 'ETH', name: 'Ethereum', protocol: 'Radiant', apy: 1.2, isStable: false, maxLTV: 0.75, price: 2300.0 },
-];
-
-const DEBT_OPTIONS: Asset[] = [
-    { symbol: 'USDT', name: 'Tether', protocol: 'Venus', apy: -10.2, isStable: true, maxLTV: 0, price: 1.0 },
-    { symbol: 'USDC', name: 'USDC', protocol: 'Venus', apy: -8.5, isStable: true, maxLTV: 0, price: 1.0 },
-    { symbol: 'BNB', name: 'BNB', protocol: 'Venus', apy: -2.1, isStable: false, maxLTV: 0, price: 320.0 },
-
-    { symbol: 'USDT', name: 'Tether', protocol: 'Kinza', apy: -14.5, isStable: true, maxLTV: 0, price: 1.0 },
-    { symbol: 'BNB', name: 'BNB', protocol: 'Kinza', apy: -3.5, isStable: false, maxLTV: 0, price: 320.0 },
-
-    { symbol: 'USDT', name: 'Tether', protocol: 'Radiant', apy: -11.0, isStable: true, maxLTV: 0, price: 1.0 },
-];
 
 export function LoopSelector() {
     const [activeProtocol, setActiveProtocol] = useState<Protocol>('Venus');
-    const [selectedCollateral, setSelectedCollateral] = useState<Asset>(COLLATERAL_OPTIONS.filter(c => c.protocol === 'Venus')[0]);
-    const [selectedDebt, setSelectedDebt] = useState<Asset>(DEBT_OPTIONS.filter(d => d.protocol === 'Venus')[0]);
     const [leverage, setLeverage] = useState([1.5]); // 1x to 5x
 
-    // Filter Assets based on Protocol
-    const protocolCollaterals = useMemo(() => {
-        return COLLATERAL_OPTIONS.filter(c => c.protocol === activeProtocol);
-    }, [activeProtocol]);
+    // Fetch Data
+    const { data: yields, isLoading: isLoadingYields } = useYields();
+    const { data: priceData } = useTokenPrices();
 
-    const protocolDebts = useMemo(() => {
-        return DEBT_OPTIONS.filter(d => d.protocol === activeProtocol);
-    }, [activeProtocol]);
+    // Derived Lists based on Protocol
+    const protocolAssets = useMemo(() => {
+        if (!yields) return [];
+        return yields.filter(y => y.project.toLowerCase() === activeProtocol.toLowerCase());
+    }, [yields, activeProtocol]);
+
+    // State for selections (Symbols only)
+    const [selectedCollateralSymbol, setSelectedCollateralSymbol] = useState<string>('');
+    const [selectedDebtSymbol, setSelectedDebtSymbol] = useState<string>('');
+
+    // Set defaults when assets load or protocol changes
+    useEffect(() => {
+        if (protocolAssets.length > 0) {
+            // Default Collateral: Check for BNB, ETH, BTC, or fall back to first
+            // Prefer non-stable for collateral to show "yield" usually, but user choice.
+            // Let's pick a Major if available, else first.
+            const preferredCol = protocolAssets.find(a => ['BNB', 'ETH', 'BTC', 'WBTC', 'BTCB'].includes(a.symbol)) || protocolAssets[0];
+            setSelectedCollateralSymbol(prev => {
+                // If previous selection exists in new list, keep it?
+                // Actually, distinct lists per protocol usually so reset is safer or check existence
+                const exists = protocolAssets.find(a => a.symbol === prev);
+                return exists ? prev : preferredCol.symbol;
+            });
+
+            // Default Debt: Prefer Stable (USDT)
+            const preferredDebt = protocolAssets.find(a => ['USDT', 'USDC'].includes(a.symbol)) || protocolAssets[0];
+            setSelectedDebtSymbol(prev => {
+                const exists = protocolAssets.find(a => a.symbol === prev);
+                return exists ? prev : preferredDebt.symbol;
+            });
+        }
+    }, [protocolAssets]);
+
+    // Helpers to get full Asset objects
+    const getPrice = (symbol: string) => {
+        return priceData?.getPrice ? priceData.getPrice(symbol) || 1.0 : 1.0; // Default to 1 if missing
+    };
+
+    const selectedCollateralData = useMemo(() => {
+        return protocolAssets.find(a => a.symbol === selectedCollateralSymbol);
+    }, [protocolAssets, selectedCollateralSymbol]);
+
+    const selectedDebtData = useMemo(() => {
+        return protocolAssets.find(a => a.symbol === selectedDebtSymbol);
+    }, [protocolAssets, selectedDebtSymbol]);
+
+    // Construct Asset objects for Simulation
+    const collateralAsset: Asset | undefined = useMemo(() => {
+        if (!selectedCollateralData) return undefined;
+        return {
+            symbol: selectedCollateralData.symbol,
+            protocol: activeProtocol,
+            apy: selectedCollateralData.apy, // Supply APY
+            maxLTV: selectedCollateralData.ltv || 0.6,
+            price: getPrice(selectedCollateralData.symbol)
+        };
+    }, [selectedCollateralData, activeProtocol, priceData]);
+
+    const debtAsset: Asset | undefined = useMemo(() => {
+        if (!selectedDebtData) return undefined;
+        return {
+            symbol: selectedDebtData.symbol,
+            protocol: activeProtocol,
+            apy: -(selectedDebtData.apyBaseBorrow || 0), // Borrow APY (negative for cost)
+            maxLTV: 0, // Irrelevant for debt side usually in this sim context
+            price: getPrice(selectedDebtData.symbol)
+        };
+    }, [selectedDebtData, activeProtocol, priceData]);
 
     // Loop Net APY Calculation
     const { netApy, healthFactor, liquidationPrice } = useMemo(() => {
-        // Use simulateLoop for centralized logic
-        // Assuming 1 unit of collateral for calculation
-        // Adjust typing if needed
-        const result = simulateLoop(1, leverage[0], selectedCollateral as any, selectedDebt as any);
-        return result;
-    }, [selectedCollateral, selectedDebt, leverage]);
+        if (!collateralAsset || !debtAsset) {
+            return { netApy: '0.00', healthFactor: '0.00', liquidationPrice: '0.00' };
+        }
+        return simulateLoop(1, leverage[0], collateralAsset, debtAsset);
+    }, [collateralAsset, debtAsset, leverage]);
 
     const isRisky = parseFloat(healthFactor) < 1.1;
 
-    // Handle Protocol Switch
+    // Handlers
     const handleProtocolChange = (protocol: Protocol) => {
         setActiveProtocol(protocol);
-        // Reset selections to first available asset in new protocol
-        const firstCol = COLLATERAL_OPTIONS.find(c => c.protocol === protocol) || COLLATERAL_OPTIONS[0];
-        const firstDebt = DEBT_OPTIONS.find(d => d.protocol === protocol) || DEBT_OPTIONS[0];
-        setSelectedCollateral(firstCol);
-        setSelectedDebt(firstDebt);
+        // Effects will handle defaults
     };
 
-    // Handle Collateral Change
-    const handleCollateralChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const symbol = e.target.value;
-        const newCol = protocolCollaterals.find(c => c.symbol === symbol) || protocolCollaterals[0];
-        setSelectedCollateral(newCol);
-
-        // Reset debt if needed (though now constrained by protocol, double check symbol logic)
-        // Actually, debt list is already filtered by protocol, so picking generic default is safer or keep if exists
-        const currentDebtExists = protocolDebts.find(d => d.symbol === selectedDebt.symbol);
-        if (!currentDebtExists) {
-            setSelectedDebt(protocolDebts[0]);
-        }
-    };
+    if (isLoadingYields) {
+        return (
+            <Card className="w-full max-w-4xl mx-auto bg-[#121216] border border-white/10 shadow-2xl p-12 flex justify-center items-center">
+                <Loader2 className="w-8 h-8 animate-spin text-[#CEFF00]" />
+            </Card>
+        );
+    }
 
     return (
         <Card className="w-full max-w-4xl mx-auto bg-[#121216] border border-white/10 shadow-2xl overflow-hidden">
@@ -148,17 +174,17 @@ export function LoopSelector() {
                         <div className="relative">
                             <select
                                 className="w-full h-16 pl-14 pr-4 bg-white/5 border border-white/10 rounded-xl text-lg font-bold appearance-none hover:bg-white/10 focus:ring-1 focus:ring-[#CEFF00] transition-all outline-none"
-                                onChange={handleCollateralChange}
-                                value={selectedCollateral.symbol}
+                                onChange={(e) => setSelectedCollateralSymbol(e.target.value)}
+                                value={selectedCollateralSymbol}
                             >
-                                {protocolCollaterals.map((opt) => (
-                                    <option key={opt.symbol} value={opt.symbol}>
-                                        {opt.symbol} ({opt.apy}% APY)
+                                {protocolAssets.map((opt) => (
+                                    <option key={`${opt.symbol}-col`} value={opt.symbol}>
+                                        {opt.symbol} ({opt.apy.toFixed(2)}% APY)
                                     </option>
                                 ))}
                             </select>
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <AssetIcon symbol={selectedCollateral.symbol} size={28} />
+                                <AssetIcon symbol={selectedCollateralSymbol} size={28} />
                             </div>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground text-sm">
                                 Amt 0.00
@@ -166,7 +192,7 @@ export function LoopSelector() {
                         </div>
                         <div className="flex justify-between text-xs font-bold px-1">
                             <span className="text-muted-foreground">Supply APY:</span>
-                            <span className="text-emerald-400">{selectedCollateral.apy}%</span>
+                            <span className="text-emerald-400">{selectedCollateralData?.apy.toFixed(2)}%</span>
                         </div>
                     </div>
 
@@ -178,26 +204,22 @@ export function LoopSelector() {
                         <div className="relative">
                             <select
                                 className="w-full h-16 pl-14 pr-4 bg-white/5 border border-white/10 rounded-xl text-lg font-bold appearance-none hover:bg-white/10 focus:ring-1 focus:ring-red-400/50 transition-all outline-none"
-                                value={selectedDebt.symbol}
-                                onChange={(e) => {
-                                    const symbol = e.target.value;
-                                    const newDebt = protocolDebts.find(d => d.symbol === symbol) || protocolDebts[0];
-                                    setSelectedDebt(newDebt);
-                                }}
+                                value={selectedDebtSymbol}
+                                onChange={(e) => setSelectedDebtSymbol(e.target.value)}
                             >
-                                {protocolDebts.map((opt) => (
-                                    <option key={opt.symbol} value={opt.symbol}>
-                                        {opt.symbol} ({opt.apy}% APY)
+                                {protocolAssets.map((opt) => (
+                                    <option key={`${opt.symbol}-debt`} value={opt.symbol}>
+                                        {opt.symbol} ({(opt.apyBaseBorrow || 0).toFixed(2)}% Cost)
                                     </option>
                                 ))}
                             </select>
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <AssetIcon symbol={selectedDebt.symbol} size={28} />
+                                <AssetIcon symbol={selectedDebtSymbol} size={28} />
                             </div>
                         </div>
                         <div className="flex justify-between text-xs font-bold px-1">
                             <span className="text-muted-foreground">Borrow Cost:</span>
-                            <span className="text-red-500">{Math.abs(selectedDebt.apy)}%</span>
+                            <span className="text-red-500">{selectedDebtData?.apyBaseBorrow?.toFixed(2)}%</span>
                         </div>
                     </div>
                 </div>
@@ -240,7 +262,7 @@ export function LoopSelector() {
                         <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Liquidation Price</div>
                         <div className="flex justify-center flex-col mt-1">
                             <div className="text-xl font-bold text-white">${liquidationPrice}</div>
-                            <div className="text-[10px] text-muted-foreground">Est. price of {selectedCollateral.symbol}</div>
+                            <div className="text-[10px] text-muted-foreground">Est. price of {selectedCollateralSymbol}</div>
                         </div>
                     </div>
                 </div>
