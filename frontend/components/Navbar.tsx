@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from "@/components/ui/button";
-import { Wallet, Menu, X } from 'lucide-react';
+import { Wallet, Menu, X, Settings } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -49,6 +49,16 @@ export function Navbar() {
                             </Link>
                         ))}
                     </div>
+
+                    <Link href="/settings">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-10 h-10 rounded-full bg-[#1A1A1E] hover:bg-[#2A2A2E] text-white border border-white/5"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </Button>
+                    </Link>
 
                     <ConnectButton.Custom>
                         {({
