@@ -4,13 +4,7 @@ import { Suspense, useMemo } from 'react';
 import { useYields } from "@/hooks/useYields";
 import { EarnTable } from "@/components/EarnTable";
 import { Loader2, HelpCircle } from 'lucide-react';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Card } from "@/components/ui/card";
+
 
 function EarnMetrics() {
     const { data: yields } = useYields();
@@ -76,75 +70,7 @@ function EarnMetrics() {
     );
 }
 
-function FAQSection() {
-    return (
-        <div className="space-y-6 mt-20">
-            <h3 className="text-xl font-bold">FAQs</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-                <Card className="bg-[#0f0f12] border-white/5 p-0">
-                    <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="item-1" className="border-b-0">
-                            <AccordionTrigger className="px-6 hover:no-underline hover:text-emerald-400">What is OpButler Lend?</AccordionTrigger>
-                            <AccordionContent className="px-6 pb-4 text-muted-foreground">
-                                OpButler Lend is your intelligent gateway to Decentralized Finance (DeFi) on BNB Chain. It aggregates the best lending and borrowing opportunities from top protocols like Venus, Kinza, and Radiant, allowing you to optimize your yields automatically.
-                                <ul className="list-disc pl-5 mt-2 space-y-1">
-                                    <li>Earn: Deposit your crypto to lend it out and earn passive APY.</li>
-                                    <li>Borrow: Use deposited assets as collateral to take out loans.</li>
-                                </ul>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </Card>
 
-                <Card className="bg-[#0f0f12] border-white/5 p-0">
-                    <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="item-2" className="border-b-0">
-                            <AccordionTrigger className="px-6 hover:no-underline hover:text-emerald-400">What's the difference between Earn and Borrow?</AccordionTrigger>
-                            <AccordionContent className="px-6 pb-4 text-muted-foreground">
-                                <p className="mb-2"><strong>Earn</strong> is for users who want to supply assets (like USDT, BNB, BTC) to earn interest paid by borrowers.</p>
-                                <p><strong>Borrow</strong> is for users who want to leverage their holdings. You supply collateral to mint or borrow other assets, allowing for advanced strategies like looping.</p>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </Card>
-
-                <Card className="bg-[#0f0f12] border-white/5 p-0">
-                    <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="item-3" className="border-b-0">
-                            <AccordionTrigger className="px-6 hover:no-underline hover:text-emerald-400">What are the risks?</AccordionTrigger>
-                            <AccordionContent className="px-6 pb-4 text-muted-foreground">
-                                All DeFi interactions carry risks.
-                                <ul className="list-disc pl-5 mt-2 space-y-1">
-                                    <li><strong>Smart Contract Risk:</strong> Underlying protocols could have bugs.</li>
-                                    <li><strong>Market Risk:</strong> Asset values can fluctuate.</li>
-                                    <li><strong>Liquidation Risk:</strong> If you borrow, ensure your health factor stays high to avoid liquidation.</li>
-                                </ul>
-                                OpButler helps mitigate these by monitoring your health factor and selecting established protocols.
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </Card>
-
-                <Card className="bg-[#0f0f12] border-white/5 p-0">
-                    <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="item-4" className="border-b-0">
-                            <AccordionTrigger className="px-6 hover:no-underline hover:text-emerald-400">Can I deposit and withdraw my funds freely?</AccordionTrigger>
-                            <AccordionContent className="px-6 pb-4 text-muted-foreground">
-                                Yes. You can deposit and withdraw at any time, subject to available liquidity in the underlying pools. The system is designed for high liquidity, but extreme market conditions could temporarily affect availability.
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </Card>
-            </div>
-
-            <div className="flex justify-end">
-                <a href="#" className="text-emerald-400 text-sm font-medium hover:underline flex items-center gap-1">
-                    Check OpButler Guides <span className="text-xs">↗</span>
-                </a>
-            </div>
-        </div>
-    );
-}
 
 export default function EarnPage() {
     return (
@@ -177,8 +103,7 @@ export default function EarnPage() {
                 <EarnTable />
             </Suspense>
 
-            {/* FAQs */}
-            <FAQSection />
+
         </div>
     );
 }
