@@ -15,7 +15,7 @@ export function Navbar() {
 
     const navLinks = [
         { name: 'Dashboard', href: '/dashboard' },
-        { name: 'Lend', href: '/strategy' },
+        { name: 'Lend', href: '/lend' },
         { name: 'Portfolio', href: '/portfolio' },
 
     ];
