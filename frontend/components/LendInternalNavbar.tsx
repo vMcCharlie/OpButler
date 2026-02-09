@@ -17,7 +17,7 @@ export function LendInternalNavbar() {
     const pathname = usePathname();
 
     return (
-        <div className="flex justify-center items-center w-full h-16 mb-8 overflow-x-auto no-scrollbar scroll-smooth">
+        <div className="flex justify-center items-center w-full h-16 mb-2 overflow-x-auto no-scrollbar scroll-smooth">
             <div className="flex p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative whitespace-nowrap min-w-max mx-4 md:mx-0">
                 {TABS.map((tab) => {
                     const isActive = pathname === tab.href;

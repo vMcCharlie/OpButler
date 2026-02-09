@@ -61,7 +61,7 @@ export function LendHeader() {
     }, [yields]);
 
     return (
-        <div className="relative w-full rounded-3xl p-[1px] bg-gradient-to-r from-[#CEFF00]/40 via-blue-500/40 to-[#CEFF00]/40 mb-8 overflow-hidden font-outfit">
+        <div className="relative w-full rounded-3xl p-[3px] bg-gradient-to-r from-[#CEFF00]/40 via-blue-500/40 to-[#CEFF00]/40 mb-8 overflow-hidden font-outfit">
             <div className="relative w-full h-full rounded-3xl bg-[#13131a] p-6 md:p-8 overflow-hidden">
                 {/* Background Gradient/Glow */}
                 <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-[#CEFF00]/10 rounded-full blur-[80px] pointer-events-none" />
@@ -87,30 +87,30 @@ export function LendHeader() {
                     <div className="w-full max-w-lg h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
 
                     {/* Metrics Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-12 w-full max-w-3xl">
-                        <div className="flex flex-col items-center">
-                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Total Supply</span>
-                            <div className="text-xl md:text-2xl font-bold text-white">
+                    <div className="flex justify-between items-center w-full max-w-3xl gap-2 md:gap-8 px-2 md:px-0">
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center">Total Supply</span>
+                            <div className="text-lg md:text-2xl font-bold text-white whitespace-nowrap">
                                 <Counter value={metrics.totalSupply} prefix="$" />
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center relative">
-                            {/* Mobile Divider */}
-                            <div className="md:hidden absolute top-0 w-8 h-[1px] bg-white/10 -mt-3" />
+                        <div className="flex flex-col items-center flex-1 relative">
+                            {/* Desktop/Mobile Divider - Vertical line */}
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
 
-                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Total Available</span>
-                            <div className="text-xl md:text-2xl font-bold text-emerald-400">
+                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center">Total Available</span>
+                            <div className="text-lg md:text-2xl font-bold text-emerald-400 whitespace-nowrap">
                                 <Counter value={metrics.totalAvailable} prefix="$" />
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center relative">
-                            {/* Mobile Divider */}
-                            <div className="md:hidden absolute top-0 w-8 h-[1px] bg-white/10 -mt-3" />
+                        <div className="flex flex-col items-center flex-1 relative">
+                            {/* Desktop/Mobile Divider - Vertical line */}
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
 
-                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Total Borrowed</span>
-                            <div className="text-xl md:text-2xl font-bold text-blue-400">
+                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center">Total Borrowed</span>
+                            <div className="text-lg md:text-2xl font-bold text-blue-400 whitespace-nowrap">
                                 <Counter value={metrics.totalBorrowed} prefix="$" />
                             </div>
                         </div>
