@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from "@/lib/utils";
@@ -17,16 +17,16 @@ export function LendInternalNavbar() {
     const pathname = usePathname();
 
     return (
-        <div className="flex justify-center w-full mb-8">
-            <div className="flex p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative">
+        <div className="flex justify-center items-center w-full h-16 mb-8 overflow-x-auto no-scrollbar scroll-smooth">
+            <div className="flex p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative whitespace-nowrap min-w-max mx-4 md:mx-0">
                 {TABS.map((tab) => {
                     const isActive = pathname === tab.href;
                     return (
-                        <Link
+                        <a
                             key={tab.id}
                             href={tab.href}
                             className={cn(
-                                "relative px-6 py-2 rounded-full text-sm font-bold transition-colors flex items-center gap-2 z-10",
+                                "relative px-4 md:px-6 py-2 rounded-full text-sm font-bold transition-colors flex items-center gap-2 z-10",
                                 isActive ? "text-black" : "text-muted-foreground hover:text-white"
                             )}
                         >
@@ -39,7 +39,7 @@ export function LendInternalNavbar() {
                             )}
                             <tab.icon className="w-4 h-4" />
                             {tab.label}
-                        </Link>
+                        </a>
                     );
                 })}
             </div>

@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from "@/components/ui/button";
-import { Wallet, Menu, X, Settings } from 'lucide-react';
+import { Wallet, Settings } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,7 +10,7 @@ import { usePathname } from 'next/navigation';
 
 export function Navbar() {
     const pathname = usePathname();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
 
     const navLinks = [
         { name: 'Dashboard', href: '/dashboard' },
@@ -43,7 +42,10 @@ export function Navbar() {
                             <Link
                                 key={link.name}
                                 href={link.href}
-                                className={`text-sm font-medium transition-colors hover:text-primary ${pathname === link.href ? 'text-primary' : 'text-muted-foreground'}`}
+                                className={`text-sm font-medium transition-colors hover:text-primary ${(link.href === '/' ? pathname === '/' : pathname.startsWith(link.href))
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground'
+                                    }`}
                             >
                                 {link.name}
                             </Link>
@@ -159,13 +161,14 @@ export function Navbar() {
                     </ConnectButton.Custom>
                 </div>
 
-                {/* Mobile Menu Toggle */}
+                {/* Mobile Connect Button (Using Simplified State) */}
                 <div className="md:hidden flex items-center gap-4">
                     <ConnectButton.Custom>
                         {({
                             account,
                             chain,
                             openConnectModal,
+                            openAccountModal,
                             authenticationStatus,
                             mounted,
                         }) => {
@@ -183,52 +186,21 @@ export function Navbar() {
                                     </Button>
                                 )
                             }
-                            return null; // Don't show full connected state here to save space, or show simplified
+
+                            // If connected, show Avatar or Name compacted
+                            return (
+                                <Button
+                                    size="sm"
+                                    onClick={openAccountModal}
+                                    className="h-9 px-3 rounded-full bg-secondary text-foreground hover:bg-secondary/80 font-mono text-xs"
+                                >
+                                    {account.displayName}
+                                </Button>
+                            );
                         }}
                     </ConnectButton.Custom>
-
-                    <button
-                        className="text-white p-2"
-                        onClick={() => setIsMobileMenuOpen(true)}
-                    >
-                        <Menu className="w-6 h-6" />
-                    </button>
                 </div>
             </div>
-
-            {/* Mobile Menu Overlay */}
-            {isMobileMenuOpen && (
-                <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col p-8 md:hidden">
-                    <div className="flex justify-between items-center mb-12">
-                        <span className="font-outfit font-bold text-2xl tracking-wide text-foreground">OpButler</span>
-                        <button
-                            className="text-white p-2 hover:bg-white/10 rounded-full transition-colors"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            <X className="w-8 h-8" />
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col gap-8 text-center">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.name}
-                                href={link.href}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                className={`text-2xl font-bold transition-colors ${pathname === link.href ? 'text-[#CEFF00]' : 'text-muted-foreground hover:text-white'}`}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
-                    </div>
-
-                    <div className="mt-auto flex flex-col gap-4">
-                        <div className="w-full flex justify-center">
-                            <ConnectButton />
-                        </div>
-                    </div>
-                </div>
-            )}
         </nav>
     );
 }

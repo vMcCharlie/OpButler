@@ -6,6 +6,7 @@ import { Providers } from './providers';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Navbar } from "@/components/Navbar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -40,10 +41,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen font-sans antialiased selection:bg-primary/20", inter.variable, outfit.variable)}>
+      <body className={cn("min-h-screen font-sans antialiased selection:bg-primary/20 pb-20 md:pb-0", inter.variable, outfit.variable)}>
         <Providers>
           <Navbar />
           {children}
+          <MobileBottomNav />
           <Toaster />
         </Providers>
       </body>

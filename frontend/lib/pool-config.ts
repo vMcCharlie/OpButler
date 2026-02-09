@@ -42,7 +42,12 @@ export const VTOKEN_ABI = parseAbi([
     // Read
     'function balanceOf(address owner) view returns (uint256)',
     'function balanceOfUnderlying(address owner) returns (uint256)',
-    'function exchangeRateStored() view returns (uint256)'
+    'function exchangeRateStored() view returns (uint256)',
+
+    // Borrow
+    'function borrow(uint256 borrowAmount) returns (uint256)',
+    'function repayBorrow(uint256 repayAmount) returns (uint256)',
+    'function repayBorrow() payable' // For BNB
 ]);
 
 // Generic Lending Pool ABI (Kinza/Radiant style - typically Aave forks)
