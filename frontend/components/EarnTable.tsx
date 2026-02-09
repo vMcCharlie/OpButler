@@ -1,15 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useYields, YieldData } from "@/hooks/useYields";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, LayoutGrid, List } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from "@/components/ui/card";
+import { EarnModal } from "./EarnModal";
 
 export function EarnTable() {
     const { data: yields, isLoading } = useYields();
+    const [selectedPool, setSelectedPool] = useState<any>(null);
 
     const earningsData = useMemo(() => {
         if (!yields) return [];
@@ -121,15 +123,26 @@ export function EarnTable() {
                                         <span className="text-[10px] md:text-xs text-muted-foreground">${formatMoney(pool.tvlUsd)}</span>
                                     </div>
 
-                                    <Link href={`/market/${pool.symbol}?tab=lend`} className="ml-2 md:ml-4 flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-emerald-500/50 group-hover:text-emerald-500">
+                                    <button
+                                        onClick={() => setSelectedPool(pool)}
+                                        className="ml-2 md:ml-4 flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-emerald-500/50 group-hover:text-emerald-500"
+                                    >
                                         <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     );
                 })}
             </div>
+
+            {selectedPool && (
+                <EarnModal
+                    isOpen={!!selectedPool}
+                    onClose={() => setSelectedPool(null)}
+                    pool={selectedPool}
+                />
+            )}
         </div>
     );
 }
