@@ -223,7 +223,9 @@ export function Navbar() {
                     </div>
 
                     <div className="mt-auto flex flex-col gap-4">
-                        <ConnectButton className="w-full" />
+                        <div className="w-full flex justify-center">
+                            <ConnectButton />
+                        </div>
                     </div>
                 </div>
             )}
