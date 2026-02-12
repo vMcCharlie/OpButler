@@ -2,24 +2,26 @@
 
 import { useMemo, useEffect, useRef } from 'react';
 import { useYields } from "@/hooks/useYields";
-import { motion, useSpring, useInView, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useInView, animate } from 'framer-motion';
 import { cn } from '@/lib/utils'; // Assuming cn exists, else remove
 import Image from 'next/image'; // If we want to add an icon or logo similar to the Jupiter reference
 
 function Counter({ value, prefix = '', suffix = '' }: { value: number, prefix?: string, suffix?: string }) {
     const ref = useRef<HTMLSpanElement>(null);
     const motionValue = useMotionValue(0);
-    const springValue = useSpring(motionValue, { damping: 20, stiffness: 200 });
     const isInView = useInView(ref, { once: true, margin: "-10px" });
 
     useEffect(() => {
         if (isInView) {
-            motionValue.set(value);
+            animate(motionValue, value, {
+                duration: 1.2, // Max 1.5s as requested
+                ease: "easeOut"
+            });
         }
     }, [motionValue, isInView, value]);
 
     useEffect(() => {
-        return springValue.on("change", (latest) => {
+        return motionValue.on("change", (latest) => {
             if (ref.current) {
                 // Formatting logic inside the animation frame
                 let formatted = latest.toFixed(0);
@@ -37,7 +39,7 @@ function Counter({ value, prefix = '', suffix = '' }: { value: number, prefix?: 
                 ref.current.textContent = `${prefix}${formatted}${suffix}`;
             }
         });
-    }, [springValue, prefix, suffix]);
+    }, [motionValue, prefix, suffix]);
 
     return <span ref={ref} />;
 }
@@ -89,7 +91,10 @@ export function LendHeader() {
                     {/* Metrics Grid - Adjusted for mobile */}
                     <div className="grid grid-cols-3 w-full max-w-3xl gap-1 md:gap-8 px-1 md:px-0">
                         <div className="flex flex-col items-center">
-                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">Total Supply</span>
+                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">
+                                <span className="md:hidden">Supply</span>
+                                <span className="hidden md:inline">Total Supply</span>
+                            </span>
                             <div className="text-sm md:text-2xl font-bold text-white whitespace-nowrap">
                                 <Counter value={metrics.totalSupply} prefix="$" />
                             </div>
@@ -99,7 +104,10 @@ export function LendHeader() {
                             {/* Desktop Divider - Vertical line */}
                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
 
-                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">Total Available</span>
+                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">
+                                <span className="md:hidden">Available</span>
+                                <span className="hidden md:inline">Total Available</span>
+                            </span>
                             <div className="text-sm md:text-2xl font-bold text-emerald-400 whitespace-nowrap">
                                 <Counter value={metrics.totalAvailable} prefix="$" />
                             </div>
@@ -109,7 +117,10 @@ export function LendHeader() {
                             {/* Desktop Divider - Vertical line */}
                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
 
-                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">Total Borrowed</span>
+                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">
+                                <span className="md:hidden">Borrowed</span>
+                                <span className="hidden md:inline">Total Borrowed</span>
+                            </span>
                             <div className="text-sm md:text-2xl font-bold text-blue-400 whitespace-nowrap">
                                 <Counter value={metrics.totalBorrowed} prefix="$" />
                             </div>
