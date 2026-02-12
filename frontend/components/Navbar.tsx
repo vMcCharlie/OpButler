@@ -22,8 +22,8 @@ export function Navbar() {
     return (
         <nav className="fixed top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-lg shadow-black/5">
             <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-8 md:px-16">
-                <Link href="/" className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity">
-                    <div className="relative h-9 w-9">
+                <Link href="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                    <div className="relative h-10 w-10 md:h-11 md:w-11">
                         <Image
                             src="/OpButler.png"
                             alt="OpButler Logo"
@@ -31,7 +31,7 @@ export function Navbar() {
                             className="object-contain"
                         />
                     </div>
-                    <span className="font-outfit font-bold text-lg tracking-wide text-foreground drop-shadow-md">OpButler</span>
+                    <span className="font-outfit font-bold text-xl md:text-2xl tracking-wide text-foreground drop-shadow-md">OpButler</span>
                 </Link>
 
                 {/* Desktop Navigation */}
@@ -166,11 +166,10 @@ export function Navbar() {
 
                 {/* Mobile Connect Button (Using Simplified State) */}
                 <div className="md:hidden flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[#F3BA2F]/10 border border-[#F3BA2F]/20 text-[#F3BA2F] text-[10px] font-bold">
-                        <div className="relative w-3 h-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F3BA2F]/10 border border-[#F3BA2F]/20 text-[#F3BA2F]">
+                        <div className="relative w-5 h-5">
                             <Image src="https://cryptologos.cc/logos/bnb-bnb-logo.png" alt="BSC" fill className="object-contain" unoptimized />
                         </div>
-                        <span>BSC</span>
                     </div>
                     <ConnectButton.Custom>
                         {({
