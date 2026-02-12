@@ -1,6 +1,7 @@
 import { useReadContract, useReadContracts, useAccount } from 'wagmi';
 import { parseAbi, formatUnits } from 'viem';
 import { useTokenPrices } from './useTokenPrices';
+import allowedAssets from '@/lib/allowedAssets.json';
 
 const KINZA_COMPTROLLER = '0xcB0620b13867623a9686A34d580436d463cA963c8C'; // Kinza Comptroller
 
@@ -115,6 +116,11 @@ export function useKinzaPortfolio() {
                 totalSupplyUSD += supplyUSD;
                 totalBorrowUSD += borrowUSD;
 
+                // Find APY data
+                const assetConfig = (allowedAssets.kinza as any[]).find(a => a.symbol === symbol || a.originalSymbol === symbol);
+                const supplyAPY = assetConfig ? assetConfig.apy : 0;
+                const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
+
                 positions.push({
                     symbol,
                     supply: supplyNum,
@@ -122,7 +128,8 @@ export function useKinzaPortfolio() {
                     borrow: borrowNum,
                     borrowUSD,
                     price,
-                    apy: 0 // Fetching APY is hard without more data (supplyRate/borrowRate), skip for now.
+                    apy: supplyAPY,
+                    borrowApy: borrowAPY
                 });
             }
         }

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccount, useReadContract } from 'wagmi';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useYields } from "@/hooks/useYields";
+import { AssetIcon } from "@/components/ui/asset-icon";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 import { useVenusSubgraph } from "@/hooks/useVenusSubgraph";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
@@ -69,7 +70,9 @@ export function Portfolio() {
                     <thead>
                         <tr className="text-muted-foreground uppercase tracking-wider text-[10px] text-left">
                             <th className="pb-2 pl-2">Asset</th>
+                            <th className="pb-2 text-right">Supply APY</th>
                             <th className="pb-2 text-right">Supplied</th>
+                            <th className="pb-2 text-right">Borrow APY</th>
                             <th className="pb-2 text-right">Borrowed</th>
                             <th className="pb-2 text-right">Value (USD)</th>
                         </tr>
@@ -77,10 +80,19 @@ export function Portfolio() {
                     <tbody className="divide-y divide-white/5">
                         {positions.map((pos, idx) => (
                             <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                <td className="py-2 pl-2 font-bold">{pos.symbol}</td>
+                                <td className="py-2 pl-2 font-bold flex items-center gap-2">
+                                    <AssetIcon symbol={pos.symbol} size={20} />
+                                    {pos.symbol}
+                                </td>
+                                <td className="py-2 text-right font-mono text-emerald-400">
+                                    {pos.apy ? `+${pos.apy.toFixed(2)}%` : '-'}
+                                </td>
                                 <td className="py-2 text-right">
                                     <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
                                     {pos.supplyUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>}
+                                </td>
+                                <td className="py-2 text-right font-mono text-red-400">
+                                    {pos.borrowApy ? `-${pos.borrowApy.toFixed(2)}%` : '-'}
                                 </td>
                                 <td className="py-2 text-right">
                                     <div className="text-red-400">{pos.borrow > 0 ? pos.borrow.toFixed(4) : '-'}</div>

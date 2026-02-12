@@ -1,6 +1,7 @@
 import { useReadContract, useReadContracts, useAccount } from 'wagmi';
 import { parseAbi, formatUnits } from 'viem';
 import { useTokenPrices } from './useTokenPrices';
+import allowedAssets from '@/lib/allowedAssets.json';
 
 const RADIANT_POOL_ADDRESS = '0xd50Cf00b6e600Dd036Ba8eF475677d816d6c4281';
 const RADIANT_DATA_PROVIDER = '0x2f9D57E97C3DFED8676e605BC504a48E0c5917E9';
@@ -92,6 +93,11 @@ export function useRadiantPortfolio() {
                 totalSupplyUSD += supplyUSD;
                 totalBorrowUSD += borrowUSD;
 
+                // Find APY data
+                const assetConfig = (allowedAssets.radiant as any[]).find(a => a.symbol === symbol || a.originalSymbol === symbol);
+                const supplyAPY = assetConfig ? assetConfig.apy : 0;
+                const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
+
                 positions.push({
                     symbol,
                     supply: supplyNum,
@@ -99,7 +105,8 @@ export function useRadiantPortfolio() {
                     borrow: borrowNum,
                     borrowUSD,
                     price,
-                    apy: 0 // TODO: parse liquidityRate for APY if needed
+                    apy: supplyAPY,
+                    borrowApy: borrowAPY
                 });
             }
         }

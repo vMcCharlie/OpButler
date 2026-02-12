@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { formatUnits, parseAbi } from 'viem';
 import { VENUS_VTOKENS, VTOKEN_ABI } from '@/lib/pool-config';
 import { useTokenPrices } from '@/hooks/useTokenPrices';
+import allowedAssets from '@/lib/allowedAssets.json';
 
 // Underlying Decimals Mapping (Manual for now, ideal would be to fetch)
 const DECIMALS: Record<string, number> = {
@@ -119,6 +120,11 @@ export function useVenusPortfolio() {
                 const supplyUSD = supplyUnderlying * price;
                 const borrowUSD = borrowUnderlying * price;
 
+                // Find matching asset in allowedAssets for APY
+                const assetConfig = (allowedAssets.venus as any[]).find(a => a.symbol === symbol || a.originalSymbol === symbol);
+                const supplyAPY = assetConfig ? assetConfig.apy : 0;
+                const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
+
                 // Reduced threshold to 0.000001 to catch small balances
                 if (supplyUSD > 0.000001 || borrowUSD > 0.000001) {
                     positions.push({
@@ -127,7 +133,9 @@ export function useVenusPortfolio() {
                         borrow: borrowUnderlying,
                         supplyUSD,
                         borrowUSD,
-                        price
+                        price,
+                        apy: supplyAPY,
+                        borrowApy: borrowAPY
                     });
                 }
 

@@ -32,12 +32,20 @@ async function fetchYields() {
     return data.data as YieldData[];
 }
 
+import allowedAssets from '@/lib/allowedAssets.json';
+
+// Create a Set of allowed pool IDs for O(1) lookup
+const ALLOWED_POOL_IDS = new Set<string>();
+Object.values(allowedAssets).forEach((assets: any[]) => {
+    assets.forEach(asset => ALLOWED_POOL_IDS.add(asset.poolId));
+});
+
 export function useYields() {
     return useQuery({
         queryKey: ['yields'],
         queryFn: fetchYields,
         select: (data) => {
-            // Filter for BSC and specific projects
+            // Filter for BSC and specific projects AND allowed pool IDs
             return data.filter(pool => {
                 const isBSC = pool.chain === 'BSC';
                 const isProject =
@@ -47,11 +55,10 @@ export function useYields() {
                     pool.project === 'kinza-finance' ||
                     pool.project === 'radiant-v2';
 
-                // We do NOT filter by asset symbol anymore. We want ALL assets.
-                // Be lenient with APY - some pools may have 0 supply APY but still useful for borrowing
-                const isViable = pool.tvlUsd > 10000;
+                // Check if the pool is in our allowed list
+                const isAllowed = ALLOWED_POOL_IDS.has(pool.pool);
 
-                return isBSC && isProject && isViable;
+                return isBSC && isProject && isAllowed;
             }).map(pool => {
                 // Determine Fallback LTV based on asset type
                 // Stables: 80% (0.8) -> Max Lev 5x
