@@ -52,10 +52,11 @@ export function MobileBottomNav() {
                         >
                             {isActive && (
                                 <motion.div
-                                    layoutId="mobile-nav-indicator"
                                     className="absolute -top-[1px] w-12 h-[2px] bg-[#CEFF00] shadow-[0_0_10px_#CEFF00]"
-                                    initial={false}
-                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
                                 />
                             )}
 
