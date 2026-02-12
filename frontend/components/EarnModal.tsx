@@ -1,14 +1,12 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Loader2, Check, ExternalLink, X, ArrowUpDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts, useBalance } from "wagmi";
 import { parseEther, parseUnits, formatUnits } from "viem";
-import { VENUS_VTOKENS, VTOKEN_ABI, ERC20_ABI } from "@/lib/pool-config";
+import { VENUS_VTOKENS, VTOKEN_ABI, ERC20_ABI, UNDERLYING_TOKENS } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { formatMoney } from "@/lib/utils";
 
@@ -38,12 +36,45 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
     const isVenus = pool.project === 'venus';
     const vTokenAddress = isVenus ? VENUS_VTOKENS[pool.symbol] : undefined;
     const isNative = pool.symbol === 'BNB';
+    const underlyingAddress = UNDERLYING_TOKENS[pool.symbol];
 
     // Transaction Hooks
     const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
-    // --- Fetch User Data for this Pool ---
+    // --- 1. Fetch Wallet Balance (Underlying) ---
+    const { data: nativeBalance } = useBalance({
+        address,
+        query: { enabled: !!address && isNative }
+    });
+
+    const { data: tokenBalanceRaw } = useReadContract({
+        address: underlyingAddress,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address && !isNative && !!underlyingAddress }
+    });
+
+    // Determine Wallet Balance
+    let walletBalance = 0;
+    let walletBalanceRaw = BigInt(0);
+
+    if (isNative) {
+        if (nativeBalance) {
+            walletBalance = parseFloat(nativeBalance.formatted);
+            walletBalanceRaw = nativeBalance.value;
+        }
+    } else {
+        if (tokenBalanceRaw) {
+            // Assume 18 decimals generally for BSC main tokens, or we could fetch decimals.
+            // Safe default for these majors is 18.
+            walletBalance = parseFloat(formatUnits(tokenBalanceRaw, 18));
+            walletBalanceRaw = tokenBalanceRaw;
+        }
+    }
+
+    // --- 2. Fetch User Protocol Data (Deposited Balance) ---
     const { data: poolData, refetch: refetchPoolData } = useReadContracts({
         contracts: [
             {
@@ -93,14 +124,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         // Most tokens in our list are 18 decimals (BNB, BTCB, ETH, USDT, USDC).
         // Let's assume 18.
         depositedAmount = parseFloat(formatUnits(rawUnderlying, 18));
-
-        // Value in USD
-        // We need price. For now, use pool.tvlUsd logic / APY to estimate or just price?
-        // We don't have price here easily without hook.
-        // We can't easily get price inside this modal without passing it or fetching it.
-        // Let's leave value as 0.00 or try to calculate if we passed price.
-        // Actually, we can just use the `depositedAmount` and `pool.price` if we added it to props?
-        // or just show the amount.
     }
 
     useEffect(() => {
@@ -162,6 +185,28 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
             }
         } catch (e) {
             console.error(e);
+        }
+    };
+
+    const setHalf = () => {
+        if (activeTab === 'deposit') {
+            setAmount((walletBalance / 2).toString());
+        } else {
+            setAmount((depositedAmount / 2).toString());
+        }
+    };
+
+    const setMax = () => {
+        if (activeTab === 'deposit') {
+            // For native BNB, leave some dust (0.01)
+            if (isNative) {
+                const max = walletBalance > 0.01 ? walletBalance - 0.01 : 0;
+                setAmount(max.toString());
+            } else {
+                setAmount(walletBalance.toString());
+            }
+        } else {
+            setAmount(depositedAmount.toString());
         }
     };
 
@@ -260,10 +305,10 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         <div className="flex justify-between text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
                             <span>{activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}</span>
                             <div className="flex gap-2">
-                                <span>Wallet: 0.00 {pool.symbol}</span>
+                                <span>Wallet: {activeTab === 'deposit' ? walletBalance.toFixed(4) : depositedAmount.toFixed(4)} {pool.symbol}</span>
                                 <div className="flex gap-1">
-                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={() => { }}>HALF</button>
-                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={() => { }}>MAX</button>
+                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setHalf}>HALF</button>
+                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setMax}>MAX</button>
                                 </div>
                             </div>
                         </div>

@@ -19,6 +19,17 @@ export const VENUS_VTOKENS: Record<string, `0x${string}`> = {
     'XRP': '0xB248a295732e0225acd3337607cc01068e6b9c53', // vXRP
 };
 
+// Underlying Token Addresses (Binance-Pegged versions on BSC)
+export const UNDERLYING_TOKENS: Record<string, `0x${string}`> = {
+    'BTCB': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+    'ETH': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+    'XRP': '0x1d2f0da169ceb9fc7b3144628db156f3f6c60dbe',
+    'USDC': '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+    'USDT': '0x55d398326f99059fF775485246999027B3197955',
+    'BNB': '0x0000000000000000000000000000000000000000', // Native
+    'WBNB': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
+};
+
 // --- ABIs ---
 
 export const ERC20_ABI = parseAbi([
