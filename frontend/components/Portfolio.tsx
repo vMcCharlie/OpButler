@@ -98,7 +98,7 @@ export function Portfolio() {
     };
 
     return (
-        <div className="container py-12 space-y-8 max-w-screen-2xl mx-auto px-8 md:px-16">
+        <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">My Portfolio</h1>
@@ -251,7 +251,7 @@ export function Portfolio() {
                         <CardTitle>Protocol Breakdown</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="rounded-md border border-border overflow-hidden">
+                        <div className="rounded-md border border-border overflow-hidden hidden md:block">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted text-muted-foreground">
                                     <tr>
@@ -360,6 +360,50 @@ export function Portfolio() {
                                     </>
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-4">
+                            {[
+                                { id: 'venus', name: 'Venus', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, isSafe: venusHealth?.isHealthy ?? true, positions: venusPositions },
+                                { id: 'kinza', name: 'Kinza', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, isSafe: kinzaHealth?.isHealthy ?? true, positions: kinzaPositions },
+                                { id: 'radiant', name: 'Radiant', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, isSafe: (!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0), positions: radiantPositions }
+                            ].map((proto) => (
+                                <div key={proto.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                                    <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleExpand(proto.id)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white border border-white/10">
+                                                <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold flex items-center gap-2">
+                                                    {proto.name}
+                                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${proto.isSafe ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                        {proto.isSafe ? 'Safe' : 'Risk'}
+                                                    </span>
+                                                </div>
+                                                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                                    <span>Sup: ${proto.supply.toFixed(0)}</span>
+                                                    <span>•</span>
+                                                    <span>Brw: ${proto.borrow.toFixed(0)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {expandedProtocol === proto.id ? <ChevronUp size={20} className="text-muted-foreground" /> : <ChevronDown size={20} className="text-muted-foreground" />}
+                                    </div>
+
+                                    {expandedProtocol === proto.id && (
+                                        <div className="border-t border-border">
+                                            {renderPositionsTable(proto.positions)}
+                                            <div className="p-3 bg-muted/20 text-center">
+                                                <button className="w-full text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-2 rounded-lg transition-colors font-medium">
+                                                    Manage {proto.name}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </CardContent>
                 </Card>

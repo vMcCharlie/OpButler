@@ -18,21 +18,21 @@ export default function LandingPage() {
         <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px]"></div>
       </div>
 
-      <div className="relative z-10 pt-32 pb-20">
-        <div className="container max-w-screen-2xl mx-auto px-8 md:px-16">
+      <div className="relative z-10 pt-24 md:pt-32 pb-20">
+        <div className="container max-w-screen-2xl mx-auto px-4 md:px-16">
 
           {/* Hero Section */}
           <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
             <div className="space-y-8 animate-fade-in-up">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#CEFF00]/10 border border-[#CEFF00]/20 text-[#CEFF00] text-sm font-bold tracking-wide">
-                <span className="relative flex h-2 w-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-[#CEFF00]/10 border border-[#CEFF00]/20 text-[#CEFF00] text-xs md:text-sm font-bold tracking-wide">
+                <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CEFF00] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#CEFF00]"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-[#CEFF00]"></span>
                 </span>
                 Live on Binance Smart Chain
               </div>
 
-              <h1 className="text-5xl md:text-7xl font-bold font-outfit leading-[1.1]">
+              <h1 className="text-4xl md:text-7xl font-bold font-outfit leading-[1.1]">
                 Your Partner in <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#CEFF00] to-emerald-400">
                   Smarter DeFi
