@@ -124,7 +124,7 @@ export function useVenusSubgraph() {
                 const borrowBal = BigInt(pos.storedBorrowBalanceMantissa || 0);
                 const exchangeRate = BigInt(market.exchangeRateMantissa || 0);
 
-                if (vBal === 0n && borrowBal === 0n) return;
+                if (vBal === BigInt(0) && borrowBal === BigInt(0)) return;
 
                 // Supply Calculation:
                 // Underlying Amount (Wei) = (vBal * exchangeRate) / 1e18
