@@ -52,6 +52,13 @@ export function Navbar() {
                         ))}
                     </div>
 
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F3BA2F]/10 border border-[#F3BA2F]/20 text-[#F3BA2F] text-xs font-bold">
+                        <div className="relative w-4 h-4">
+                            <Image src="https://cryptologos.cc/logos/bnb-bnb-logo.png" alt="BSC" fill className="object-contain" unoptimized />
+                        </div>
+                        <span className="hidden md:inline">BSC</span>
+                    </div>
+
                     <Link href="/settings">
                         <Button
                             variant="ghost"

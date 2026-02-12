@@ -9,7 +9,7 @@ import Image from 'next/image'; // If we want to add an icon or logo similar to 
 function Counter({ value, prefix = '', suffix = '' }: { value: number, prefix?: string, suffix?: string }) {
     const ref = useRef<HTMLSpanElement>(null);
     const motionValue = useMotionValue(0);
-    const springValue = useSpring(motionValue, { damping: 30, stiffness: 100 });
+    const springValue = useSpring(motionValue, { damping: 20, stiffness: 200 });
     const isInView = useInView(ref, { once: true, margin: "-10px" });
 
     useEffect(() => {

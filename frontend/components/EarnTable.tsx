@@ -35,100 +35,184 @@ export function EarnTable() {
     }
 
     return (
+    const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
+
+    return (
         <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                    <button className="px-4 py-1.5 rounded-full bg-[#1A1A1E] text-white text-sm font-medium border border-emerald-500/20 text-emerald-400">
-                        Earn
+                    {/* Removed "Earn" Badge as requested */}
+                </div>
+                <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
+                    <button
+                        onClick={() => setViewMode('card')}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                        <LayoutGrid className="w-4 h-4" />
                     </button>
-                    {/* Future filters can go here */}
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                    <LayoutGrid className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
-                    <List className="w-5 h-5 cursor-pointer text-white" />
+                    <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                        <List className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
 
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <div className="col-span-6 md:col-span-4">Vault</div>
-                <div className="col-span-3 md:col-span-2 text-right">APY</div>
-                <div className="hidden md:block col-span-2 text-right">Deposited</div>
-                <div className="hidden md:block col-span-2 text-right">Earnings</div>
-                <div className="col-span-3 md:col-span-2 text-right">TVL</div>
-            </div>
+            {/* List View */}
+            {viewMode === 'list' && (
+                <>
+                    {/* Table Header */}
+                    <div className="grid grid-cols-12 gap-4 px-6 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="col-span-6 md:col-span-4">Vault</div>
+                        <div className="col-span-3 md:col-span-2 text-right">APY</div>
+                        <div className="hidden md:block col-span-2 text-right">Deposited</div>
+                        <div className="hidden md:block col-span-2 text-right">Earnings</div>
+                        <div className="col-span-3 md:col-span-2 text-right">TVL</div>
+                    </div>
 
-            {/* Table Body */}
-            <div className="space-y-2">
-                {earningsData.map((pool) => {
-                    // Mapping protocol to icon/name
-                    const protocolDisplay =
-                        pool.project === 'venus' ? 'Venus' :
-                            pool.project === 'kinza-finance' ? 'Kinza' :
-                                pool.project === 'radiant-v2' ? 'Radiant' : pool.project;
+                    {/* Table Body */}
+                    <div className="space-y-2">
+                        {earningsData.map((pool) => {
+                            const protocolDisplay =
+                                pool.project === 'venus' ? 'Venus' :
+                                    pool.project === 'kinza-finance' ? 'Kinza' :
+                                        pool.project === 'radiant-v2' ? 'Radiant' : pool.project;
 
-                    const protocolImg =
-                        pool.project === 'venus' ? '/venus.png' :
-                            pool.project === 'kinza-finance' ? '/kinza.png' :
-                                pool.project === 'radiant-v2' ? '/radiant.jpeg' : null;
+                            const protocolImg =
+                                pool.project === 'venus' ? '/venus.png' :
+                                    pool.project === 'kinza-finance' ? '/kinza.png' :
+                                        pool.project === 'radiant-v2' ? '/radiant.jpeg' : null;
 
-                    return (
-                        <div key={`${pool.pool}-${pool.project}`} className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300">
-                            <div className="grid grid-cols-12 gap-4 px-6 py-5 items-center">
-                                {/* Vault */}
-                                <div className="col-span-6 md:col-span-4 flex items-center gap-4">
-                                    <div className="relative flex-shrink-0">
-                                        <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
-                                        {protocolImg && (
-                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-[#0f0f12] bg-white overflow-hidden">
-                                                <img src={protocolImg} className="w-full h-full object-cover" alt={protocolDisplay} />
+                            return (
+                                <div key={`${pool.pool}-${pool.project}`} className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300">
+                                    <div className="grid grid-cols-12 gap-4 px-6 py-5 items-center">
+                                        {/* Vault */}
+                                        <div className="col-span-6 md:col-span-4 flex items-center gap-4">
+                                            <div className="relative flex-shrink-0">
+                                                <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
+                                                {protocolImg && (
+                                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-[#0f0f12] bg-white overflow-hidden">
+                                                        <img src={protocolImg} className="w-full h-full object-cover" alt={protocolDisplay} />
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="font-bold text-white text-sm md:text-base truncate">{pool.symbol}</span>
+                                                <span className="text-[10px] md:text-xs text-muted-foreground truncate">{protocolDisplay}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* APY */}
+                                        <div className="col-span-3 md:col-span-2 text-right">
+                                            <div className="flex items-center justify-end gap-1.5 font-mono text-emerald-400 font-bold text-sm md:text-base">
+                                                <span className="hidden md:inline text-emerald-400">🛡️</span>
+                                                {pool.apy.toFixed(2)}%
+                                            </div>
+                                        </div>
+
+                                        {/* Deposited - Placeholder */}
+                                        <div className="hidden md:block col-span-2 text-right font-mono text-muted-foreground text-sm">
+                                            -
+                                        </div>
+
+                                        {/* Earnings - Placeholder */}
+                                        <div className="hidden md:block col-span-2 text-right font-mono text-muted-foreground text-sm">
+                                            -
+                                        </div>
+
+                                        {/* TVL */}
+                                        <div className="col-span-3 md:col-span-2 flex items-center justify-between pl-0 md:pl-4">
+                                            <div className="flex flex-col items-end flex-1 min-w-0">
+                                                <span className="font-bold text-white text-xs md:text-sm max-w-full truncate">{formatMoney(pool.tvlUsd)} <span className="hidden sm:inline">{pool.symbol}</span></span>
+                                                <span className="text-[10px] md:text-xs text-muted-foreground">${formatMoney(pool.tvlUsd)}</span>
+                                            </div>
+
+                                            <button
+                                                onClick={() => setSelectedPool(pool)}
+                                                className="ml-2 md:ml-4 flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-emerald-500/50 group-hover:text-emerald-500"
+                                            >
+                                                <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="font-bold text-white text-sm md:text-base truncate">{pool.symbol}</span>
-                                        <span className="text-[10px] md:text-xs text-muted-foreground truncate">{protocolDisplay}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </>
+            )}
+
+            {/* Card View */}
+            {viewMode === 'card' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {earningsData.map((pool) => {
+                        const protocolDisplay =
+                            pool.project === 'venus' ? 'Venus' :
+                                pool.project === 'kinza-finance' ? 'Kinza' :
+                                    pool.project === 'radiant-v2' ? 'Radiant' : pool.project;
+
+                        const protocolImg =
+                            pool.project === 'venus' ? '/venus.png' :
+                                pool.project === 'kinza-finance' ? '/kinza.png' :
+                                    pool.project === 'radiant-v2' ? '/radiant.jpeg' : null;
+
+                        return (
+                            <Card
+                                key={`${pool.pool}-${pool.project}`}
+                                className="bg-[#0f0f12] border-white/5 hover:border-emerald-500/30 transition-all cursor-pointer group overflow-hidden"
+                                onClick={() => setSelectedPool(pool)}
+                            >
+                                <div className="p-6 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative">
+                                                <AssetIcon symbol={pool.symbol} className="w-10 h-10" />
+                                                {protocolImg && (
+                                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border border-[#0f0f12] bg-white overflow-hidden">
+                                                        <img src={protocolImg} className="w-full h-full object-cover" alt={protocolDisplay} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-lg leading-tight">{pool.symbol}</h3>
+                                                <p className="text-xs text-muted-foreground">{protocolDisplay}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">APY</div>
+                                            <div className="font-mono text-xl font-bold text-emerald-400">
+                                                {pool.apy.toFixed(2)}%
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 py-4 border-t border-white/5">
+                                        <div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total Supplied</div>
+                                            <div className="font-mono font-medium">{formatMoney(pool.tvlUsd)} <span className="text-xs text-muted-foreground">{pool.symbol}</span></div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">TVL (USD)</div>
+                                            <div className="font-mono font-medium">${formatMoney(pool.tvlUsd)}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-2">
+                                        <span className="text-xs text-emerald-500/80 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                            Low Risk
+                                        </span>
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#CEFF00] group-hover:text-black transition-colors">
+                                            <ChevronRight className="w-4 h-4" />
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* APY */}
-                                <div className="col-span-3 md:col-span-2 text-right">
-                                    <div className="flex items-center justify-end gap-1.5 font-mono text-emerald-400 font-bold text-sm md:text-base">
-                                        <span className="hidden md:inline text-emerald-400">🛡️</span> {/* Placeholder icon for 'safe' or similar from design */}
-                                        {pool.apy.toFixed(2)}%
-                                    </div>
-                                </div>
-
-                                {/* Deposited */}
-                                <div className="hidden md:block col-span-2 text-right font-mono text-muted-foreground text-sm">
-                                    -
-                                </div>
-
-                                {/* Earnings */}
-                                <div className="hidden md:block col-span-2 text-right font-mono text-muted-foreground text-sm">
-                                    -
-                                </div>
-
-                                {/* TVL */}
-                                <div className="col-span-3 md:col-span-2 flex items-center justify-between pl-0 md:pl-4">
-                                    <div className="flex flex-col items-end flex-1 min-w-0">
-                                        <span className="font-bold text-white text-xs md:text-sm max-w-full truncate">{formatMoney(pool.tvlUsd)} <span className="hidden sm:inline">{pool.symbol}</span></span>
-                                        <span className="text-[10px] md:text-xs text-muted-foreground">${formatMoney(pool.tvlUsd)}</span>
-                                    </div>
-
-                                    <button
-                                        onClick={() => setSelectedPool(pool)}
-                                        className="ml-2 md:ml-4 flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-emerald-500/50 group-hover:text-emerald-500"
-                                    >
-                                        <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+                            </Card>
+                        );
+                    })}
+                </div>
+            )}
 
             {selectedPool && (
                 <EarnModal

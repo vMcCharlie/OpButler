@@ -26,7 +26,7 @@ export function LendInternalNavbar() {
                             key={tab.id}
                             href={tab.href}
                             className={cn(
-                                "relative px-4 md:px-6 py-2 rounded-full text-sm font-bold transition-colors flex items-center gap-2 z-10",
+                                "relative px-3 md:px-6 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold transition-colors flex items-center gap-1.5 md:gap-2 z-10",
                                 isActive ? "text-black" : "text-muted-foreground hover:text-white"
                             )}
                         >
