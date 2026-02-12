@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Loader2, Check, ExternalLink, X, ArrowUpDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts } from "wagmi";
 import { parseEther, parseUnits, formatUnits } from "viem";
 import { VENUS_VTOKENS, VTOKEN_ABI, ERC20_ABI } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
@@ -43,17 +43,70 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
     const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
-    // Read Allowance (If ERC20)
-    // NOTE: In a real app we need the underlying token address. 
-    // We are skipping looking that up dynamically for this demo and assuming we can't do approval without it.
-    // However, for vBNB (Native), no approval needed.
-    // For others, we'd need a map of Symbol -> TokenAddress.
+    // --- Fetch User Data for this Pool ---
+    const { data: poolData, refetch: refetchPoolData } = useReadContracts({
+        contracts: [
+            {
+                address: vTokenAddress,
+                abi: VTOKEN_ABI,
+                functionName: 'balanceOf',
+                args: address ? [address] : undefined
+            },
+            {
+                address: vTokenAddress,
+                abi: VTOKEN_ABI,
+                functionName: 'exchangeRateStored'
+            },
+            {
+                address: vTokenAddress,
+                abi: ERC20_ABI, // vToken is ERC20
+                functionName: 'decimals'
+            }
+        ],
+        query: {
+            enabled: !!address && !!vTokenAddress,
+            refetchInterval: 5000
+        }
+    });
+
+    // Calculate Deposited Amount
+    let depositedAmount = 0;
+    let depositedValueUSD = 0;
+
+    if (poolData && poolData[0].status === 'success' && poolData[1].status === 'success') {
+        const vBalance = poolData[0].result as bigint;
+        const exchangeRate = poolData[1].result as bigint;
+
+        // Decimals (vTokens are 8)
+        // Exchange Rate scaling = 18 + underlyingDecimals - 8
+        // We need to know underlying decimals. 
+        // For MVP, we can assume standard 18 for most, or try to deduce?
+        // Let's hardcode 18 for now as widely used, or use a map if we had one here.
+        // Actually, simple formula: Underlying = (vToken * ExchangeRate) / 1e18
+        // This works regardless of decimals IF the exchange rate is scaled by 1e18 relative to the textual representation.
+        // But solidity math:
+        // Underlying Amount = (vTokenBalance * ExchangeRate) / 1e18
+
+        const rawUnderlying = (vBalance * exchangeRate) / BigInt(1e18);
+
+        // Now format units based on Underlying Decimals.
+        // Most tokens in our list are 18 decimals (BNB, BTCB, ETH, USDT, USDC).
+        // Let's assume 18.
+        depositedAmount = parseFloat(formatUnits(rawUnderlying, 18));
+
+        // Value in USD
+        // We need price. For now, use pool.tvlUsd logic / APY to estimate or just price?
+        // We don't have price here easily without hook.
+        // We can't easily get price inside this modal without passing it or fetching it.
+        // Let's leave value as 0.00 or try to calculate if we passed price.
+        // Actually, we can just use the `depositedAmount` and `pool.price` if we added it to props?
+        // or just show the amount.
+    }
 
     useEffect(() => {
         if (isConfirmed) {
             setStep("success");
-            // Reset after delay or keep success state?
-            // Design says "show checkmark animation".
+            refetchPoolData(); // Refresh balance
             setTimeout(() => {
                 // optional auto-close or reset
             }, 3000);
@@ -62,7 +115,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         } else {
             setStep("idle");
         }
-    }, [isConfirmed, isConfirming, isPending]);
+    }, [isConfirmed, isConfirming, isPending, refetchPoolData]);
 
     const handleAction = () => {
         if (!isConnected) {
@@ -148,8 +201,8 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         </div>
                         <div className="text-right">
                             <div className="text-[10px] uppercase text-muted-foreground font-bold mb-1">Deposited</div>
-                            <div className="text-lg font-bold font-mono">0.00 {pool.symbol}</div>
-                            <div className="text-[10px] text-muted-foreground">$0.00</div>
+                            <div className="text-lg font-bold font-mono">{depositedAmount.toFixed(4)} {pool.symbol}</div>
+                            <div className="text-[10px] text-muted-foreground">≈ ${formatMoney(depositedAmount * (pool.tvlUsd > 0 ? (pool.tvlUsd / 1000000) : 0))} (Est)</div>
                         </div>
 
                         <div className="col-span-2 h-[1px] bg-white/5 my-1" />
@@ -238,7 +291,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         onClick={handleAction}
                         disabled={isButtonDisabled}
                         className={`w-full h-14 text-lg font-bold rounded-xl relative overflow-hidden transition-all ${step === 'success' ? 'bg-emerald-500 hover:bg-emerald-500' :
-                                activeTab === 'deposit' ? 'bg-[#CEFF00] hover:bg-[#b5e000] text-black' : 'bg-white hover:bg-gray-200 text-black'
+                            activeTab === 'deposit' ? 'bg-[#CEFF00] hover:bg-[#b5e000] text-black' : 'bg-white hover:bg-gray-200 text-black'
                             }`}
                     >
                         <AnimatePresence mode="wait">

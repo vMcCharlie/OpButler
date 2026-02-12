@@ -5,6 +5,7 @@ import { useAccount, useReadContract } from 'wagmi';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useYields } from "@/hooks/useYields";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
+import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
 import { TrendingUp, AlertTriangle, ShieldCheck } from "lucide-react";
 
@@ -24,19 +25,23 @@ export function Portfolio() {
         ? walletAddressRaw
         : undefined;
 
-    // 2. Fetch Aggregated Health
+    // 2. Fetch Aggregated Health (Keep for Risk analysis if needed, but use new hook for totals)
     const healthData = useAggregatedHealth(walletAddress as `0x${string}` | undefined);
-    const { totalNetWorthUSD, venus, kinza, radiant } = healthData;
+    const { venus, kinza, radiant } = healthData;
 
-    // 3. Prepare Chart Data
+    // 3. Fetch Precise Venus Data
+    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, netWorthUSD: venusNetWorth } = useVenusPortfolio();
+
+    // 4. Prepare Chart Data
     const allocationData = [
-        { name: 'Venus', value: venus?.liquidity || 0, color: '#F0B90B' },
+        { name: 'Venus', value: venusSupply, color: '#F0B90B' },
         { name: 'Kinza', value: kinza?.liquidity || 0, color: '#3B82F6' },
         { name: 'Radiant', value: radiant?.totalCollateral || 0, color: '#A855F7' },
     ].filter(d => d.value > 0);
 
-    const totalSupplied = (venus?.liquidity || 0) + (kinza?.liquidity || 0) + (radiant?.totalCollateral || 0);
-    const totalDebt = (venus?.shortfall || 0) + (kinza?.shortfall || 0) + (radiant?.totalDebt || 0);
+    const totalSupplied = venusSupply + (kinza?.liquidity || 0) + (radiant?.totalCollateral || 0);
+    const totalDebt = venusBorrow + (kinza?.shortfall || 0) + (radiant?.totalDebt || 0);
+    const totalNetWorth = totalSupplied - totalDebt;
 
     return (
         <div className="container py-12 space-y-8 max-w-screen-2xl mx-auto px-8 md:px-16">
@@ -64,7 +69,7 @@ export function Portfolio() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
-                            ${(totalNetWorthUSD || 0).toFixed(2)}
+                            ${(totalNetWorth || 0).toFixed(2)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Total Equity
@@ -127,7 +132,7 @@ export function Portfolio() {
                             let statusText = 'Healthy';
                             let statusColor = 'text-emerald-500';
 
-                            if ((totalNetWorthUSD || 0) < 0.1) {
+                            if ((totalNetWorth || 0) < 0.1) {
                                 statusText = 'Inactive';
                                 statusColor = 'text-muted-foreground';
                             } else if (!isAllSafe) {
