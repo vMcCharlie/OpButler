@@ -122,8 +122,8 @@ export function useVenusPortfolio() {
                 if (supplyUSD > 0.01 || borrowUSD > 0.01) {
                     positions.push({
                         symbol,
-                        supplyUnderlying,
-                        borrowUnderlying,
+                        supply: supplyUnderlying,
+                        borrow: borrowUnderlying,
                         supplyUSD,
                         borrowUSD,
                         price

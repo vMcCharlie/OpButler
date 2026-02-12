@@ -1,16 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccount, useReadContract } from 'wagmi';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useYields } from "@/hooks/useYields";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
+import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
+import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
-import { TrendingUp, AlertTriangle, ShieldCheck } from "lucide-react";
+import { TrendingUp, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 
 export function Portfolio() {
     const { address } = useAccount();
+
+    const [expandedProtocol, setExpandedProtocol] = useState<string | null>(null);
 
     // 1. Get User's Smart Wallet Address
     const { data: walletAddressRaw } = useReadContract({
@@ -25,23 +30,68 @@ export function Portfolio() {
         ? walletAddressRaw
         : undefined;
 
-    // 2. Fetch Aggregated Health (Keep for Risk analysis if needed, but use new hook for totals)
+    // 2. Fetch Portfolio Data
+    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, positions: venusPositions } = useVenusPortfolio();
+    const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow, positions: kinzaPositions } = useKinzaPortfolio();
+    const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow, positions: radiantPositions } = useRadiantPortfolio();
+
+    // 3. Health Data (Still useful for Safety status if hooks don't return health factor directly yet)
     const healthData = useAggregatedHealth(walletAddress as `0x${string}` | undefined);
-    const { venus, kinza, radiant } = healthData;
+    const { venus: venusHealth, kinza: kinzaHealth, radiant: radiantHealth } = healthData;
 
-    // 3. Fetch Precise Venus Data
-    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, netWorthUSD: venusNetWorth } = useVenusPortfolio();
+    // 4. Aggregations
+    const totalSupplied = venusSupply + kinzaSupply + radiantSupply;
+    const totalDebt = venusBorrow + kinzaBorrow + radiantBorrow;
+    const totalNetWorth = totalSupplied - totalDebt;
 
-    // 4. Prepare Chart Data
     const allocationData = [
         { name: 'Venus', value: venusSupply, color: '#F0B90B' },
-        { name: 'Kinza', value: kinza?.liquidity || 0, color: '#3B82F6' },
-        { name: 'Radiant', value: radiant?.totalCollateral || 0, color: '#A855F7' },
+        { name: 'Kinza', value: kinzaSupply, color: '#3B82F6' },
+        { name: 'Radiant', value: radiantSupply, color: '#A855F7' },
     ].filter(d => d.value > 0);
 
-    const totalSupplied = venusSupply + (kinza?.liquidity || 0) + (radiant?.totalCollateral || 0);
-    const totalDebt = venusBorrow + (kinza?.shortfall || 0) + (radiant?.totalDebt || 0);
-    const totalNetWorth = totalSupplied - totalDebt;
+    const toggleExpand = (protocol: string) => {
+        if (expandedProtocol === protocol) setExpandedProtocol(null);
+        else setExpandedProtocol(protocol);
+    };
+
+    const renderPositionsTable = (positions: any[]) => {
+        if (!positions || positions.length === 0) {
+            return <div className="p-4 text-center text-muted-foreground text-xs">No active positions found.</div>;
+        }
+        return (
+            <div className="bg-muted/30 p-4 rounded-b-lg border-t border-border animate-in slide-in-from-top-2">
+                <table className="w-full text-xs">
+                    <thead>
+                        <tr className="text-muted-foreground uppercase tracking-wider text-[10px] text-left">
+                            <th className="pb-2 pl-2">Asset</th>
+                            <th className="pb-2 text-right">Supplied</th>
+                            <th className="pb-2 text-right">Borrowed</th>
+                            <th className="pb-2 text-right">Value (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {positions.map((pos, idx) => (
+                            <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                <td className="py-2 pl-2 font-bold">{pos.symbol}</td>
+                                <td className="py-2 text-right">
+                                    <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
+                                    {pos.supplyUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>}
+                                </td>
+                                <td className="py-2 text-right">
+                                    <div className="text-red-400">{pos.borrow > 0 ? pos.borrow.toFixed(4) : '-'}</div>
+                                    {pos.borrowUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>}
+                                </td>
+                                <td className="py-2 text-right font-mono text-muted-foreground">
+                                    ${(pos.supplyUSD - pos.borrowUSD).toFixed(2)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
 
     return (
         <div className="container py-12 space-y-8 max-w-screen-2xl mx-auto px-8 md:px-16">
@@ -123,12 +173,11 @@ export function Portfolio() {
                     </CardHeader>
                     <CardContent>
                         {(() => {
-                            const isVenusSafe = venus?.isHealthy ?? true;
-                            const isKinzaSafe = kinza?.isHealthy ?? true;
-                            const isRadiantSafe = (!radiant?.healthFactor || radiant.healthFactor > 1.0);
+                            const isVenusSafe = venusHealth?.isHealthy ?? true;
+                            const isKinzaSafe = kinzaHealth?.isHealthy ?? true;
+                            const isRadiantSafe = (!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0);
                             const isAllSafe = isVenusSafe && isKinzaSafe && isRadiantSafe;
 
-                            // Determine status: Inactive (Net Worth ~0) vs Healthy vs Risk
                             let statusText = 'Healthy';
                             let statusColor = 'text-emerald-500';
 
@@ -183,7 +232,7 @@ export function Portfolio() {
                         ) : (
                             <div className="flex h-full flex-col items-center justify-center text-muted-foreground gap-2">
                                 <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                                    <TrendingUp className="opacity-50" />
                                 </div>
                                 <span className="text-sm font-medium">No active positions</span>
                                 <span className="text-xs opacity-50 text-center px-4">Assets supplied to Venus, Kinza, or Radiant will appear here.</span>
@@ -198,7 +247,7 @@ export function Portfolio() {
                         <CardTitle>Protocol Breakdown</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="rounded-md border border-border">
+                        <div className="rounded-md border border-border overflow-hidden">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted text-muted-foreground">
                                     <tr>
@@ -211,70 +260,100 @@ export function Portfolio() {
                                 </thead>
                                 <tbody className="divide-y divide-border">
                                     {/* Venus Row */}
-                                    <tr className="hover:bg-muted/50 transition-colors">
-                                        <td className="p-4 font-bold flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                                <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
-                                            </div>
-                                            Venus
-                                        </td>
-                                        <td className="p-4 text-right font-mono">${(venus?.liquidity || 0).toFixed(2)}</td>
-                                        <td className="p-4 text-right font-mono text-red-400">${(venus?.shortfall || 0).toFixed(2)}</td>
-                                        <td className="p-4 text-center">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${(venus?.isHealthy ?? true) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                {(venus?.isHealthy ?? true) ? 'Safe' : 'Risk'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <a href="/strategy?protocol=venus" className="inline-block">
-                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">Manage</button>
-                                            </a>
-                                        </td>
-                                    </tr>
+                                    <>
+                                        <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand('venus')}>
+                                            <td className="p-4 font-bold flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                                    <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
+                                                </div>
+                                                Venus
+                                                {expandedProtocol === 'venus' ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                                            </td>
+                                            <td className="p-4 text-right font-mono">${venusSupply.toFixed(2)}</td>
+                                            <td className="p-4 text-right font-mono text-red-400">${venusBorrow.toFixed(2)}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${(venusHealth?.isHealthy ?? true) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                    {(venusHealth?.isHealthy ?? true) ? 'Safe' : 'Risk'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
+                                                    Manage
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {expandedProtocol === 'venus' && (
+                                            <tr>
+                                                <td colSpan={5} className="p-0">
+                                                    {renderPositionsTable(venusPositions)}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
 
                                     {/* Kinza Row */}
-                                    <tr className="hover:bg-muted/50 transition-colors">
-                                        <td className="p-4 font-bold flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                                <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
-                                            </div>
-                                            Kinza
-                                        </td>
-                                        <td className="p-4 text-right font-mono">${(kinza?.liquidity || 0).toFixed(2)}</td>
-                                        <td className="p-4 text-right font-mono text-red-400">${(kinza?.shortfall || 0).toFixed(2)}</td>
-                                        <td className="p-4 text-center">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${(kinza?.isHealthy ?? true) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                {(kinza?.isHealthy ?? true) ? 'Safe' : 'Risk'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <a href="/strategy?protocol=kinza" className="inline-block">
-                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">Manage</button>
-                                            </a>
-                                        </td>
-                                    </tr>
+                                    <>
+                                        <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand('kinza')}>
+                                            <td className="p-4 font-bold flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                                    <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
+                                                </div>
+                                                Kinza
+                                                {expandedProtocol === 'kinza' ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                                            </td>
+                                            <td className="p-4 text-right font-mono">${kinzaSupply.toFixed(2)}</td>
+                                            <td className="p-4 text-right font-mono text-red-400">${kinzaBorrow.toFixed(2)}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${(kinzaHealth?.isHealthy ?? true) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                    {(kinzaHealth?.isHealthy ?? true) ? 'Safe' : 'Risk'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
+                                                    Manage
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {expandedProtocol === 'kinza' && (
+                                            <tr>
+                                                <td colSpan={5} className="p-0">
+                                                    {renderPositionsTable(kinzaPositions)}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
 
                                     {/* Radiant Row */}
-                                    <tr className="hover:bg-muted/50 transition-colors">
-                                        <td className="p-4 font-bold flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                                <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
-                                            </div>
-                                            Radiant
-                                        </td>
-                                        <td className="p-4 text-right font-mono">${(radiant?.totalCollateral || 0).toFixed(2)}</td>
-                                        <td className="p-4 text-right font-mono text-red-400">${(radiant?.totalDebt || 0).toFixed(2)}</td>
-                                        <td className="p-4 text-center">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${(!radiant?.healthFactor || radiant.healthFactor > 1.0) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                {(!radiant?.healthFactor || radiant.healthFactor > 1.0) ? 'Safe' : 'Risk'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <a href="/strategy?protocol=radiant" className="inline-block">
-                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">Manage</button>
-                                            </a>
-                                        </td>
-                                    </tr>
+                                    <>
+                                        <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand('radiant')}>
+                                            <td className="p-4 font-bold flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                                    <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
+                                                </div>
+                                                Radiant
+                                                {expandedProtocol === 'radiant' ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                                            </td>
+                                            <td className="p-4 text-right font-mono">${radiantSupply.toFixed(2)}</td>
+                                            <td className="p-4 text-right font-mono text-red-400">${radiantBorrow.toFixed(2)}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${(!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                    {(!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0) ? 'Safe' : 'Risk'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
+                                                    Manage
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {expandedProtocol === 'radiant' && (
+                                            <tr>
+                                                <td colSpan={5} className="p-0">
+                                                    {renderPositionsTable(radiantPositions)}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
                                 </tbody>
                             </table>
                         </div>
@@ -284,3 +363,4 @@ export function Portfolio() {
         </div>
     );
 }
+
