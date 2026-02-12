@@ -39,7 +39,7 @@ export function Dashboard() {
     const isLoading = healthData.isLoading;
 
     return (
-        <div className="container py-12 space-y-8 max-w-screen-2xl mx-auto px-8 md:px-16">
+        <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Dashboard</h1>
@@ -50,7 +50,7 @@ export function Dashboard() {
             </div>
 
             {/* Top Stats: Aggregated Financials */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
                 {/* Total Net Worth */}
                 <Card className="border-l-4 border-l-primary/80 bg-gradient-to-br from-primary/5 via-card to-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -60,7 +60,7 @@ export function Dashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
+                        <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
                             ${isLoading ? '...' : (healthData?.totalNetWorthUSD || 0).toFixed(2)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -78,7 +78,7 @@ export function Dashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-emerald-500">
+                        <div className="text-2xl md:text-3xl font-bold text-emerald-500">
                             {/* Mock Aggregate for Demo as hooks return Health mainly */}
                             ${isLoading ? '...' : ((healthData?.radiant?.totalCollateral || 0) + (healthData?.venus?.liquidity || 0) + (healthData?.kinza?.liquidity || 0)).toFixed(2)}
                         </div>
@@ -97,7 +97,7 @@ export function Dashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-red-500">
+                        <div className="text-2xl md:text-3xl font-bold text-red-500">
                             ${isLoading ? '...' : ((healthData?.radiant?.totalDebt || 0) + (healthData?.venus?.shortfall || 0) + (healthData?.kinza?.shortfall || 0)).toFixed(2)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -121,7 +121,7 @@ export function Dashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-blue-400">
+                        <div className="text-2xl md:text-3xl font-bold text-blue-400">
                             {isLoading ? '...' :
                                 (healthData?.radiant?.healthFactor && healthData.radiant.healthFactor < 999)
                                     ? healthData.radiant.healthFactor.toFixed(2)

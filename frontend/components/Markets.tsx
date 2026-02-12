@@ -109,7 +109,7 @@ export function Markets() {
             </CardHeader>
             <CardContent>
                 <div className="relative w-full overflow-auto">
-                    <table className="w-full caption-bottom text-sm text-left">
+                    <table className="w-full caption-bottom text-sm text-left hidden md:table">
                         <thead className="[&_tr]:border-b">
                             <tr className="border-border text-muted-foreground uppercase tracking-wider text-[10px]">
                                 <th className="h-12 px-4 align-middle font-medium min-w-[220px]">Token Name</th>
@@ -159,7 +159,7 @@ export function Markets() {
                                         <div className="flex flex-col items-center relative">
                                             {showBest && (
                                                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-500/20 text-yellow-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 whitespace-nowrap shadow-[0_0_10px_rgba(234,179,8,0.3)] animate-pulse">
-                                                    🏆 Best Rate
+                                                    🏆 Best
                                                 </div>
                                             )}
                                             <span className={`font-bold font-mono text-xs ${showBest ? 'text-yellow-400 scale-110 transition-transform' : 'text-emerald-400'}`}>
@@ -215,6 +215,66 @@ export function Markets() {
                             })}
                         </tbody>
                     </table>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                        {marketData.map(asset => {
+                            const availableProviders = [asset.venus, asset.kinza, asset.radiant].filter(Boolean).length;
+                            const renderMobileCell = (label: string, data?: { s: number, b: number }, isBest?: boolean) => {
+                                if (!data) return null;
+                                return (
+                                    <div className="flex flex-col items-center bg-muted/20 p-2 rounded-lg flex-1">
+                                        <div className="flex items-center gap-1 mb-1">
+                                            {label === 'Venus' && <img src="/venus.png" className="w-3 h-3 rounded-full" />}
+                                            {label === 'Kinza' && <img src="/kinza.png" className="w-3 h-3 rounded-full" />}
+                                            {label === 'Radiant' && <img src="/radiant.jpeg" className="w-3 h-3 rounded-full" />}
+                                            <span className="text-[10px] text-muted-foreground">{label}</span>
+                                        </div>
+                                        <span className={`font-mono text-xs font-bold ${isBest && data.s >= 0.01 && availableProviders > 1 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                                            +{data.s.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                );
+                            };
+
+                            return (
+                                <div key={asset.symbol} className="bg-card border border-border rounded-xl p-4 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <AssetIcon symbol={asset.symbol} tokenAddress={asset.tokenAddress} size={36} />
+                                            <div>
+                                                <div className="font-bold text-lg">{asset.symbol}</div>
+                                                <div className="text-xs text-muted-foreground">BSC Network</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs text-muted-foreground">Total Supplied</div>
+                                            <div className="font-mono font-bold text-emerald-500">{formatMoney(asset.totalSupplied)}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        {renderMobileCell('Venus', asset.venus, asset.maxAPY === asset.venus?.s)}
+                                        {renderMobileCell('Kinza', asset.kinza, asset.maxAPY === asset.kinza?.s)}
+                                        {renderMobileCell('Radiant', asset.radiant, asset.maxAPY === asset.radiant?.s)}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Link href={`/market/${asset.symbol}?tab=lend`} className="w-full">
+                                            <Button size="sm" className="w-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white font-bold">
+                                                Deposit
+                                            </Button>
+                                        </Link>
+                                        <Link href={`/market/${asset.symbol}?tab=borrow`} className="w-full">
+                                            <Button size="sm" className="w-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white font-bold">
+                                                Borrow
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                     {marketData.length === 0 && <div className="p-8 text-center text-muted-foreground">No matching assets found.</div>}
                 </div>
             </CardContent>
