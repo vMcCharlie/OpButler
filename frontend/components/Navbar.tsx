@@ -52,12 +52,7 @@ export function Navbar() {
                         ))}
                     </div>
 
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F3BA2F]/10 border border-[#F3BA2F]/20 text-[#F3BA2F] text-xs font-bold">
-                        <div className="relative w-4 h-4">
-                            <Image src="https://cryptologos.cc/logos/bnb-bnb-logo.png" alt="BSC" fill className="object-contain" unoptimized />
-                        </div>
-                        <span className="hidden md:inline">BSC</span>
-                    </div>
+
 
                     <Link href="/settings">
                         <Button
@@ -170,7 +165,13 @@ export function Navbar() {
                 </div>
 
                 {/* Mobile Connect Button (Using Simplified State) */}
-                <div className="md:hidden flex items-center gap-4">
+                <div className="md:hidden flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[#F3BA2F]/10 border border-[#F3BA2F]/20 text-[#F3BA2F] text-[10px] font-bold">
+                        <div className="relative w-3 h-3">
+                            <Image src="https://cryptologos.cc/logos/bnb-bnb-logo.png" alt="BSC" fill className="object-contain" unoptimized />
+                        </div>
+                        <span>BSC</span>
+                    </div>
                     <ConnectButton.Custom>
                         {({
                             account,
