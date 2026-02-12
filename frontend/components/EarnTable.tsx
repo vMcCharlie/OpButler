@@ -35,9 +35,6 @@ export function EarnTable() {
     }
 
     return (
-    const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
-
-    return (
         <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6">
