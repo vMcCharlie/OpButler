@@ -3,7 +3,7 @@ import { parseAbi } from 'viem';
 // --- Contract Addresses (BSC Mainnet) ---
 // Note: These are example addresses. In a real prod app, you'd fetch these from a config or subgraph.
 
-export const VENUS_COMPTROLLER = '0xfD36E2c2F6789db23113685031d7F16329158384';
+export const VENUS_COMPTROLLER = '0xfD36E2c2a6789Db23113685031d7F16329158384';
 export const KINZA_COMPTROLLER = '0x...'; // Placeholder if specific comptroller needed
 export const RADIANT_LENDING_POOL = '0x...'; // Placeholder
 
