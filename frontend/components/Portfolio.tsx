@@ -1,24 +1,89 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccount, useReadContract } from 'wagmi';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
-import { useYields } from "@/hooks/useYields";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
+import { useAggregatedHealth, ProtocolHealth } from "@/hooks/useAggregatedHealth";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
-import { TrendingUp, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Heart, Activity } from "lucide-react";
+
+// --- Health Factor Badge ---
+function HealthBadge({ health }: { health: ProtocolHealth }) {
+    if (!health.hasPositions) {
+        return (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-muted/50 text-muted-foreground">
+                Inactive
+            </span>
+        );
+    }
+
+    const config = {
+        safe: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30', label: 'Safe' },
+        warning: { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/30', label: 'Warning' },
+        danger: { bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/30', label: 'Risk' },
+        inactive: { bg: 'bg-muted/50', text: 'text-muted-foreground', border: 'border-muted', label: 'Inactive' },
+    }[health.status];
+
+    return (
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${config.bg} ${config.text} ${config.border} inline-flex items-center gap-1`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${health.status === 'safe' ? 'bg-emerald-400' : health.status === 'warning' ? 'bg-amber-400' : 'bg-red-400'}`} />
+            {config.label}
+            {health.healthFactor > 0 && (
+                <span className="ml-0.5 opacity-70">{health.healthFactor.toFixed(2)}</span>
+            )}
+        </span>
+    );
+}
+
+// --- Custom Pie Chart Tooltip ---
+function CustomTooltip({ active, payload }: any) {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl px-4 py-3 shadow-2xl">
+                <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: data.color }} />
+                    <span className="font-bold text-sm text-foreground">{data.name}</span>
+                </div>
+                <div className="text-xs space-y-0.5 text-muted-foreground">
+                    <div>Supply: <span className="text-emerald-400 font-mono">${data.supply?.toFixed(2) || '0.00'}</span></div>
+                    <div>Borrow: <span className="text-red-400 font-mono">${data.borrow?.toFixed(2) || '0.00'}</span></div>
+                    <div>Net: <span className="text-foreground font-mono">${(data.value - (data.borrow || 0)).toFixed(2)}</span></div>
+                    <div className="pt-1 border-t border-border mt-1">
+                        Share: <span className="font-bold text-foreground">{data.percent?.toFixed(1)}%</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return null;
+}
+
+// --- Center Label for Pie ---
+function CenterHealthLabel({ score }: { score: number }) {
+    const color = score >= 7 ? '#34d399' : score >= 4 ? '#fbbf24' : '#f87171';
+    return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-3xl font-black tracking-tight" style={{ color }}>
+                {score.toFixed(1)}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">
+                Health Score
+            </span>
+        </div>
+    );
+}
 
 export function Portfolio() {
     const { address } = useAccount();
-
     const [expandedProtocol, setExpandedProtocol] = useState<string | null>(null);
 
-    // 1. Get User's Smart Wallet Address
+    // Smart Wallet
     const { data: walletAddressRaw } = useReadContract({
         address: OPBUTLER_FACTORY_ADDRESS as `0x${string}`,
         abi: OpButlerFactoryABI,
@@ -26,37 +91,49 @@ export function Portfolio() {
         args: address ? [address] : undefined,
         query: { enabled: !!address }
     });
-
     const walletAddress = (walletAddressRaw && walletAddressRaw !== '0x0000000000000000000000000000000000000000')
-        ? walletAddressRaw
-        : undefined;
+        ? walletAddressRaw : undefined;
 
-    // 2. Fetch Portfolio Data
-    // Venus (On-Chain)
+    // Portfolio Data
     const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, positions: venusPositions } = useVenusPortfolio();
-
     const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow, positions: kinzaPositions } = useKinzaPortfolio();
     const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow, positions: radiantPositions } = useRadiantPortfolio();
 
-    // 3. Health Data (Still useful for Safety status if hooks don't return health factor directly yet)
+    // Health Data
     const healthData = useAggregatedHealth(walletAddress as `0x${string}` | undefined);
-    const { venus: venusHealth, kinza: kinzaHealth, radiant: radiantHealth } = healthData;
+    const { venus: venusHealth, kinza: kinzaHealth, radiant: radiantHealth, overallScore } = healthData;
 
-    // 4. Aggregations
+    // Aggregations
     const totalSupplied = venusSupply + kinzaSupply + radiantSupply;
     const totalDebt = venusBorrow + kinzaBorrow + radiantBorrow;
     const totalNetWorth = totalSupplied - totalDebt;
 
+    // Allocation data with extra info for tooltip
     const allocationData = [
-        { name: 'Venus', value: venusSupply, color: '#F0B90B' },
-        { name: 'Kinza', value: kinzaSupply, color: '#3B82F6' },
-        { name: 'Radiant', value: radiantSupply, color: '#A855F7' },
+        { name: 'Venus', value: venusSupply, supply: venusSupply, borrow: venusBorrow, color: '#F0B90B', percent: 0 },
+        { name: 'Kinza', value: kinzaSupply, supply: kinzaSupply, borrow: kinzaBorrow, color: '#3B82F6', percent: 0 },
+        { name: 'Radiant', value: radiantSupply, supply: radiantSupply, borrow: radiantBorrow, color: '#A855F7', percent: 0 },
     ].filter(d => d.value > 0);
 
+    // Calculate percentages
+    const allocTotal = allocationData.reduce((s, d) => s + d.value, 0);
+    allocationData.forEach(d => { d.percent = allocTotal > 0 ? (d.value / allocTotal) * 100 : 0; });
+
     const toggleExpand = (protocol: string) => {
-        if (expandedProtocol === protocol) setExpandedProtocol(null);
-        else setExpandedProtocol(protocol);
+        setExpandedProtocol(prev => prev === protocol ? null : protocol);
     };
+
+    // Health status summary
+    const getOverallStatus = () => {
+        if (totalNetWorth < 0.01) return { text: 'Inactive', color: 'text-muted-foreground', icon: Activity };
+        const activeProtocols = [venusHealth, kinzaHealth, radiantHealth].filter(h => h.hasPositions);
+        const anyDanger = activeProtocols.some(h => h.status === 'danger');
+        const anyWarning = activeProtocols.some(h => h.status === 'warning');
+        if (anyDanger) return { text: 'At Risk', color: 'text-red-500 animate-pulse', icon: AlertTriangle };
+        if (anyWarning) return { text: 'Caution', color: 'text-amber-400', icon: AlertTriangle };
+        return { text: 'Healthy', color: 'text-emerald-400', icon: ShieldCheck };
+    };
+    const overallStatus = getOverallStatus();
 
     const renderPositionsTable = (positions: any[]) => {
         if (!positions || positions.length === 0) {
@@ -107,6 +184,12 @@ export function Portfolio() {
         );
     };
 
+    const protocols = [
+        { id: 'venus', name: 'Venus', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: venusHealth, positions: venusPositions },
+        { id: 'kinza', name: 'Kinza', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: kinzaHealth, positions: kinzaPositions },
+        { id: 'radiant', name: 'Radiant', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: radiantHealth, positions: radiantPositions },
+    ];
+
     return (
         <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
             <div className="flex items-center justify-between">
@@ -135,9 +218,7 @@ export function Portfolio() {
                         <div className="text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
                             ${(totalNetWorth || 0).toFixed(2)}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Total Equity
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Total Equity</p>
                     </CardContent>
                 </Card>
 
@@ -150,12 +231,8 @@ export function Portfolio() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-emerald-500">
-                            ${totalSupplied.toFixed(2)}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Collateral & Liquidity
-                        </p>
+                        <div className="text-3xl font-bold text-emerald-500">${totalSupplied.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Collateral & Liquidity</p>
                     </CardContent>
                 </Card>
 
@@ -168,12 +245,8 @@ export function Portfolio() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-red-500">
-                            ${totalDebt.toFixed(2)}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Global Borrowed Amount
-                        </p>
+                        <div className="text-3xl font-bold text-red-500">${totalDebt.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Global Borrowed Amount</p>
                     </CardContent>
                 </Card>
 
@@ -182,67 +255,58 @@ export function Portfolio() {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Health Status</CardTitle>
                         <div className="p-2 bg-blue-500/10 rounded-full">
-                            <ShieldCheck className="w-4 h-4 text-blue-500" />
+                            <Heart className="w-4 h-4 text-blue-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {(() => {
-                            const isVenusSafe = venusHealth?.isHealthy ?? true;
-                            const isKinzaSafe = kinzaHealth?.isHealthy ?? true;
-                            const isRadiantSafe = (!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0);
-                            const isAllSafe = isVenusSafe && isKinzaSafe && isRadiantSafe;
-
-                            let statusText = 'Healthy';
-                            let statusColor = 'text-emerald-500';
-
-                            if ((totalNetWorth || 0) < 0.1) {
-                                statusText = 'Inactive';
-                                statusColor = 'text-muted-foreground';
-                            } else if (!isAllSafe) {
-                                statusText = 'Risk';
-                                statusColor = 'text-red-500 animate-pulse';
-                            }
-
-                            return (
-                                <>
-                                    <div className={`text-3xl font-bold ${statusColor}`}>
-                                        {statusText}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Overall Account Safety
-                                    </p>
-                                </>
-                            );
-                        })()}
+                        <div className={`text-3xl font-bold ${overallStatus.color}`}>
+                            {overallStatus.text}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Score: <span className={`font-bold ${overallScore >= 7 ? 'text-emerald-400' : overallScore >= 4 ? 'text-amber-400' : 'text-red-400'}`}>{overallScore.toFixed(1)}/10</span>
+                        </p>
                     </CardContent>
                 </Card>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-3">
-                {/* Asset Allocation Chart */}
+                {/* Protocol Allocation Chart */}
                 <Card className="col-span-1 border border-border bg-card">
                     <CardHeader>
                         <CardTitle>Protocol Allocation</CardTitle>
                     </CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className="h-[300px] relative">
                         {allocationData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={allocationData}
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {allocationData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }} />
-                                    <Legend verticalAlign="bottom" height={36} />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            <>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={allocationData}
+                                            innerRadius={70}
+                                            outerRadius={95}
+                                            paddingAngle={4}
+                                            dataKey="value"
+                                            cornerRadius={8}
+                                            stroke="none"
+                                        >
+                                            {allocationData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip content={<CustomTooltip />} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <CenterHealthLabel score={overallScore} />
+                                {/* Legend */}
+                                <div className="flex justify-center gap-4 -mt-2">
+                                    {allocationData.map((entry, index) => (
+                                        <div key={index} className="flex items-center gap-1.5 text-xs">
+                                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                            <span className="text-muted-foreground">{entry.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         ) : (
                             <div className="flex h-full flex-col items-center justify-center text-muted-foreground gap-2">
                                 <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
@@ -255,12 +319,13 @@ export function Portfolio() {
                     </CardContent>
                 </Card>
 
-                {/* Detailed Positions Table */}
+                {/* Protocol Breakdown Table */}
                 <Card className="col-span-2 border border-border bg-card">
                     <CardHeader>
                         <CardTitle>Protocol Breakdown</CardTitle>
                     </CardHeader>
                     <CardContent>
+                        {/* Desktop Table */}
                         <div className="rounded-md border border-border overflow-hidden hidden md:block">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted text-muted-foreground">
@@ -268,117 +333,48 @@ export function Portfolio() {
                                         <th className="p-4 font-medium">Protocol</th>
                                         <th className="p-4 font-medium text-right">Liquidity / Collateral</th>
                                         <th className="p-4 font-medium text-right">Debt</th>
-                                        <th className="p-4 font-medium text-center">Status</th>
+                                        <th className="p-4 font-medium text-center">Health</th>
                                         <th className="p-4 font-medium text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {/* Venus Row */}
-                                    <>
-                                        <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand('venus')}>
-                                            <td className="p-4 font-bold flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                                    <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
-                                                </div>
-                                                Venus
-                                                {expandedProtocol === 'venus' ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                                            </td>
-                                            <td className="p-4 text-right font-mono">${venusSupply.toFixed(2)}</td>
-                                            <td className="p-4 text-right font-mono text-red-400">${venusBorrow.toFixed(2)}</td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${(venusHealth?.isHealthy ?? true) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                    {(venusHealth?.isHealthy ?? true) ? 'Safe' : 'Risk'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right">
-                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
-                                                    Manage
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {expandedProtocol === 'venus' && (
-                                            <tr>
-                                                <td colSpan={5} className="p-0">
-                                                    {renderPositionsTable(venusPositions)}
+                                    {protocols.map((proto) => (
+                                        <React.Fragment key={proto.id}>
+                                            <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand(proto.id)}>
+                                                <td className="p-4 font-bold flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                                        <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
+                                                    </div>
+                                                    {proto.name}
+                                                    {expandedProtocol === proto.id ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                                                </td>
+                                                <td className="p-4 text-right font-mono">${proto.supply.toFixed(2)}</td>
+                                                <td className="p-4 text-right font-mono text-red-400">${proto.borrow.toFixed(2)}</td>
+                                                <td className="p-4 text-center">
+                                                    <HealthBadge health={proto.health} />
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
+                                                        Manage
+                                                    </button>
                                                 </td>
                                             </tr>
-                                        )}
-                                    </>
-
-                                    {/* Kinza Row */}
-                                    <>
-                                        <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand('kinza')}>
-                                            <td className="p-4 font-bold flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                                    <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
-                                                </div>
-                                                Kinza
-                                                {expandedProtocol === 'kinza' ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                                            </td>
-                                            <td className="p-4 text-right font-mono">${kinzaSupply.toFixed(2)}</td>
-                                            <td className="p-4 text-right font-mono text-red-400">${kinzaBorrow.toFixed(2)}</td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${(kinzaHealth?.isHealthy ?? true) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                    {(kinzaHealth?.isHealthy ?? true) ? 'Safe' : 'Risk'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right">
-                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
-                                                    Manage
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {expandedProtocol === 'kinza' && (
-                                            <tr>
-                                                <td colSpan={5} className="p-0">
-                                                    {renderPositionsTable(kinzaPositions)}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </>
-
-                                    {/* Radiant Row */}
-                                    <>
-                                        <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand('radiant')}>
-                                            <td className="p-4 font-bold flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                                    <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
-                                                </div>
-                                                Radiant
-                                                {expandedProtocol === 'radiant' ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                                            </td>
-                                            <td className="p-4 text-right font-mono">${radiantSupply.toFixed(2)}</td>
-                                            <td className="p-4 text-right font-mono text-red-400">${radiantBorrow.toFixed(2)}</td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${(!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                    {(!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0) ? 'Safe' : 'Risk'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right">
-                                                <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
-                                                    Manage
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {expandedProtocol === 'radiant' && (
-                                            <tr>
-                                                <td colSpan={5} className="p-0">
-                                                    {renderPositionsTable(radiantPositions)}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </>
+                                            {expandedProtocol === proto.id && (
+                                                <tr>
+                                                    <td colSpan={5} className="p-0">
+                                                        {renderPositionsTable(proto.positions)}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
 
                         {/* Mobile Card View */}
                         <div className="md:hidden space-y-4">
-                            {[
-                                { id: 'venus', name: 'Venus', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, isSafe: venusHealth?.isHealthy ?? true, positions: venusPositions },
-                                { id: 'kinza', name: 'Kinza', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, isSafe: kinzaHealth?.isHealthy ?? true, positions: kinzaPositions },
-                                { id: 'radiant', name: 'Radiant', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, isSafe: (!radiantHealth?.healthFactor || radiantHealth.healthFactor > 1.0), positions: radiantPositions }
-                            ].map((proto) => (
+                            {protocols.map((proto) => (
                                 <div key={proto.id} className="rounded-xl border border-border bg-card overflow-hidden">
                                     <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleExpand(proto.id)}>
                                         <div className="flex items-center gap-3">
@@ -388,20 +384,17 @@ export function Portfolio() {
                                             <div>
                                                 <div className="font-bold flex items-center gap-2">
                                                     {proto.name}
-                                                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${proto.isSafe ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                        {proto.isSafe ? 'Safe' : 'Risk'}
-                                                    </span>
+                                                    <HealthBadge health={proto.health} />
                                                 </div>
                                                 <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                                    <span>Sup: ${proto.supply.toFixed(0)}</span>
+                                                    <span>Sup: ${proto.supply.toFixed(2)}</span>
                                                     <span>•</span>
-                                                    <span>Brw: ${proto.borrow.toFixed(0)}</span>
+                                                    <span>Brw: ${proto.borrow.toFixed(2)}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         {expandedProtocol === proto.id ? <ChevronUp size={20} className="text-muted-foreground" /> : <ChevronDown size={20} className="text-muted-foreground" />}
                                     </div>
-
                                     {expandedProtocol === proto.id && (
                                         <div className="border-t border-border">
                                             {renderPositionsTable(proto.positions)}
@@ -421,4 +414,3 @@ export function Portfolio() {
         </div>
     );
 }
-

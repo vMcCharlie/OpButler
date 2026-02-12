@@ -6,7 +6,10 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { useAccount, useReadContract } from 'wagmi';
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
-import { TrendingUp, AlertTriangle } from "lucide-react";
+import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
+import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
+import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
+import { TrendingUp, AlertTriangle, Heart } from "lucide-react";
 
 const chartData = [
     { name: 'Mon', value: 1000 },
@@ -38,6 +41,14 @@ export function Dashboard() {
     const healthData = useAggregatedHealth(walletAddress as `0x${string}` | undefined);
     const isLoading = healthData.isLoading;
 
+    // 3. Fetch Portfolio Data
+    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow } = useVenusPortfolio();
+    const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow } = useKinzaPortfolio();
+    const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow } = useRadiantPortfolio();
+    const totalSupplied = venusSupply + kinzaSupply + radiantSupply;
+    const totalBorrowed = venusBorrow + kinzaBorrow + radiantBorrow;
+    const totalNetWorth = totalSupplied - totalBorrowed;
+
     return (
         <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
             <div className="flex items-center justify-between">
@@ -61,7 +72,7 @@ export function Dashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
-                            ${isLoading ? '...' : (healthData?.totalNetWorthUSD || 0).toFixed(2)}
+                            ${isLoading ? '...' : totalNetWorth.toFixed(2)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Across Venus, Kinza, Radiant
@@ -79,8 +90,7 @@ export function Dashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl md:text-3xl font-bold text-emerald-500">
-                            {/* Mock Aggregate for Demo as hooks return Health mainly */}
-                            ${isLoading ? '...' : ((healthData?.radiant?.totalCollateral || 0) + (healthData?.venus?.liquidity || 0) + (healthData?.kinza?.liquidity || 0)).toFixed(2)}
+                            ${isLoading ? '...' : totalSupplied.toFixed(2)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Collateral & Liquidity
@@ -98,7 +108,7 @@ export function Dashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl md:text-3xl font-bold text-red-500">
-                            ${isLoading ? '...' : ((healthData?.radiant?.totalDebt || 0) + (healthData?.venus?.shortfall || 0) + (healthData?.kinza?.shortfall || 0)).toFixed(2)}
+                            ${isLoading ? '...' : totalBorrowed.toFixed(2)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Global Borrowed Amount
@@ -109,26 +119,17 @@ export function Dashboard() {
                 {/* Aggregated Health Status */}
                 <Card className="border-l-4 border-l-blue-500/80">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Health Status</CardTitle>
-                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${(healthData?.radiant?.healthFactor || 999) > 1.5
-                                ? 'bg-emerald-500/20 text-emerald-500'
-                                : (healthData?.radiant?.healthFactor || 999) > 1.1
-                                    ? 'bg-amber-500/20 text-amber-500'
-                                    : 'bg-red-500/20 text-red-500'
-                            }`}>
-                            {(healthData?.radiant?.healthFactor || 999) > 1.5 ? 'Safe' :
-                                (healthData?.radiant?.healthFactor || 999) > 1.1 ? 'Warning' : 'Critical'}
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Health Score</CardTitle>
+                        <div className="p-2 bg-blue-500/10 rounded-full">
+                            <Heart className="w-4 h-4 text-blue-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl md:text-3xl font-bold text-blue-400">
-                            {isLoading ? '...' :
-                                (healthData?.radiant?.healthFactor && healthData.radiant.healthFactor < 999)
-                                    ? healthData.radiant.healthFactor.toFixed(2)
-                                    : '∞'}
+                        <div className={`text-2xl md:text-3xl font-bold ${healthData.overallScore >= 7 ? 'text-emerald-400' : healthData.overallScore >= 4 ? 'text-amber-400' : 'text-red-400'}`}>
+                            {isLoading ? '...' : `${healthData.overallScore.toFixed(1)}/10`}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Aggregate Health Factor
+                            Overall Account Health
                         </p>
                     </CardContent>
                 </Card>
@@ -136,71 +137,40 @@ export function Dashboard() {
 
             {/* Protocol Health Matrix */}
             <div className="grid gap-4 md:grid-cols-3">
-                {/* Venus */}
-                <Card className="bg-card/50 border-input">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                <img src="/venus.png" className="w-full h-full object-cover" alt="Venus" />
+                {[
+                    { name: 'Venus Protocol', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: healthData.venus },
+                    { name: 'Kinza Finance', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza },
+                    { name: 'Radiant V2', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant },
+                ].map((proto) => (
+                    <Card key={proto.name} className="bg-card/50 border-input">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                    <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
+                                </div>
+                                {proto.name}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-1">
+                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Supplied</span> <span className="font-mono">${proto.supply.toFixed(2)}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Borrowed</span> <span className="font-mono text-red-400">${proto.borrow.toFixed(2)}</span></div>
+                            <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Health</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${proto.health.status === 'safe' ? 'bg-emerald-500/20 text-emerald-500' :
+                                        proto.health.status === 'warning' ? 'bg-amber-500/20 text-amber-400' :
+                                            proto.health.status === 'danger' ? 'bg-red-500/20 text-red-500' :
+                                                'bg-muted/50 text-muted-foreground'
+                                    }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${proto.health.status === 'safe' ? 'bg-emerald-400' :
+                                            proto.health.status === 'warning' ? 'bg-amber-400' :
+                                                proto.health.status === 'danger' ? 'bg-red-400' : 'bg-muted-foreground'
+                                        }`} />
+                                    {proto.health.hasPositions ? `${proto.health.healthFactor.toFixed(2)}` : 'N/A'}
+                                </span>
                             </div>
-                            Venus Protocol
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Available Credit</span> <span className="font-mono">${healthData?.venus?.liquidity?.toFixed(2) || '0.00'}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Debt Risk</span> <span className="font-mono text-red-400">${healthData?.venus?.shortfall?.toFixed(2) || '0.00'}</span></div>
-                        <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
-                            <span className="text-xs font-bold uppercase text-muted-foreground">Health Score</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(healthData?.venus?.isHealthy ?? true) ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                                {(healthData?.venus?.isHealthy ?? true) ? 'Safe' : 'Risk'}
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Kinza */}
-                <Card className="bg-card/50 border-input">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                <img src="/kinza.png" className="w-full h-full object-cover" alt="Kinza" />
-                            </div>
-                            Kinza Finance
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Available Credit</span> <span className="font-mono">${healthData?.kinza?.liquidity?.toFixed(2) || '0.00'}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Debt Risk</span> <span className="font-mono text-red-400">${healthData?.kinza?.shortfall?.toFixed(2) || '0.00'}</span></div>
-                        <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
-                            <span className="text-xs font-bold uppercase text-muted-foreground">Health Score</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(healthData?.kinza?.isHealthy ?? true) ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                                {(healthData?.kinza?.isHealthy ?? true) ? 'Safe' : 'Risk'}
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Radiant */}
-                <Card className="bg-card/50 border-input">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                            <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
-                                <img src="/radiant.jpeg" className="w-full h-full object-cover" alt="Radiant" />
-                            </div>
-                            Radiant V2
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Supplied</span> <span className="font-mono">${healthData?.radiant?.totalCollateral?.toFixed(2) || '0.00'}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Total Borrowed</span> <span className="font-mono text-red-400">${healthData?.radiant?.totalDebt?.toFixed(2) || '0.00'}</span></div>
-                        <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
-                            <span className="text-xs font-bold uppercase text-muted-foreground">Health Score</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(!healthData?.radiant?.healthFactor || healthData.radiant.healthFactor > 1.1) ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
-                                {(!healthData?.radiant?.healthFactor || healthData.radiant.healthFactor >= 999) ? '∞' : healthData.radiant.healthFactor.toFixed(2)}
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
 
             {/* Main Content Area: Markets Only */}
