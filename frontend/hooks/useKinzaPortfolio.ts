@@ -1,21 +1,20 @@
 import { useReadContract, useReadContracts, useAccount } from 'wagmi';
-import { parseAbi, formatUnits } from 'viem';
+import { parseAbi, formatUnits, getAddress } from 'viem';
 import { useTokenPrices } from './useTokenPrices';
 import allowedAssets from '@/lib/allowedAssets.json';
+import { useMemo } from 'react';
 
-const KINZA_COMPTROLLER = '0xcB0620b13867623a9686A34d580436d463cA963c8C'; // Kinza Comptroller
+// Kinza is an Aave V3 fork — use Pool + PoolDataProvider, NOT Comptroller
+// Source: https://docs.kinza.finance/resources/deployed-contracts/bnb-chain
+const KINZA_POOL = getAddress('0xcb0620b181140e57d1c0d8b724cde623ca963c8c');
+const KINZA_DATA_PROVIDER = getAddress('0x09ddc4ae826601b0f9671b9edffdf75e7e6f5d61');
 
-const COMPTROLLER_ABI = parseAbi([
-    'function getAllMarkets() view returns (address[])',
+const POOL_ABI = parseAbi([
+    'function getReservesList() view returns (address[])',
 ]);
 
-const VTOKEN_ABI = parseAbi([
-    'function balanceOf(address owner) view returns (uint256)',
-    'function borrowBalanceStored(address account) view returns (uint256)',
-    'function exchangeRateStored() view returns (uint256)',
-    'function underlying() view returns (address)',
-    'function decimals() view returns (uint8)',
-    'function symbol() view returns (string)'
+const DATA_PROVIDER_ABI = parseAbi([
+    'function getUserReserveData(address asset, address user) view returns (uint256 currentATokenBalance, uint256 currentStableDebtBalance, uint256 currentVariableDebtBalance, uint256 principalStableDebt, uint256 scaledVariableDebt, uint256 stableBorrowRate, uint256 liquidityRate, uint40 stableRateLastUpdated, bool usedAsCollateralEnabled)'
 ]);
 
 const ERC20_ABI = parseAbi([
@@ -27,88 +26,77 @@ export function useKinzaPortfolio() {
     const { address } = useAccount();
     const { data: prices } = useTokenPrices();
 
-    // 1. Fetch All Markets
-    const { data: allMarkets } = useReadContract({
-        address: KINZA_COMPTROLLER,
-        abi: COMPTROLLER_ABI,
-        functionName: 'getAllMarkets',
+    // 1. Fetch All Reserves from Pool
+    const { data: allReserves } = useReadContract({
+        address: KINZA_POOL,
+        abi: POOL_ABI,
+        functionName: 'getReservesList',
         query: {
-            staleTime: 1000 * 60 * 60, // 1 hour (markets don't change often)
+            staleTime: 1000 * 60 * 60, // 1 hour
         }
     });
 
-    const markets = (allMarkets as `0x${string}`[]) || [];
+    const reserves = (allReserves as `0x${string}`[]) || [];
 
-    // 2. Fetch Data for All Markets (Multicall)
-    // We need 4 calls per market: Balance, Borrow, ExchangeRate, Underlying
-    const contractCalls = markets.flatMap(market => [
-        { address: market, abi: VTOKEN_ABI, functionName: 'balanceOf', args: [address] },
-        { address: market, abi: VTOKEN_ABI, functionName: 'borrowBalanceStored', args: [address] },
-        { address: market, abi: VTOKEN_ABI, functionName: 'exchangeRateStored' },
-        { address: market, abi: VTOKEN_ABI, functionName: 'underlying' },
-        { address: market, abi: VTOKEN_ABI, functionName: 'symbol' }, // vToken Symbol
+    // 2. Build multicall: for each reserve, fetch getUserReserveData + symbol + decimals
+    // 3 calls per reserve: getUserReserveData, symbol, decimals
+    const contractCalls = reserves.flatMap(reserve => [
+        {
+            address: KINZA_DATA_PROVIDER,
+            abi: DATA_PROVIDER_ABI,
+            functionName: 'getUserReserveData',
+            args: [reserve, address]
+        },
+        { address: reserve, abi: ERC20_ABI, functionName: 'symbol' },
+        { address: reserve, abi: ERC20_ABI, functionName: 'decimals' },
     ]);
 
     const { data: activeData } = useReadContracts({
-        contracts: address && markets.length > 0 ? contractCalls as any[] : [],
+        contracts: address && reserves.length > 0 ? contractCalls as any[] : [],
         query: {
-            enabled: !!address && markets.length > 0,
+            enabled: !!address && reserves.length > 0,
             refetchInterval: 15000
         }
     });
 
     // 3. Process Data
-    let totalSupplyUSD = 0;
-    let totalBorrowUSD = 0;
-    const positions: any[] = [];
+    return useMemo(() => {
+        let totalSupplyUSD = 0;
+        let totalBorrowUSD = 0;
+        const positions: any[] = [];
 
-    if (activeData && prices) {
-        // activeData is flat array: [Bal, Bor, Ex, Und, Sym, Bal, Bor, Ex, Und, Sym, ...]
-        // 5 calls per market.
-        for (let i = 0; i < markets.length; i++) {
-            const baseIndex = i * 5;
-            const balRes = activeData[baseIndex];
-            const borRes = activeData[baseIndex + 1];
-            const exRes = activeData[baseIndex + 2];
-            const undRes = activeData[baseIndex + 3];
-            const symRes = activeData[baseIndex + 4];
+        if (activeData && prices) {
+            // activeData is flat: [UserReserveData, Symbol, Decimals, UserReserveData, Symbol, Decimals, ...]
+            // 3 calls per reserve
+            for (let i = 0; i < reserves.length; i++) {
+                const baseIndex = i * 3;
+                const reserveDataRes = activeData[baseIndex];
+                const symbolRes = activeData[baseIndex + 1];
+                const decimalsRes = activeData[baseIndex + 2];
 
-            if (balRes.status === 'success' && borRes.status === 'success' && exRes.status === 'success') {
-                const vBal = balRes.result as bigint;
-                const borrowBal = borRes.result as bigint; // Underlying amount
-                const exchangeRate = exRes.result as bigint;
-                const underlyingAddr = undRes.status === 'success' ? undRes.result as string : null;
-                const vSymbol = symRes.status === 'success' ? symRes.result as string : 'Unknown';
+                if (reserveDataRes?.status !== 'success') continue;
 
-                // Optimization: Skip if both 0
-                if (vBal === BigInt(0) && borrowBal === BigInt(0)) continue;
+                const reserveData = reserveDataRes.result as any[];
+                // Index 0: currentATokenBalance (supply)
+                // Index 1: currentStableDebtBalance
+                // Index 2: currentVariableDebtBalance
+                const aTokenBalance = reserveData[0] as bigint;
+                const stableDebt = reserveData[1] as bigint;
+                const variableDebt = reserveData[2] as bigint;
 
-                // Calculate Supply Underlying
-                // underlying = (vBal * exchangeRate) / 1e18
-                const supplyUnderlying = (vBal * exchangeRate) / BigInt("1000000000000000000");
+                // Skip if no positions
+                if (aTokenBalance === BigInt(0) && stableDebt === BigInt(0) && variableDebt === BigInt(0)) continue;
 
-                // We need the underlying decimals to format correctly to number
-                // BUT we don't have it in this call loop. We could fetch it, or assume 18.
-                // Most Kinza assets are 18.
-                // Let's assume 18 for now or add a call for it? Adding a call is safer but makes it 6 calls.
-                // Let's use 18 and fix if we see outliers.
-                const decimals = 18;
+                let symbol = symbolRes?.status === 'success' ? symbolRes.result as string : 'Unknown';
+                const decimals = decimalsRes?.status === 'success' ? decimalsRes.result as number : 18;
 
-                const supplyNum = parseFloat(formatUnits(supplyUnderlying, decimals));
-                const borrowNum = parseFloat(formatUnits(borrowBal, decimals));
+                // Normalize symbol for price lookup
+                if (symbol === 'WBNB') symbol = 'BNB';
 
-                // Get Price - we need symbol.
-                // vSymbol is likely "zkBNB", "kUSDT" etc.
-                // We can try to map based on vSymbol or just fetch underlying Symbol.
-                // Underlying symbol would be better.
-                // Let's rely on standard mapping or just `symbol()` of underlying in next iteration if needed.
-                // For now, let's use the vSymbol to guess. "kUSDT" -> USDT.
-                let symbol = vSymbol.startsWith('k') ? vSymbol.slice(1) : vSymbol;
-                if (symbol === 'WBNB') symbol = 'BNB'; // Kinza mostly
-
-                // Better: if we have underlyingAddr, check a known map or map to price?
-                // `useTokenPrices` has `getPrice(symbol)`.
                 const price = prices.getPrice(symbol);
+
+                const supplyNum = parseFloat(formatUnits(aTokenBalance, decimals));
+                const borrowNum = parseFloat(formatUnits(variableDebt + stableDebt, decimals));
 
                 const supplyUSD = supplyNum * price;
                 const borrowUSD = borrowNum * price;
@@ -116,8 +104,10 @@ export function useKinzaPortfolio() {
                 totalSupplyUSD += supplyUSD;
                 totalBorrowUSD += borrowUSD;
 
-                // Find APY data
-                const assetConfig = (allowedAssets.kinza as any[]).find(a => a.symbol === symbol || a.originalSymbol === symbol);
+                // Find APY data from allowedAssets
+                const assetConfig = (allowedAssets.kinza as any[]).find(
+                    a => a.symbol === symbol || a.originalSymbol === symbol
+                );
                 const supplyAPY = assetConfig ? assetConfig.apy : 0;
                 const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
 
@@ -133,12 +123,12 @@ export function useKinzaPortfolio() {
                 });
             }
         }
-    }
 
-    return {
-        totalSupplyUSD,
-        totalBorrowUSD,
-        netWorthUSD: totalSupplyUSD - totalBorrowUSD,
-        positions
-    };
+        return {
+            totalSupplyUSD,
+            totalBorrowUSD,
+            netWorthUSD: totalSupplyUSD - totalBorrowUSD,
+            positions
+        };
+    }, [activeData, prices, reserves]);
 }
