@@ -99,27 +99,28 @@ export function useVenusPortfolio() {
                 // So ExchangeRate is a big number.
 
                 const underlyingDecimals = DECIMALS[symbol] || 18;
-                const vTokenDecimals = 8; // Venus vTokens are always 8 decimals
 
-                // Calculate Supply in Underlying
-                // Supply = (vTokenBal * exchangeRate) / 1e18
-                // Wait, precise math:
-                // mantissa = 18 + underlyingDecimals - vTokenDecimals
-                const mantissa = 18 + underlyingDecimals - vTokenDecimals;
+                // Debugging Log
+                console.log(`[Venus] ${symbol}: vBal=${vTokenBal.toString()}, Exch=${exchangeRate.toString()}, Dec=${underlyingDecimals}`);
 
-                // User Supply (Underlying) = (vTokenBal * exchangeRate) / 10^mantissa
-                const supplyUnderlying = (Number(vTokenBal) * Number(exchangeRate)) / Math.pow(10, mantissa);
+                // Calculate Supply in Underlying (Wei)
+                // correct formula: (vTokenBal * exchangeRate) / 1e18
+                const supplyUnderlyingWei = (vTokenBal * exchangeRate) / BigInt("1000000000000000000");
+                const supplyUnderlying = parseFloat(formatUnits(supplyUnderlyingWei, underlyingDecimals));
 
                 // Borrow Balance is already in Underlying
-                const borrowUnderlying = Number(formatUnits(borrowBal, underlyingDecimals));
+                const borrowUnderlying = parseFloat(formatUnits(borrowBal, underlyingDecimals));
 
                 // Price
                 const price = prices.getPrice(symbol);
 
+                console.log(`[Venus] ${symbol}: Supply=${supplyUnderlying} (${supplyUnderlyingWei}), Borrow=${borrowUnderlying}, Price=${price}`);
+
                 const supplyUSD = supplyUnderlying * price;
                 const borrowUSD = borrowUnderlying * price;
 
-                if (supplyUSD > 0.01 || borrowUSD > 0.01) {
+                // Reduced threshold to 0.000001 to catch small balances
+                if (supplyUSD > 0.000001 || borrowUSD > 0.000001) {
                     positions.push({
                         symbol,
                         supply: supplyUnderlying,
@@ -134,6 +135,8 @@ export function useVenusPortfolio() {
                 totalBorrowUSD += borrowUSD;
             }
         }
+
+        console.log('[Venus] Total Supply USD:', totalSupplyUSD);
 
         return {
             totalSupplyUSD,
