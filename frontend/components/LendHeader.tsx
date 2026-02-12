@@ -67,50 +67,50 @@ export function LendHeader() {
                 <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-[#CEFF00]/10 rounded-full blur-[80px] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
 
-                <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="relative z-10 flex flex-col items-center text-center w-full">
                     {/* Logo/Icon + Title Row */}
-                    <div className="flex items-center gap-4 mb-2">
-                        <div className="relative w-10 h-10 md:w-12 md:h-12">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="relative w-8 h-8 md:w-12 md:h-12">
                             <Image src="/OpButler.png" alt="OpButler" fill className="object-contain" />
                         </div>
 
-                        <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                        <h1 className="text-xl md:text-3xl font-bold text-white tracking-tight">
                             <span className="text-white">OpButler</span> <span className="text-[#CEFF00]">Lend</span>
                         </h1>
                     </div>
 
-                    <p className="text-muted-foreground text-[16px] max-w-md mb-6">
+                    <p className="text-muted-foreground text-sm md:text-[16px] max-w-md mb-6 px-4">
                         The smartest yield intelligence suite on Binance
                     </p>
 
                     {/* Divider */}
                     <div className="w-full max-w-lg h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
 
-                    {/* Metrics Grid */}
-                    <div className="flex justify-between items-center w-full max-w-3xl gap-2 md:gap-8 px-2 md:px-0">
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center">Total Supply</span>
-                            <div className="text-lg md:text-2xl font-bold text-white whitespace-nowrap">
+                    {/* Metrics Grid - Adjusted for mobile */}
+                    <div className="grid grid-cols-3 w-full max-w-3xl gap-1 md:gap-8 px-1 md:px-0">
+                        <div className="flex flex-col items-center">
+                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">Total Supply</span>
+                            <div className="text-sm md:text-2xl font-bold text-white whitespace-nowrap">
                                 <Counter value={metrics.totalSupply} prefix="$" />
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center flex-1 relative">
-                            {/* Desktop/Mobile Divider - Vertical line */}
+                        <div className="flex flex-col items-center relative border-l border-white/5 md:border-none pl-1 md:pl-0">
+                            {/* Desktop Divider - Vertical line */}
                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
 
-                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center">Total Available</span>
-                            <div className="text-lg md:text-2xl font-bold text-emerald-400 whitespace-nowrap">
+                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">Total Available</span>
+                            <div className="text-sm md:text-2xl font-bold text-emerald-400 whitespace-nowrap">
                                 <Counter value={metrics.totalAvailable} prefix="$" />
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center flex-1 relative">
-                            {/* Desktop/Mobile Divider - Vertical line */}
+                        <div className="flex flex-col items-center relative border-l border-white/5 md:border-none pl-1 md:pl-0">
+                            {/* Desktop Divider - Vertical line */}
                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
 
-                            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center">Total Borrowed</span>
-                            <div className="text-lg md:text-2xl font-bold text-blue-400 whitespace-nowrap">
+                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">Total Borrowed</span>
+                            <div className="text-sm md:text-2xl font-bold text-blue-400 whitespace-nowrap">
                                 <Counter value={metrics.totalBorrowed} prefix="$" />
                             </div>
                         </div>

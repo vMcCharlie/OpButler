@@ -62,12 +62,12 @@ export function EarnTable() {
             {viewMode === 'list' && (
                 <>
                     {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-4 px-6 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        <div className="col-span-6 md:col-span-4">Vault</div>
+                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-2 text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="col-span-5 md:col-span-4">Vault</div>
                         <div className="col-span-3 md:col-span-2 text-right">APY</div>
                         <div className="hidden md:block col-span-2 text-right">Deposited</div>
                         <div className="hidden md:block col-span-2 text-right">Earnings</div>
-                        <div className="col-span-3 md:col-span-2 text-right">TVL</div>
+                        <div className="col-span-4 md:col-span-2 text-right pr-2 md:pr-0">TVL</div>
                     </div>
 
                     {/* Table Body */}
@@ -84,29 +84,29 @@ export function EarnTable() {
                                         pool.project === 'radiant-v2' ? '/radiant.jpeg' : null;
 
                             return (
-                                <div key={`${pool.pool}-${pool.project}`} className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300">
-                                    <div className="grid grid-cols-12 gap-4 px-6 py-5 items-center">
+                                <div key={`${pool.pool}-${pool.project}`} className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-xl md:rounded-2xl transition-all duration-300">
+                                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-3 md:py-5 items-center">
                                         {/* Vault */}
-                                        <div className="col-span-6 md:col-span-4 flex items-center gap-4">
+                                        <div className="col-span-5 md:col-span-4 flex items-center gap-2 md:gap-4">
                                             <div className="relative flex-shrink-0">
-                                                <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
+                                                <AssetIcon symbol={pool.symbol} className="w-6 h-6 md:w-10 md:h-10" />
                                                 {protocolImg && (
-                                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-[#0f0f12] bg-white overflow-hidden">
+                                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-5 md:h-5 rounded-full border border-[#0f0f12] bg-white overflow-hidden">
                                                         <img src={protocolImg} className="w-full h-full object-cover" alt={protocolDisplay} />
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="font-bold text-white text-sm md:text-base truncate">{pool.symbol}</span>
-                                                <span className="text-[10px] md:text-xs text-muted-foreground truncate">{protocolDisplay}</span>
+                                                <span className="font-bold text-white text-xs md:text-base truncate leading-tight">{pool.symbol}</span>
+                                                <span className="text-[9px] md:text-xs text-muted-foreground truncate leading-tight">{protocolDisplay}</span>
                                             </div>
                                         </div>
 
                                         {/* APY */}
                                         <div className="col-span-3 md:col-span-2 text-right">
-                                            <div className="flex items-center justify-end gap-1.5 font-mono text-emerald-400 font-bold text-sm md:text-base">
+                                            <div className="flex flex-col md:flex-row items-end md:items-center justify-end gap-0.5 md:gap-1.5 font-mono text-emerald-400 font-bold text-xs md:text-base">
                                                 <span className="hidden md:inline text-emerald-400">🛡️</span>
-                                                {pool.apy.toFixed(2)}%
+                                                <span>{pool.apy.toFixed(2)}%</span>
                                             </div>
                                         </div>
 
@@ -121,15 +121,15 @@ export function EarnTable() {
                                         </div>
 
                                         {/* TVL */}
-                                        <div className="col-span-3 md:col-span-2 flex items-center justify-between pl-0 md:pl-4">
+                                        <div className="col-span-4 md:col-span-2 flex items-center justify-end pl-0 md:pl-4 gap-1">
                                             <div className="flex flex-col items-end flex-1 min-w-0">
-                                                <span className="font-bold text-white text-xs md:text-sm max-w-full truncate">{formatMoney(pool.tvlUsd)} <span className="hidden sm:inline">{pool.symbol}</span></span>
-                                                <span className="text-[10px] md:text-xs text-muted-foreground">${formatMoney(pool.tvlUsd)}</span>
+                                                <span className="font-bold text-white text-[10px] md:text-sm max-w-full truncate">{formatMoney(pool.tvlUsd)} <span className="hidden sm:inline">{pool.symbol}</span></span>
+                                                <span className="text-[9px] md:text-xs text-muted-foreground">${formatMoney(pool.tvlUsd)}</span>
                                             </div>
 
                                             <button
                                                 onClick={() => setSelectedPool(pool)}
-                                                className="ml-2 md:ml-4 flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-emerald-500/50 group-hover:text-emerald-500"
+                                                className="ml-1 md:ml-4 flex-shrink-0 w-5 h-5 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-emerald-500/50 group-hover:text-emerald-500"
                                             >
                                                 <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
                                             </button>

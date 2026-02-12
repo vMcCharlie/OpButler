@@ -18,7 +18,7 @@ export function LendInternalNavbar() {
 
     return (
         <div className="flex justify-center items-center w-full h-16 mb-2 overflow-x-auto no-scrollbar scroll-smooth">
-            <div className="flex p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative whitespace-nowrap min-w-max mx-4 md:mx-0">
+            <div className="grid grid-cols-4 gap-1 p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative w-full md:w-auto md:flex md:gap-0 mx-4 md:mx-0">
                 {TABS.map((tab) => {
                     const isActive = pathname === tab.href;
                     return (
@@ -26,7 +26,7 @@ export function LendInternalNavbar() {
                             key={tab.id}
                             href={tab.href}
                             className={cn(
-                                "relative px-3 md:px-6 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold transition-colors flex items-center gap-1.5 md:gap-2 z-10",
+                                "relative px-1 md:px-6 py-2 rounded-full text-[10px] md:text-sm font-bold transition-colors flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 z-10 text-center leading-none",
                                 isActive ? "text-black" : "text-muted-foreground hover:text-white"
                             )}
                         >
@@ -37,8 +37,8 @@ export function LendInternalNavbar() {
                                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                 />
                             )}
-                            <tab.icon className="w-4 h-4" />
-                            {tab.label}
+                            <tab.icon className="w-3 h-3 md:w-4 md:h-4" />
+                            <span className="truncate w-full">{tab.label}</span>
                         </a>
                     );
                 })}
