@@ -13,6 +13,7 @@ import { formatMoney } from "@/lib/utils";
 export function EarnTable() {
     const { data: yields, isLoading } = useYields();
     const [selectedPool, setSelectedPool] = useState<any>(null);
+    const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
 
     const earningsData = useMemo(() => {
         if (!yields) return [];
