@@ -6,7 +6,7 @@ import { useAccount, useReadContract } from 'wagmi';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useYields } from "@/hooks/useYields";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
-import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
+import { useVenusSubgraph } from "@/hooks/useVenusSubgraph";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
@@ -31,7 +31,11 @@ export function Portfolio() {
         : undefined;
 
     // 2. Fetch Portfolio Data
-    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, positions: venusPositions } = useVenusPortfolio();
+    const { data: venusData } = useVenusSubgraph();
+    const venusSupply = venusData?.totalSupplyUSD || 0;
+    const venusBorrow = venusData?.totalBorrowUSD || 0;
+    const venusPositions = venusData?.positions || [];
+
     const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow, positions: kinzaPositions } = useKinzaPortfolio();
     const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow, positions: radiantPositions } = useRadiantPortfolio();
 
