@@ -1,159 +1,152 @@
-import { useReadContracts, useAccount } from 'wagmi';
+import { useReadContract, useReadContracts, useAccount } from 'wagmi';
 import { useMemo } from 'react';
 import { formatUnits, parseAbi } from 'viem';
-import { VENUS_VTOKENS, VTOKEN_ABI } from '@/lib/pool-config';
+import { VENUS_COMPTROLLER } from '@/lib/pool-config';
 import { useTokenPrices } from '@/hooks/useTokenPrices';
 import allowedAssets from '@/lib/allowedAssets.json';
 
-// Underlying Decimals Mapping (Manual for now, ideal would be to fetch)
-const DECIMALS: Record<string, number> = {
-    'BNB': 18,
-    'WBNB': 18,
-    'BTCB': 18, // BTCB is 18
-    'ETH': 18,
-    'USDT': 18, // USDT on BSC is 18
-    'USDC': 18, // USDC on BSC is 18
-    'XRP': 18, // XRP on BSC (BEP20) is 18
-    // Add others as needed
-};
+const COMPTROLLER_ABI = parseAbi([
+    'function getAllMarkets() view returns (address[])',
+]);
+
+const VTOKEN_ABI = parseAbi([
+    'function balanceOf(address owner) view returns (uint256)',
+    'function borrowBalanceStored(address account) view returns (uint256)',
+    'function exchangeRateStored() view returns (uint256)',
+    'function underlying() view returns (address)',
+    'function symbol() view returns (string)',
+    'function decimals() view returns (uint8)'
+]);
+
+const ERC20_ABI = parseAbi([
+    'function symbol() view returns (string)',
+    'function decimals() view returns (uint8)'
+]);
 
 export function useVenusPortfolio() {
     const { address } = useAccount();
     const { data: prices } = useTokenPrices();
 
-    // Prepare contract calls for all supported Venus Tokens
-    const vTokenSymbols = Object.keys(VENUS_VTOKENS);
-    const contracts: any[] = [];
-
-    vTokenSymbols.forEach(symbol => {
-        const vTokenAddress = VENUS_VTOKENS[symbol];
-        if (!vTokenAddress) return;
-
-        // 1. Balance of vToken (User's supply in vTokens)
-        contracts.push({
-            address: vTokenAddress,
-            abi: VTOKEN_ABI,
-            functionName: 'balanceOf',
-            args: [address as `0x${string}`]
-        });
-
-        // 2. Borrow Balance Current (User's borrow in Underlying)
-        // Note: borrowBalanceStored is view, borrowBalanceCurrent updates state but is not view.
-        // We use borrowBalanceStored for reading without transaction.
-        contracts.push({
-            address: vTokenAddress,
-            abi: VTOKEN_ABI,
-            functionName: 'borrowBalanceStored',
-            args: [address as `0x${string}`]
-        });
-
-        // 3. Exchange Rate (vToken -> Underlying)
-        contracts.push({
-            address: vTokenAddress,
-            abi: VTOKEN_ABI,
-            functionName: 'exchangeRateStored',
-        });
-    });
-
-    const { data: results, isLoading, refetch } = useReadContracts({
-        contracts,
+    // 1. Fetch All Markets from Comptroller
+    const { data: allMarkets } = useReadContract({
+        address: VENUS_COMPTROLLER as `0x${string}`,
+        abi: COMPTROLLER_ABI,
+        functionName: 'getAllMarkets',
         query: {
-            enabled: !!address,
-            refetchInterval: 10_000,
+            staleTime: 1000 * 60 * 60, // 1 hour
         }
     });
 
+    const markets = (allMarkets as `0x${string}`[]) || [];
+
+    // 2. Multicall for User Data
+    // For each market: Balance, Borrow, ExchangeRate, Underlying, Symbol, Decimals(optional if standard)
+    // We also need decimals of underlying to format correctly.
+    const contractCalls = markets.flatMap(market => [
+        { address: market, abi: VTOKEN_ABI, functionName: 'balanceOf', args: [address] },
+        { address: market, abi: VTOKEN_ABI, functionName: 'borrowBalanceStored', args: [address] },
+        { address: market, abi: VTOKEN_ABI, functionName: 'exchangeRateStored' },
+        { address: market, abi: VTOKEN_ABI, functionName: 'underlying' },
+        { address: market, abi: VTOKEN_ABI, functionName: 'symbol' },
+    ]);
+
+    const { data: activeData } = useReadContracts({
+        contracts: address && markets.length > 0 ? contractCalls as any[] : [],
+        query: {
+            enabled: !!address && markets.length > 0,
+            refetchInterval: 15000
+        }
+    });
+
+    // 3. Process Data
     return useMemo(() => {
-        if (!results || !prices || !address) return {
+        if (!activeData || !prices || !address) return {
             totalSupplyUSD: 0,
             totalBorrowUSD: 0,
             netWorthUSD: 0,
             positions: [],
-            isLoading: true,
-            refetch
+            isLoading: true
         };
 
         let totalSupplyUSD = 0;
         let totalBorrowUSD = 0;
-        const positions = [];
+        const positions: any[] = [];
 
-        // Iterate by chunks of 3 calls per token
-        for (let i = 0; i < vTokenSymbols.length; i++) {
-            const symbol = vTokenSymbols[i];
-            const baseIdx = i * 3;
+        // 5 calls per market
+        for (let i = 0; i < markets.length; i++) {
+            const baseIndex = i * 5;
+            const balRes = activeData[baseIndex];
+            const borRes = activeData[baseIndex + 1];
+            const exRes = activeData[baseIndex + 2];
+            const undRes = activeData[baseIndex + 3];
+            const symRes = activeData[baseIndex + 4];
 
-            const balRes = results[baseIdx];
-            const borrowRes = results[baseIdx + 1];
-            const exchRes = results[baseIdx + 2];
+            if (balRes.status === 'success' && borRes.status === 'success' && exRes.status === 'success') {
+                const vBal = balRes.result as bigint;
+                const borrowBal = borRes.result as bigint; // Underlying amount
+                const exchangeRate = exRes.result as bigint;
+                const vSymbol = symRes.status === 'success' ? (symRes.result as string) : '';
 
-            if (balRes.status === 'success' && borrowRes.status === 'success' && exchRes.status === 'success') {
-                const vTokenBal = balRes.result as bigint;
-                const borrowBal = borrowRes.result as bigint;
-                const exchangeRate = exchRes.result as bigint; // Scaled by 1e18 usually, but depends on decimals
+                // Skip if no balance and no borrow
+                if (vBal === BigInt(0) && borrowBal === BigInt(0)) continue;
 
-                // Venus Exchange Rate Logic:
-                // Exchange Rate = (Total Cash + Total Borrows - Total Reserves) / Total Supply
-                // It is scaled by 1e18 + (underlyingDecimals - vTokenDecimals).
-                // vTokens have 8 decimals.
-                // Underlying (e.g. BNB) has 18.
-                // Scaling = 10^(18 + 18 - 8) = 1e28.
-                // So ExchangeRate is a big number.
+                // Determine Asset Symbol
+                // vBNB doesn't have underlying() usually, returns 0x0... or reverts?
+                // Actually vBNB has underlying() on some chains, but on Venus it might not.
+                // If symbol is vBNB, we know it's BNB.
+                let symbol = vSymbol.startsWith('v') ? vSymbol.slice(1) : vSymbol;
+                if (symbol === 'WBNB') symbol = 'BNB';
 
-                const underlyingDecimals = DECIMALS[symbol] || 18;
+                // Decimals
+                // Most underlying on BSC are 18. USDC/USDT are 18 on BSC.
+                // We can assume 18 for now.
+                const decimals = 18;
 
-                // Debugging Log
-                console.log(`[Venus] ${symbol}: vBal=${vTokenBal.toString()}, Exch=${exchangeRate.toString()}, Dec=${underlyingDecimals}`);
+                // Supply in Underlying
+                // underlying = (vBal * exchangeRate) / 1e18
+                const supplyUnderlyingWei = (vBal * exchangeRate) / BigInt("1000000000000000000");
+                const supplyNum = parseFloat(formatUnits(supplyUnderlyingWei, decimals));
 
-                // Calculate Supply in Underlying (Wei)
-                // correct formula: (vTokenBal * exchangeRate) / 1e18
-                const supplyUnderlyingWei = (vTokenBal * exchangeRate) / BigInt("1000000000000000000");
-                const supplyUnderlying = parseFloat(formatUnits(supplyUnderlyingWei, underlyingDecimals));
-
-                // Borrow Balance is already in Underlying
-                const borrowUnderlying = parseFloat(formatUnits(borrowBal, underlyingDecimals));
+                // Borrow in Underlying
+                const borrowNum = parseFloat(formatUnits(borrowBal, decimals));
 
                 // Price
                 const price = prices.getPrice(symbol);
 
-                console.log(`[Venus] ${symbol}: Supply=${supplyUnderlying} (${supplyUnderlyingWei}), Borrow=${borrowUnderlying}, Price=${price}`);
-
-                const supplyUSD = supplyUnderlying * price;
-                const borrowUSD = borrowUnderlying * price;
-
-                // Find matching asset in allowedAssets for APY
-                const assetConfig = (allowedAssets.venus as any[]).find(a => a.symbol === symbol || a.originalSymbol === symbol);
-                const supplyAPY = assetConfig ? assetConfig.apy : 0;
-                const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
-
-                // Reduced threshold to 0.000001 to catch small balances
-                if (supplyUSD > 0.000001 || borrowUSD > 0.000001) {
-                    positions.push({
-                        symbol,
-                        supply: supplyUnderlying,
-                        borrow: borrowUnderlying,
-                        supplyUSD,
-                        borrowUSD,
-                        price,
-                        apy: supplyAPY,
-                        borrowApy: borrowAPY
-                    });
-                }
+                const supplyUSD = supplyNum * price;
+                const borrowUSD = borrowNum * price;
 
                 totalSupplyUSD += supplyUSD;
                 totalBorrowUSD += borrowUSD;
+
+                // Find APY data
+                // Try exact match, then v-stripped match
+                let assetConfig = (allowedAssets.venus as any[]).find(a => a.symbol === symbol || a.originalSymbol === symbol);
+
+                // If not found, try to look up by underlying symbol (handled by logic above partially)
+                const supplyAPY = assetConfig ? assetConfig.apy : 0;
+                const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
+
+                positions.push({
+                    symbol,
+                    supply: supplyNum,
+                    supplyUSD,
+                    borrow: borrowNum,
+                    borrowUSD,
+                    price,
+                    apy: supplyAPY,
+                    borrowApy: borrowAPY
+                });
             }
         }
-
-        console.log('[Venus] Total Supply USD:', totalSupplyUSD);
 
         return {
             totalSupplyUSD,
             totalBorrowUSD,
             netWorthUSD: totalSupplyUSD - totalBorrowUSD,
             positions,
-            isLoading: false,
-            refetch
+            isLoading: false
         };
 
-    }, [results, prices, address]);
+    }, [activeData, prices, address, markets]);
 }

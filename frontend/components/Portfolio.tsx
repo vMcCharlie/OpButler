@@ -7,7 +7,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 import { useYields } from "@/hooks/useYields";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
-import { useVenusSubgraph } from "@/hooks/useVenusSubgraph";
+import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
@@ -32,10 +32,8 @@ export function Portfolio() {
         : undefined;
 
     // 2. Fetch Portfolio Data
-    const { data: venusData } = useVenusSubgraph();
-    const venusSupply = venusData?.totalSupplyUSD || 0;
-    const venusBorrow = venusData?.totalBorrowUSD || 0;
-    const venusPositions = venusData?.positions || [];
+    // Venus (On-Chain)
+    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, positions: venusPositions } = useVenusPortfolio();
 
     const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow, positions: kinzaPositions } = useKinzaPortfolio();
     const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow, positions: radiantPositions } = useRadiantPortfolio();
