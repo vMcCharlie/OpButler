@@ -1,28 +1,58 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useYields, YieldData } from "@/hooks/useYields";
+import { useYields } from "@/hooks/useYields";
+import { useVenusPortfolio } from '@/hooks/useVenusPortfolio';
+import { useKinzaPortfolio } from '@/hooks/useKinzaPortfolio';
+import { useRadiantPortfolio } from '@/hooks/useRadiantPortfolio';
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { Button } from "@/components/ui/button";
 import { ChevronRight, LayoutGrid, List } from 'lucide-react';
-import Link from 'next/link';
 import { Card } from "@/components/ui/card";
 import { EarnModal } from "./EarnModal";
 import { formatMoney } from "@/lib/utils";
 
 export function EarnTable() {
-    const { data: yields, isLoading } = useYields();
+    const { data: yields, isLoading: isYieldsLoading } = useYields();
+    const { positions: venusPositions, isLoading: isVenusLoading } = useVenusPortfolio();
+    const { positions: kinzaPositions, isLoading: isKinzaLoading } = useKinzaPortfolio();
+    const { positions: radiantPositions, isLoading: isRadiantLoading } = useRadiantPortfolio();
+
     const [selectedPool, setSelectedPool] = useState<any>(null);
     const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
+
+    const isLoading = isYieldsLoading || isVenusLoading || isKinzaLoading || isRadiantLoading;
+
+    // Map positions for O(1) lookup: key = `${protocol}-${symbol}`
+    const positionMap = useMemo(() => {
+        const map = new Map<string, any>();
+
+        venusPositions.forEach((pos: any) => {
+            map.set(`venus-${pos.symbol}`, pos);
+        });
+        kinzaPositions.forEach((pos: any) => {
+            map.set(`kinza-finance-${pos.symbol}`, pos);
+        });
+        radiantPositions.forEach((pos: any) => {
+            map.set(`radiant-v2-${pos.symbol}`, pos);
+        });
+
+        return map;
+    }, [venusPositions, kinzaPositions, radiantPositions]);
 
     const earningsData = useMemo(() => {
         if (!yields) return [];
 
         // Flatten yields into a list of earn opportunities
-        // We want to list each pool separately as a "Vault"
         return yields
             .filter(pool => pool.apy > 0) // Only relevant earning pools
-            .sort((a, b) => b.tvlUsd - a.tvlUsd); // Sort by TVL default
+            .sort((a, b) => {
+                // Primary sort: Symbol (Alphabetical)
+                const symbolComparison = a.symbol.localeCompare(b.symbol);
+                if (symbolComparison !== 0) return symbolComparison;
+
+                // Secondary sort: APY (Descending)
+                return b.apy - a.apy;
+            });
     }, [yields]);
 
     if (isLoading) {
@@ -83,8 +113,19 @@ export function EarnTable() {
                                     pool.project === 'kinza-finance' ? '/kinza.png' :
                                         pool.project === 'radiant-v2' ? '/radiant.jpeg' : null;
 
+                            // Lookup position
+                            // Note: hooks return standardized symbols (e.g. 'BNB', 'BTCB')
+                            // Ensure pool.symbol matches hook symbol standards if needed
+                            const userPosition = positionMap.get(`${pool.project}-${pool.symbol}`);
+                            const depositedAmount = userPosition ? userPosition.supply : 0;
+                            const depositedUSD = userPosition ? userPosition.supplyUSD : 0;
+
                             return (
-                                <div key={`${pool.pool}-${pool.project}`} className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-xl md:rounded-2xl transition-all duration-300">
+                                <div
+                                    key={`${pool.pool}-${pool.project}`}
+                                    className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-xl md:rounded-2xl transition-all duration-300 cursor-pointer"
+                                    onClick={() => setSelectedPool(pool)}
+                                >
                                     <div className="grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-3 md:py-5 items-center">
                                         {/* Vault */}
                                         <div className="col-span-5 md:col-span-4 flex items-center gap-2 md:gap-4">
@@ -105,17 +146,23 @@ export function EarnTable() {
                                         {/* APY */}
                                         <div className="col-span-3 md:col-span-2 text-right">
                                             <div className="flex flex-col md:flex-row items-end md:items-center justify-end gap-0.5 md:gap-1.5 font-mono text-emerald-400 font-bold text-xs md:text-base">
-                                                <span className="hidden md:inline text-emerald-400">🛡️</span>
                                                 <span>{pool.apy.toFixed(2)}%</span>
                                             </div>
                                         </div>
 
-                                        {/* Deposited - Placeholder */}
-                                        <div className="hidden md:block col-span-2 text-right font-mono text-muted-foreground text-sm">
-                                            -
+                                        {/* Deposited */}
+                                        <div className="hidden md:block col-span-2 text-right font-mono text-sm">
+                                            {depositedAmount > 0 ? (
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-white font-medium">{formatMoney(depositedAmount)} {pool.symbol}</span>
+                                                    <span className="text-xs text-muted-foreground">${formatMoney(depositedUSD)}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">-</span>
+                                            )}
                                         </div>
 
-                                        {/* Earnings - Placeholder */}
+                                        {/* Earnings */}
                                         <div className="hidden md:block col-span-2 text-right font-mono text-muted-foreground text-sm">
                                             -
                                         </div>
@@ -127,12 +174,11 @@ export function EarnTable() {
                                                 <span className="text-[9px] md:text-xs text-muted-foreground">${formatMoney(pool.tvlUsd)}</span>
                                             </div>
 
-                                            <button
-                                                onClick={() => setSelectedPool(pool)}
+                                            <div
                                                 className="ml-1 md:ml-4 flex-shrink-0 w-5 h-5 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-emerald-500/50 group-hover:text-emerald-500"
                                             >
                                                 <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
-                                            </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
