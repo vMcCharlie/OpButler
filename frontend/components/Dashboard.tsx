@@ -50,7 +50,7 @@ export function Dashboard() {
     const totalNetWorth = totalSupplied - totalBorrowed;
 
     return (
-        <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
+        <div className="container pt-0 md:pt-8 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Dashboard</h1>
@@ -157,13 +157,13 @@ export function Dashboard() {
                             <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
                                 <span className="text-xs font-bold uppercase text-muted-foreground">Health</span>
                                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${proto.health.status === 'safe' ? 'bg-emerald-500/20 text-emerald-500' :
-                                        proto.health.status === 'warning' ? 'bg-amber-500/20 text-amber-400' :
-                                            proto.health.status === 'danger' ? 'bg-red-500/20 text-red-500' :
-                                                'bg-muted/50 text-muted-foreground'
+                                    proto.health.status === 'warning' ? 'bg-amber-500/20 text-amber-400' :
+                                        proto.health.status === 'danger' ? 'bg-red-500/20 text-red-500' :
+                                            'bg-muted/50 text-muted-foreground'
                                     }`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${proto.health.status === 'safe' ? 'bg-emerald-400' :
-                                            proto.health.status === 'warning' ? 'bg-amber-400' :
-                                                proto.health.status === 'danger' ? 'bg-red-400' : 'bg-muted-foreground'
+                                        proto.health.status === 'warning' ? 'bg-amber-400' :
+                                            proto.health.status === 'danger' ? 'bg-red-400' : 'bg-muted-foreground'
                                         }`} />
                                     {proto.health.hasPositions ? `${proto.health.healthFactor.toFixed(2)}` : 'N/A'}
                                 </span>

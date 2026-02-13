@@ -16,7 +16,7 @@ import {
     getUnderlyingAddress, getApprovalTarget,
 } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { formatMoney, formatSmallNumber, getTokenDecimals } from "@/lib/utils";
+import { formatMoney, formatSmallNumber, getTokenDecimals, toPlainString } from "@/lib/utils";
 import { useTokenPrices } from "@/hooks/useTokenPrices";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
@@ -240,12 +240,12 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     // MAX / HALF
     const repayMax = Math.min(walletBalance, borrowedAmount);
     const setHalf = () => {
-        if (activeTab === 'repay') setAmount((repayMax / 2).toString());
+        if (activeTab === 'repay') setAmount(toPlainString(repayMax / 2));
     };
     const setMax = () => {
         if (activeTab === 'repay') {
             const max = isNative && repayMax > 0.01 ? repayMax - 0.01 : repayMax;
-            setAmount(max.toString());
+            setAmount(toPlainString(max));
         }
     };
 

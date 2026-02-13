@@ -17,7 +17,7 @@ import {
     getUnderlyingAddress, getApprovalTarget,
 } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { formatMoney, formatSmallNumber, getTokenDecimals } from "@/lib/utils";
+import { formatMoney, formatSmallNumber, getTokenDecimals, toPlainString } from "@/lib/utils";
 import { useTokenPrices } from "@/hooks/useTokenPrices";
 import { useVenusCollateral } from "@/hooks/useVenusCollateral";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
@@ -322,14 +322,14 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
 
     const setHalf = () => {
         const base = activeTab === 'deposit' ? walletBalance : maxWithdrawable;
-        setAmount((base / 2).toString());
+        setAmount(toPlainString(base / 2));
     };
     const setMax = () => {
         if (activeTab === 'deposit') {
             const max = isNative && walletBalance > 0.01 ? walletBalance - 0.01 : walletBalance;
-            setAmount(max.toString());
+            setAmount(toPlainString(max));
         } else {
-            setAmount(maxWithdrawable.toString());
+            setAmount(toPlainString(maxWithdrawable));
         }
     };
 

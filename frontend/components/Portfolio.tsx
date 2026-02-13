@@ -261,7 +261,7 @@ export function Portfolio() {
     ];
 
     return (
-        <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-0 md:px-16">
+        <div className="container pt-0 md:pt-8 pb-24 space-y-8 max-w-screen-2xl mx-auto px-0 md:px-16">
             <div className="flex items-center justify-between px-4 md:px-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">My Portfolio</h1>
@@ -275,7 +275,7 @@ export function Portfolio() {
             </div>
 
             {/* Main Stats Grid */}
-            <div className="grid gap-6 md:grid-cols-4 px-4 md:px-0">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6 px-4 md:px-0">
                 {/* Net Worth */}
                 <Card className="border-l-4 border-l-primary/80 bg-gradient-to-br from-primary/5 via-card to-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -285,10 +285,12 @@ export function Portfolio() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
+                        <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
                             ${(totalNetWorth || 0).toFixed(2)}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Total Equity</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Across Venus, Kinza, Radiant
+                        </p>
                     </CardContent>
                 </Card>
 
@@ -301,7 +303,7 @@ export function Portfolio() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-emerald-500">${totalSupplied.toFixed(2)}</div>
+                        <div className="text-2xl md:text-3xl font-bold text-emerald-500">${totalSupplied.toFixed(2)}</div>
                         <p className="text-xs text-muted-foreground mt-1">Collateral & Liquidity</p>
                     </CardContent>
                 </Card>
@@ -309,13 +311,13 @@ export function Portfolio() {
                 {/* Total Debt */}
                 <Card className="border-l-4 border-l-red-500/80">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Debt</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Borrowed</CardTitle>
                         <div className="p-2 bg-red-500/10 rounded-full">
                             <AlertTriangle className="w-4 h-4 text-red-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-red-500">${totalDebt.toFixed(2)}</div>
+                        <div className="text-2xl md:text-3xl font-bold text-red-500">${totalDebt.toFixed(2)}</div>
                         <p className="text-xs text-muted-foreground mt-1">Global Borrowed Amount</p>
                     </CardContent>
                 </Card>
@@ -323,17 +325,17 @@ export function Portfolio() {
                 {/* Health Status */}
                 <Card className="border-l-4 border-l-blue-500/80">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Health Status</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Health Score</CardTitle>
                         <div className="p-2 bg-blue-500/10 rounded-full">
                             <Heart className="w-4 h-4 text-blue-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-3xl font-bold ${overallStatus.color}`}>
-                            {overallStatus.text}
+                        <div className={`text-2xl md:text-3xl font-bold ${overallScore >= 7 ? 'text-emerald-400' : overallScore >= 4 ? 'text-amber-400' : 'text-red-400'}`}>
+                            {overallScore.toFixed(1)}/10
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Score: <span className={`font-bold ${overallScore >= 7 ? 'text-emerald-400' : overallScore >= 4 ? 'text-amber-400' : 'text-red-400'}`}>{overallScore.toFixed(1)}/10</span>
+                            Overall Account Health
                         </p>
                     </CardContent>
                 </Card>

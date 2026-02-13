@@ -84,3 +84,13 @@ export const TOKEN_DECIMALS: Record<string, number> = {
 export function getTokenDecimals(symbol: string): number {
     return TOKEN_DECIMALS[symbol] || 18;
 }
+
+/**
+ * Converts a number to a plain string, avoiding scientific notation.
+ * Trims unnecessary trailing zeros for a clean display.
+ */
+export function toPlainString(num: number): string {
+    // We use toFixed with a large precision to avoid scientific notation,
+    // then regex to remove trailing zeros and the decimal point if it's no longer needed.
+    return num.toFixed(18).replace(/\.?0+$/, "");
+}
