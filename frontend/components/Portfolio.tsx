@@ -583,45 +583,58 @@ export function Portfolio() {
                         <div className="md:hidden space-y-4">
                             {protocols.map((proto) => (
                                 <div key={proto.id} className="rounded-xl border border-border bg-card overflow-hidden">
-                                    <div className="p-3 md:p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleExpand(proto.id)}>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white border border-white/10">
-                                                <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
+                                    <div className="p-4 flex flex-col gap-4 cursor-pointer" onClick={() => toggleExpand(proto.id)}>
+                                        {/* Top Row: Identity & Action */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-white border border-white/10 shadow-sm">
+                                                    <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
+                                                </div>
+                                                <div>
+                                                    <div className="font-black text-lg tracking-tight leading-none mb-1">{proto.name}</div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase font-black tracking-widest leading-none">Net Worth: <span className="text-white">${(proto.supply - proto.borrow).toFixed(2)}</span></div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-bold flex items-center gap-2">
-                                                    {proto.name}
-                                                    <HealthBadge health={proto.health} />
-                                                </div>
-                                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                                                    <span>Sup: ${proto.supply.toFixed(2)}</span>
-                                                    <span>•</span>
-                                                    <span className="text-red-400">Debt: ${proto.borrow.toFixed(2)}</span>
-                                                </div>
-                                                <div className="mt-2 w-full max-w-[180px]">
-                                                    <div className="flex justify-between items-center text-[9px] mb-1">
-                                                        <span className="text-muted-foreground/60 uppercase">Utilization</span>
-                                                        <span className={cn(
-                                                            "font-bold",
-                                                            proto.utilization > 90 ? "text-red-400" : proto.utilization > 70 ? "text-amber-400" : "text-emerald-400"
-                                                        )}>
-                                                            {proto.utilization.toFixed(1)}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                                        <motion.div
-                                                            className={cn(
-                                                                "h-full rounded-full",
-                                                                proto.utilization > 90 ? "bg-red-500" : proto.utilization > 70 ? "bg-amber-500" : "bg-emerald-500"
-                                                            )}
-                                                            initial={{ width: 0 }}
-                                                            animate={{ width: `${Math.min(100, proto.utilization)}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                            <div className="flex items-center gap-2">
+                                                <HealthBadge health={proto.health} />
+                                                {expandedProtocol === proto.id ? <ChevronUp size={20} className="text-muted-foreground" /> : <ChevronDown size={20} className="text-muted-foreground" />}
                                             </div>
                                         </div>
-                                        {expandedProtocol === proto.id ? <ChevronUp size={20} className="text-muted-foreground" /> : <ChevronDown size={20} className="text-muted-foreground" />}
+
+                                        {/* Middle Section: Supply & Debt Grid */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3 flex flex-col gap-1">
+                                                <span className="text-[10px] uppercase text-emerald-500/50 font-black tracking-widest">Supply</span>
+                                                <span className="text-sm font-black text-white font-mono">${proto.supply.toFixed(2)}</span>
+                                            </div>
+                                            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3 flex flex-col gap-1">
+                                                <span className="text-[10px] uppercase text-red-500/50 font-black tracking-widest">Debt</span>
+                                                <span className="text-sm font-black text-red-400 font-mono">${proto.borrow.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Section: Utilization Progress */}
+                                        <div className="bg-white/[0.02] rounded-xl p-3 border border-white/5">
+                                            <div className="flex justify-between items-center text-[10px] mb-2 font-black">
+                                                <span className="text-muted-foreground/60 uppercase tracking-widest">Utilization</span>
+                                                <span className={cn(
+                                                    "font-black tabular-nums tracking-tighter",
+                                                    proto.utilization > 90 ? "text-red-400" : proto.utilization > 70 ? "text-amber-400" : "text-emerald-400"
+                                                )}>
+                                                    {proto.utilization.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    className={cn(
+                                                        "h-full rounded-full",
+                                                        proto.utilization > 90 ? "bg-red-500" : proto.utilization > 70 ? "bg-amber-500" : "bg-emerald-500"
+                                                    )}
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${Math.min(100, proto.utilization)}%` }}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                     {expandedProtocol === proto.id && (
                                         <div className="border-t border-border">
