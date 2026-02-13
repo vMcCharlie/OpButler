@@ -1,17 +1,16 @@
 import { parseAbi } from 'viem';
 
 // --- Contract Addresses (BSC Mainnet) ---
-// Note: These are example addresses. In a real prod app, you'd fetch these from a config or subgraph.
 
 export const VENUS_COMPTROLLER = '0xfD36E2c2a6789Db23113685031d7F16329158384';
-export const KINZA_COMPTROLLER = '0x...'; // Placeholder if specific comptroller needed
-export const RADIANT_LENDING_POOL = '0x...'; // Placeholder
+
+// PancakeSwap V2 Router (BSC Mainnet)
+export const PANCAKE_ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E' as `0x${string}`;
 
 // vToken Mappings for Venus (Asset Symbol -> vToken Address)
-// Source: Venus Protocol Docs / BscScan
 export const VENUS_VTOKENS: Record<string, `0x${string}`> = {
     'BNB': '0xA07c5b74C9B40447a954e1466938b865b6BBe19B', // vBNB
-    'WBNB': '0xA07c5b74C9B40447a954e1466938b865b6BBe19B', // Treated as BNB on Venus usually (vBNB)
+    'WBNB': '0xA07c5b74C9B40447a954e1466938b865b6BBe19B',
     'USDT': '0xfD5840Cd36d94D7229439859C0112a4185BC0255', // vUSDT
     'USDC': '0xecA88125a5ADbe82614ffC12D0DB554E2e2867C8', // vUSDC
     'BTCB': '0x882C173bC7Ff3b7786CA16dfeD3DFFfb9Ee7847B', // vBTC
@@ -40,7 +39,17 @@ export const ERC20_ABI = parseAbi([
     'function symbol() view returns (string)'
 ]);
 
-// Venus vToken ABI (Mint/Redeem)
+// Venus Comptroller ABI (Collateral Management)
+export const COMPTROLLER_ABI = parseAbi([
+    'function getAssetsIn(address account) view returns (address[])',
+    'function getAccountLiquidity(address account) view returns (uint256, uint256, uint256)',
+    'function enterMarkets(address[] calldata vTokens) returns (uint256[])',
+    'function exitMarket(address vToken) returns (uint256)',
+    'function markets(address) view returns (bool isListed, uint256 collateralFactorMantissa, bool isComped)',
+    'function getAllMarkets() view returns (address[])',
+]);
+
+// Venus vToken ABI (Supply/Borrow/Redeem)
 export const VTOKEN_ABI = parseAbi([
     // Supply (Mint)
     'function mint(uint256 mintAmount) returns (uint256)', // For ERC20
@@ -54,6 +63,7 @@ export const VTOKEN_ABI = parseAbi([
     'function balanceOf(address owner) view returns (uint256)',
     'function balanceOfUnderlying(address owner) returns (uint256)',
     'function exchangeRateStored() view returns (uint256)',
+    'function borrowBalanceStored(address account) view returns (uint256)',
 
     // Borrow
     'function borrow(uint256 borrowAmount) returns (uint256)',
@@ -68,3 +78,4 @@ export const LENDING_POOL_ABI = parseAbi([
     'function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf)',
     'function repay(address asset, uint256 amount, uint256 rateMode, address onBehalfOf)'
 ]);
+

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { Loader2, Check, ExternalLink, X, ArrowUpDown } from "lucide-react";
+import { Loader2, Check, ExternalLink, X, ArrowUpDown, AlertTriangle, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts, useBalance } from "wagmi";
 import { parseEther, parseUnits, formatUnits } from "viem";
@@ -10,6 +10,7 @@ import { VENUS_VTOKENS, VTOKEN_ABI, ERC20_ABI, UNDERLYING_TOKENS } from "@/lib/p
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { formatMoney, formatTokenAmount } from "@/lib/utils";
 import { useTokenPrices } from "@/hooks/useTokenPrices";
+import { useVenusCollateral } from "@/hooks/useVenusCollateral";
 
 interface EarnModalProps {
     isOpen: boolean;
@@ -19,8 +20,8 @@ interface EarnModalProps {
         project: string;
         apy: number;
         tvlUsd: number;
-        userDeposited?: number; // Placeholder for now
-        userEarnings?: number; // Placeholder for now
+        userDeposited?: number;
+        userEarnings?: number;
     };
 }
 
@@ -32,12 +33,13 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
     const [step, setStep] = useState<"idle" | "approving" | "mining" | "success">("idle");
     const { data: prices } = useTokenPrices();
 
+    // Collateral awareness
+    const collateral = useVenusCollateral(pool.symbol);
+
     // Get Price
     const tokenPrice = prices ? prices.getPrice(pool.symbol) : 0;
 
     // --- Contract Config ---
-    // Only supporting Venus for explicit demo logic right now.
-    // Others will show a "Coming Soon" or generic handling.
     const isVenus = pool.project === 'venus';
     const vTokenAddress = isVenus ? VENUS_VTOKENS[pool.symbol] : undefined;
     const isNative = pool.symbol === 'BNB';
@@ -72,8 +74,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         }
     } else {
         if (tokenBalanceRaw) {
-            // Assume 18 decimals generally for BSC main tokens, or we could fetch decimals.
-            // Safe default for these majors is 18.
             walletBalance = parseFloat(formatUnits(tokenBalanceRaw, 18));
             walletBalanceRaw = tokenBalanceRaw;
         }
@@ -112,31 +112,16 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
     if (poolData && poolData[0].status === 'success' && poolData[1].status === 'success') {
         const vBalance = poolData[0].result as bigint;
         const exchangeRate = poolData[1].result as bigint;
-
-        // Decimals (vTokens are 8)
-        // Exchange Rate scaling = 18 + underlyingDecimals - 8
-        // We need to know underlying decimals. 
-        // For MVP, we can assume standard 18 for most, or try to deduce?
-        // Let's hardcode 18 for now as widely used, or use a map if we had one here.
-        // Actually, simple formula: Underlying = (vToken * ExchangeRate) / 1e18
-        // This works regardless of decimals IF the exchange rate is scaled by 1e18 relative to the textual representation.
-        // But solidity math:
-        // Underlying Amount = (vTokenBalance * ExchangeRate) / 1e18
-
         const rawUnderlying = (vBalance * exchangeRate) / BigInt(1e18);
-
-        // Now format units based on Underlying Decimals.
-        // Most tokens in our list are 18 decimals (BNB, BTCB, ETH, USDT, USDC).
-        // Let's assume 18.
         depositedAmount = parseFloat(formatUnits(rawUnderlying, 18));
+        depositedValueUSD = depositedAmount * tokenPrice;
     }
 
     useEffect(() => {
         if (isConfirmed) {
             setStep("success");
-            refetchPoolData(); // Refresh balance
+            refetchPoolData();
             setTimeout(() => {
-                // optional auto-close or reset
             }, 3000);
         } else if (isConfirming || isPending) {
             setStep("mining");
@@ -144,6 +129,10 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
             setStep("idle");
         }
     }, [isConfirmed, isConfirming, isPending, refetchPoolData]);
+
+    // --- Withdraw Gating Logic ---
+    const isWithdrawBlocked = activeTab === 'withdraw' && collateral.isCollateral && collateral.borrowBalance > 0;
+    const withdrawLimitedByCollateral = activeTab === 'withdraw' && collateral.isCollateral && collateral.maxWithdrawable < depositedAmount;
 
     const handleAction = () => {
         if (!isConnected) {
@@ -157,11 +146,10 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         }
 
         try {
-            const amountBig = parseUnits(amount, 18); // Assume 18 decimals for simplicity in demo
+            const amountBig = parseUnits(amount, 18);
 
             if (activeTab === 'deposit') {
                 if (isNative) {
-                    // Mint vBNB (payable)
                     writeContract({
                         address: vTokenAddress,
                         abi: VTOKEN_ABI,
@@ -169,9 +157,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         value: amountBig
                     });
                 } else {
-                    // Mint vToken (ERC20)
-                    // TODO: Add Approve Step. For now assuming approved or skipping to mint call which will fail if not approved.
-                    // To do it properly we need the Token Address.
                     writeContract({
                         address: vTokenAddress,
                         abi: VTOKEN_ABI,
@@ -197,13 +182,13 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         if (activeTab === 'deposit') {
             setAmount((walletBalance / 2).toString());
         } else {
-            setAmount((depositedAmount / 2).toString());
+            const maxAmount = collateral.isCollateral ? collateral.maxWithdrawable : depositedAmount;
+            setAmount((maxAmount / 2).toString());
         }
     };
 
     const setMax = () => {
         if (activeTab === 'deposit') {
-            // For native BNB, leave some dust (0.01)
             if (isNative) {
                 const max = walletBalance > 0.01 ? walletBalance - 0.01 : 0;
                 setAmount(max.toString());
@@ -211,11 +196,14 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                 setAmount(walletBalance.toString());
             }
         } else {
-            setAmount(depositedAmount.toString());
+            const maxAmount = collateral.isCollateral ? collateral.maxWithdrawable : depositedAmount;
+            setAmount(maxAmount.toString());
         }
     };
 
-    const isButtonDisabled = !amount || parseFloat(amount) <= 0 || step === 'mining' || step === 'success';
+    const amountNum = parseFloat(amount || '0');
+    const exceedsWithdrawLimit = activeTab === 'withdraw' && collateral.isCollateral && amountNum > collateral.maxWithdrawable && collateral.maxWithdrawable >= 0;
+    const isButtonDisabled = !amount || amountNum <= 0 || step === 'mining' || step === 'success' || (activeTab === 'withdraw' && isWithdrawBlocked) || exceedsWithdrawLimit;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -237,36 +225,113 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
 
                 {/* Stats Card */}
                 <div className="px-6 mb-6">
-                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 grid grid-cols-2 gap-y-4 gap-x-8">
-                        <div>
-                            <div className="text-[10px] uppercase text-emerald-400 font-bold mb-1">Your Earnings</div>
-                            <div className="text-lg font-mono text-emerald-400">-</div> {/* Placeholder */}
-                            <div className="text-[10px] text-muted-foreground">Lifetime</div>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-[10px] uppercase text-muted-foreground font-bold mb-1">Deposited</div>
-                            <div className="text-lg font-bold font-mono">{formatTokenAmount(depositedAmount)} {pool.symbol}</div>
-                            <div className="text-[10px] text-muted-foreground">≈ {formatMoney(depositedAmount * tokenPrice)} (Est)</div>
-                        </div>
-
-                        <div className="col-span-2 h-[1px] bg-white/5 my-1" />
-
-                        <div className="flex justify-between items-center">
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                APY <ArrowUpDown className="w-3 h-3" />
-                            </span>
-                            <span className="text-emerald-400 font-bold font-mono text-sm bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
-                                {pool.apy.toFixed(2)}%
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-xs text-muted-foreground">Vault TVL</span>
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 space-y-3">
+                        {/* Row 1: Deposited & Collateral Status */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <div className="text-[10px] uppercase text-muted-foreground font-bold mb-1">Deposited</div>
+                                <div className="text-lg font-bold font-mono">{formatTokenAmount(depositedAmount)} {pool.symbol}</div>
+                                <div className="text-[10px] text-muted-foreground">≈ {formatMoney(depositedAmount * tokenPrice)}</div>
+                            </div>
                             <div className="text-right">
-                                <span className="text-white font-bold text-sm block">{formatMoney(pool.tvlUsd)}</span>
+                                <div className="text-[10px] uppercase text-muted-foreground font-bold mb-1">Collateral</div>
+                                {collateral.isLoading ? (
+                                    <div className="text-sm text-muted-foreground">Loading...</div>
+                                ) : collateral.isCollateral ? (
+                                    <div className="flex items-center justify-end gap-1.5">
+                                        <Shield className="w-3.5 h-3.5 text-amber-400" />
+                                        <span className="text-sm font-bold text-amber-400">Active</span>
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-muted-foreground">Not Collateral</div>
+                                )}
+                                {collateral.borrowBalance > 0 && (
+                                    <div className="text-[10px] text-red-400 mt-0.5">
+                                        Borrow: {formatTokenAmount(collateral.borrowBalance)} ({formatMoney(collateral.borrowBalanceUSD)})
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="h-[1px] bg-white/5" />
+
+                        {/* Row 2: APY & TVL */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    APY <ArrowUpDown className="w-3 h-3" />
+                                </span>
+                                <span className="text-emerald-400 font-bold font-mono text-sm bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
+                                    {pool.apy.toFixed(2)}%
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground">Vault TVL</span>
+                                <span className="text-white font-bold text-sm">{formatMoney(pool.tvlUsd)}</span>
+                            </div>
+                        </div>
+
+                        {/* Row 3: Withdraw limits (only in withdraw mode with collateral) */}
+                        {activeTab === 'withdraw' && collateral.isCollateral && !collateral.isLoading && (
+                            <>
+                                <div className="h-[1px] bg-white/5" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span className="text-[10px] text-muted-foreground uppercase">Max Withdrawable</span>
+                                        <div className="text-sm font-mono font-medium text-white">
+                                            {formatTokenAmount(collateral.maxWithdrawable)} {pool.symbol}
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[10px] text-muted-foreground uppercase">Account Liquidity</span>
+                                        <div className={`text-sm font-mono font-medium ${collateral.shortfall > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            {collateral.shortfall > 0 ? `-${formatMoney(collateral.shortfall)}` : formatMoney(collateral.liquidity)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Collateral + Debt Warning Banner */}
+                {activeTab === 'withdraw' && isWithdrawBlocked && (
+                    <div className="px-6 mb-4">
+                        <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                            <div>
+                                <div className="text-sm font-bold text-red-400 mb-1">Active Debt Prevents Withdrawal</div>
+                                <div className="text-xs text-red-300/80 mb-2">
+                                    This asset is being used as collateral for a debt of{' '}
+                                    <span className="font-mono font-bold">{formatTokenAmount(collateral.borrowBalance)} {pool.symbol}</span>
+                                    {' '}({formatMoney(collateral.borrowBalanceUSD)}).
+                                    You need to repay your debt before you can withdraw this collateral.
+                                </div>
+                                <a
+                                    href="/lend/borrow"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold hover:bg-blue-500/30 transition-colors"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    Go to Repay Debt
+                                </a>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
+
+                {/* Withdraw limit warning (collateral but partial withdrawal allowed) */}
+                {activeTab === 'withdraw' && withdrawLimitedByCollateral && !isWithdrawBlocked && (
+                    <div className="px-6 mb-4">
+                        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                            <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <div className="text-xs text-amber-200">
+                                This asset is used as collateral. Max safe withdrawal:{' '}
+                                <span className="font-mono font-bold">{formatTokenAmount(collateral.maxWithdrawable)} {pool.symbol}</span>.
+                                Withdrawing more may cause liquidation.
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Action Tabs */}
                 <div className="px-6 mb-4">
@@ -304,7 +369,11 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         <div className="flex justify-between text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
                             <span>{activeTab === 'deposit' ? 'Deposit Amount' : 'Withdraw Amount'}</span>
                             <div className="flex gap-2">
-                                <span>{activeTab === 'deposit' ? 'Wallet Balance' : 'Deposited'}: {formatTokenAmount(activeTab === 'deposit' ? walletBalance : depositedAmount)} {pool.symbol}</span>
+                                <span>
+                                    {activeTab === 'deposit' ? 'Wallet' : 'Available'}:{' '}
+                                    {formatTokenAmount(activeTab === 'deposit' ? walletBalance : (collateral.isCollateral ? collateral.maxWithdrawable : depositedAmount))}{' '}
+                                    {pool.symbol}
+                                </span>
                                 <div className="flex gap-1">
                                     <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setHalf}>HALF</button>
                                     <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setMax}>MAX</button>
@@ -323,6 +392,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                 className="bg-transparent text-right text-2xl font-mono font-bold w-full outline-none placeholder:text-muted-foreground/30 text-white"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
+                                disabled={isWithdrawBlocked}
                             />
                         </div>
                         <div className="text-right text-xs text-muted-foreground mt-1">
@@ -330,6 +400,14 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                 ≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}
                             </div>
                         </div>
+
+                        {/* Exceeds limit warning */}
+                        {exceedsWithdrawLimit && (
+                            <div className="text-xs text-red-400 mt-2 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" />
+                                Amount exceeds safe withdrawal limit of {formatTokenAmount(collateral.maxWithdrawable)} {pool.symbol}
+                            </div>
+                        )}
                     </div>
 
                     {/* Action Button */}
@@ -348,7 +426,11 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
                                 >
-                                    {isConnected ? (activeTab === 'deposit' ? 'Deposit' : 'Withdraw') : 'Connect to Deposit'}
+                                    {!isConnected
+                                        ? 'Connect to Deposit'
+                                        : isWithdrawBlocked
+                                            ? '🔒 Repay Debt First'
+                                            : (activeTab === 'deposit' ? 'Deposit' : 'Withdraw')}
                                 </motion.span>
                             )}
 
