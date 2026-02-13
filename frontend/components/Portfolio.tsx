@@ -220,14 +220,18 @@ export function Portfolio() {
                                 {protocolId === 'venus' && (
                                     <td className="py-2 text-center px-4">
                                         <div className="flex justify-center items-center">
-                                            {togglingAssets[pos.vTokenAddress] ? (
-                                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                            {pos.supply > 0 ? (
+                                                togglingAssets[pos.vTokenAddress] ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                                ) : (
+                                                    <Switch
+                                                        checked={pos.isCollateral}
+                                                        onCheckedChange={() => handleCollateralToggle(pos.vTokenAddress, pos.symbol, pos.isCollateral)}
+                                                        disabled={togglingAssets[pos.vTokenAddress]}
+                                                    />
+                                                )
                                             ) : (
-                                                <Switch
-                                                    checked={pos.isCollateral}
-                                                    onCheckedChange={() => handleCollateralToggle(pos.vTokenAddress, pos.symbol, pos.isCollateral)}
-                                                    disabled={togglingAssets[pos.vTokenAddress]}
-                                                />
+                                                <span className="text-muted-foreground/30 text-[10px]">—</span>
                                             )}
                                         </div>
                                     </td>
