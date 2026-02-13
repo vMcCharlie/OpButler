@@ -232,7 +232,7 @@ export function StrategyBuilder() {
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
-                            <RefreshCw size={14} /> Refinance (Move)
+                            <RefreshCw size={14} /> Pay Off (Move)
                         </button>
                         <button
                             onClick={() => setMode('unwind')}
@@ -249,7 +249,7 @@ export function StrategyBuilder() {
                         <div>
                             <CardTitle className="text-xl flex items-center gap-2">
                                 <Layers className={`w-5 h-5 ${mode === 'loop' ? 'text-primary' : mode === 'refinance' ? 'text-blue-500' : 'text-red-500'}`} />
-                                {mode === 'loop' ? 'Yield Booster' : mode === 'refinance' ? 'Loan Refinancer' : 'Emergency Exit'}
+                                {mode === 'loop' ? 'Yield Booster' : mode === 'refinance' ? 'Debt Pay Off' : 'Emergency Exit'}
                             </CardTitle>
                             <CardDescription>
                                 {mode === 'loop' ? 'Amplify your APY efficiently.' : mode === 'refinance' ? 'Move loans to cheaper protocols.' : 'Unwind positions instantly.'}

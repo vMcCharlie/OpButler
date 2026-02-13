@@ -13,7 +13,7 @@ const TABS = [
     { id: 'Earn', label: 'Earn', icon: HandCoins },
     { id: 'Borrow', label: 'Borrow', icon: Wallet },
     { id: 'Multiply', label: 'Multiply', icon: Layers },
-    { id: 'Refinance', label: 'Refinance', icon: Repeat },
+    { id: 'PayOff', label: 'Pay Off', icon: Repeat },
 ];
 
 export function StrategyTabs({ activeTab, onTabChange }: StrategyTabsProps) {

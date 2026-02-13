@@ -133,7 +133,7 @@ export function LoopSelector() {
                     <span className="mr-2">⚡</span> Yield Booster (Loop)
                 </button>
                 <button className="flex-1 py-4 text-center font-bold text-muted-foreground hover:text-white transition-colors uppercase tracking-wide text-sm">
-                    <span className="mr-2">🔄</span> Refinance (Move)
+                    <span className="mr-2">🔄</span> Pay Off (Move)
                 </button>
                 <button className="flex-1 py-4 text-center font-bold text-muted-foreground hover:text-red-400 transition-colors uppercase tracking-wide text-sm">
                     <span className="mr-2">⚠️</span> Panic Exit

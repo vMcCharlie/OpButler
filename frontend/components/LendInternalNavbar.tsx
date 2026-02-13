@@ -10,7 +10,7 @@ const TABS = [
     { id: 'earn', label: 'Earn', href: '/lend/earn', icon: HandCoins },
     { id: 'borrow', label: 'Borrow', href: '/lend/borrow', icon: Wallet },
     { id: 'multiply', label: 'Multiply', href: '/lend/multiply', icon: Layers },
-    { id: 'refinance', label: 'Refinance', href: '/lend/refinance', icon: Repeat },
+    { id: 'payoff', label: 'Pay Off', href: '/lend/payoff', icon: Repeat },
 ];
 
 export function LendInternalNavbar() {
