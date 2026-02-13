@@ -44,27 +44,39 @@ export function MarketModal({ isOpen, onClose, initialMode, pool }: MarketModalP
                     <DialogTitle>{pool.symbol} Market - {protocolDisplay}</DialogTitle>
                 </div>
                 {/* Unified Header */}
-                <div className="p-4 md:p-6 pb-2 md:pb-4 border-b border-white/5 bg-[#09090b] sticky top-0 z-20">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
+                <div className="p-4 md:p-6 pb-3 md:pb-4 border-b border-white/5 bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-30">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2.5 md:gap-3">
+                            <div className="relative">
+                                <AssetIcon symbol={pool.symbol} className="w-9 h-9 md:w-11 md:h-11 shadow-2xl" />
+                                <div className={cn(
+                                    "absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full border border-white/20 flex items-center justify-center p-0.5 z-10 shadow-lg",
+                                    pool.project === 'venus' ? "bg-[#F0B90B]" : pool.project === 'kinza-finance' ? "bg-[#3B82F6]" : "bg-[#A855F7]"
+                                )}>
+                                    <img
+                                        src={pool.project === 'venus' ? '/venus.png' : pool.project === 'kinza-finance' ? '/kinza.png' : '/radiant.jpeg'}
+                                        className="w-full h-full object-contain rounded-full"
+                                        alt={protocolDisplay}
+                                    />
+                                </div>
+                            </div>
                             <div>
-                                <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
-                                <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground uppercase">
+                                <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight">{pool.symbol}</h2>
+                                <div className="flex items-center gap-1.5 text-[9px] md:text-xs text-muted-foreground/60 font-bold uppercase tracking-widest">
                                     <span>{protocolDisplay}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 md:gap-3">
                             {/* Mode Toggle */}
-                            <div className="flex items-center bg-white/5 p-1 rounded-full border border-white/5">
+                            <div className="flex items-center bg-black/40 p-1 rounded-full border border-white/5 shadow-inner">
                                 <button
                                     onClick={() => handleModeSwitch("earn")}
                                     className={cn(
-                                        "px-3 py-1 rounded-full text-[10px] md:text-xs font-bold transition-all",
+                                        "px-4 py-1.5 rounded-full text-[10px] md:text-xs font-black transition-all lowercase italic",
                                         mode === "earn"
-                                            ? "bg-emerald-500 text-white shadow-lg"
+                                            ? "bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                                             : "text-muted-foreground hover:text-white"
                                     )}
                                 >
@@ -73,9 +85,9 @@ export function MarketModal({ isOpen, onClose, initialMode, pool }: MarketModalP
                                 <button
                                     onClick={() => handleModeSwitch("borrow")}
                                     className={cn(
-                                        "px-3 py-1 rounded-full text-[10px] md:text-xs font-bold transition-all",
+                                        "px-4 py-1.5 rounded-full text-[10px] md:text-xs font-black transition-all lowercase italic",
                                         mode === "borrow"
-                                            ? "bg-blue-600 text-white shadow-lg"
+                                            ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
                                             : "text-muted-foreground hover:text-white"
                                     )}
                                 >
@@ -83,8 +95,8 @@ export function MarketModal({ isOpen, onClose, initialMode, pool }: MarketModalP
                                 </button>
                             </div>
 
-                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted-foreground hover:text-white">
-                                <X size={20} />
+                            <button onClick={onClose} className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-all text-muted-foreground hover:text-white group">
+                                <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                             </button>
                         </div>
                     </div>

@@ -215,75 +215,127 @@ export function BorrowModalContent({ onClose, pool, isEmbedded = false }: Borrow
                 </div>
             )}
 
-            <div className="px-4 md:px-6 pt-4 md:pt-6 mb-4 md:mb-6">
-                <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 grid grid-cols-2 gap-y-3 md:gap-y-4 gap-x-6 md:gap-x-8">
-                    <div>
-                        <div className="text-[9px] md:text-[10px] uppercase text-blue-400 font-bold mb-1">Your Debt</div>
-                        <div className="text-base md:text-lg font-mono text-blue-400 tracking-tight">{borrowedAmount > 0 ? <>{formatSmallNumber(borrowedAmount)} {pool.symbol}</> : '0'}</div>
-                        <div className="text-[9px] md:text-[10px] text-muted-foreground">≈ {formatMoney(borrowedAmountUSD)}</div>
+            <div className="px-4 md:px-6 pt-4 md:pt-6 mb-3 md:mb-5">
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 md:p-5 space-y-3.5 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                        <AssetIcon symbol={pool.symbol} className="w-20 h-20 -mr-6 -mt-6 rotate-12 opacity-50" />
                     </div>
-                    <div className="text-right">
-                        <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground font-bold mb-1">Health Factor</div>
-                        <div className="text-base md:text-lg font-bold font-mono text-emerald-400">{borrowedAmount > 0 ? 'Monitor' : 'Safe'}</div>
+                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                        <div>
+                            <div className="text-[9px] md:text-[10px] uppercase text-blue-400/50 font-black tracking-tighter mb-1">Your Debt</div>
+                            <div className="text-xl md:text-2xl font-black font-mono tracking-tighter text-blue-400">
+                                {borrowedAmount > 0 ? <>{formatSmallNumber(borrowedAmount)} <span className="text-[10px] md:text-xs opacity-60 ml-0.5">{pool.symbol}</span></> : '0'}
+                            </div>
+                            <div className="text-[10px] md:text-xs text-muted-foreground/40 font-bold">≈ {formatMoney(borrowedAmountUSD)}</div>
+                        </div>
+                        <div className="text-right flex flex-col items-end justify-center">
+                            <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/50 font-black tracking-tighter mb-1.5">Health Factor</div>
+                            <div className={cn(
+                                "px-2 py-0.5 rounded-full border flex items-center gap-1",
+                                borrowedAmount > 0 ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                            )}>
+                                <div className={cn("w-1 h-1 rounded-full animate-pulse", borrowedAmount > 0 ? "bg-amber-500" : "bg-emerald-500")} />
+                                <span className="text-[10px] md:text-xs font-black uppercase italic">{borrowedAmount > 0 ? 'MONITOR' : 'SAFE'}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="col-span-2 h-[1px] bg-white/5 my-0.5 md:my-1" />
-                    <div className="flex justify-between items-center"><span className="text-[10px] md:text-xs text-muted-foreground flex items-center gap-1">Borrow APY <ArrowUpDown className="w-2.5 h-2.5" /></span><span className="text-blue-400 font-bold font-mono text-[11px] md:text-sm bg-blue-400/10 px-1.5 md:px-2 py-0.5 rounded-full border border-blue-400/20">-{borrowApy.toFixed(2)}%</span></div>
-                    <div className="flex justify-between items-center"><span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">Available Liquidity</span><span className="text-white font-bold text-[11px] md:text-sm">{formatMoney(availableLiquidity)}</span></div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5 relative z-10">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] uppercase text-muted-foreground/40 font-black tracking-widest mb-0.5">Borrow APY</span>
+                            <span className="text-blue-400 font-black font-mono text-sm md:text-base flex items-center gap-1">
+                                -{borrowApy.toFixed(2)}%
+                                <ArrowUpDown className="w-2.5 h-2.5 opacity-50" />
+                            </span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                            <span className="text-[9px] uppercase text-muted-foreground/40 font-black tracking-widest mb-0.5">Liquidity</span>
+                            <span className="text-white font-black text-sm md:text-base tracking-tight">{formatMoney(availableLiquidity)}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div className="px-4 md:px-6 mb-4">
                 <div className="bg-[#121216] rounded-xl p-1 flex relative">
                     <motion.div className="absolute top-1 bottom-1 bg-[#1a1a20] rounded-lg shadow-sm" initial={false} animate={{ left: activeTab === 'borrow' ? '4px' : '50%', width: 'calc(50% - 4px)' }} transition={{ type: "spring", stiffness: 300, damping: 30 }} />
-                    <button onClick={() => { setActiveTab('borrow'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'borrow' ? 'text-white' : 'text-muted-foreground'}`}>Borrow</button>
-                    <button onClick={() => { setActiveTab('repay'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'repay' ? 'text-white' : 'text-muted-foreground'}`}>Repay</button>
+                    <button onClick={() => { setActiveTab('borrow'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'borrow' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Borrow</button>
+                    <button onClick={() => { setActiveTab('repay'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'repay' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Repay</button>
                 </div>
             </div>
 
-            <div className="px-4 md:px-6 pb-6 text-white">
-                <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 mb-4">
-                    <div className="flex justify-between text-[9px] md:text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
-                        <span>{activeTab === 'borrow' ? 'Borrow Amount' : 'Repay Amount'}</span>
-                        <div className="flex gap-2">
-                            {activeTab === 'repay' && (
-                                <div className="flex gap-1"><button className="text-[9px] md:text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setHalf}>HALF</button><button className="text-[9px] md:text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setMax}>MAX</button></div>
-                            )}
+            <div className="px-4 md:px-6 pb-5 text-white">
+                <div className="bg-black/40 border border-white/5 rounded-2xl p-3.5 md:p-5 mb-4 shadow-inner relative overflow-hidden group">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-[10px] md:text-xs uppercase text-muted-foreground/60 font-black tracking-widest italic">{activeTab === 'borrow' ? 'Borrow' : 'Repay'}</span>
+                        <div className="flex gap-1.5">
                             {activeTab === 'borrow' && (
-                                <div className="flex gap-1"><button onClick={() => setAmount(toPlainString(safeMaxAmount))} className="text-[9px] md:text-[10px] text-[#CEFF00] font-bold border border-[#CEFF00]/30 px-2 py-0.5 rounded hover:bg-[#CEFF00]/10">SAFE MAX</button></div>
+                                <button onClick={() => setAmount(toPlainString(safeMaxAmount))} className="text-[9px] md:text-[10px] text-amber-400 font-black italic border border-amber-400/20 px-2 py-1 rounded-md hover:bg-amber-400/10 transition-colors uppercase tracking-tighter bg-amber-400/5">Safe Max</button>
                             )}
+                            <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setHalf}>Half</button>
+                            <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setMax}>Max</button>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <div className="flex items-center gap-1.5 md:gap-2 bg-black/40 px-1.5 md:px-2 py-1 md:py-1.5 rounded-lg border border-white/5 flex-shrink-0"><AssetIcon symbol={pool.symbol} className="w-5 h-5 md:w-6 md:h-6" /><span className="font-bold text-xs md:text-sm">{pool.symbol}</span></div>
-                        <input type="number" placeholder="0.00" className="bg-transparent text-right text-xl md:text-2xl font-mono font-bold w-full outline-none text-white placeholder:text-muted-foreground/30" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] md:text-xs mt-2">
-                        <div className="text-muted-foreground/60 font-medium">
-                            {activeTab === 'repay' ? 'Wallet: ' : 'Available: '}
-                            <span className="text-white font-bold ml-1">{formatSmallNumber(activeTab === 'repay' ? walletBalance : availableLiquidity / (tokenPrice || 1))} {pool.symbol}</span>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/10 transition-transform group-focus-within:scale-95 duration-500">
+                            <AssetIcon symbol={pool.symbol} className="w-5 h-5 md:w-6 md:h-6" />
+                            <span className="font-black text-xs md:text-sm">{pool.symbol}</span>
                         </div>
-                        <div className="text-muted-foreground">≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}</div>
+                        <input
+                            type="number"
+                            placeholder="0.00"
+                            className="bg-transparent text-right text-3xl md:text-4xl font-black font-mono tracking-tighter w-full outline-none placeholder:text-white/5 text-white"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                        />
                     </div>
-                    {writeError && step === 'idle' && (<div className="text-[10px] md:text-xs text-red-400 mt-2 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /><span className="truncate">{writeError.message}</span></div>)}
+                    <div className="flex justify-between items-center text-[10px] md:text-xs mt-4 pt-3 border-t border-white/[0.03]">
+                        <div className="text-muted-foreground/40 font-bold uppercase italic">
+                            {activeTab === 'repay' ? 'Wallet' : 'Available'}
+                            <span className="text-white/60 font-black ml-1.5 not-italic">{formatSmallNumber(activeTab === 'repay' ? walletBalance : availableLiquidity / (tokenPrice || 1))}</span>
+                        </div>
+                        <div className="text-muted-foreground/30 font-black italic">≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}</div>
+                    </div>
                 </div>
+            </div>
+            <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4 mx-4 md:mx-6">
+                <div className="flex justify-between items-center text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60"><span>Transaction Impact</span></div>
+                <div className="flex justify-between items-center w-full"><span className="text-[10px] md:text-xs text-muted-foreground font-medium">Health Factor</span><div className="flex items-center gap-2"><span className="text-[10px] md:text-xs font-bold text-white/40">{(currentHF > 5 ? 5.0 : currentHF).toFixed(2)}</span><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className={cn("text-xs md:text-sm font-bold", newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]")}>{newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}</span></div></div>
+                {(amountUSD > 0) && (
+                    <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden"><motion.div className={cn("h-full bg-gradient-to-r", newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400")} initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }} transition={{ duration: 0.5 }} /></div>
+                )}
+                <div className="flex justify-between w-full text-[10px] md:text-xs items-center pt-1 border-t border-white/5"><span className="text-muted-foreground">Borrow APY</span><span className="text-red-400 font-mono font-bold">-{borrowApy.toFixed(2)}%</span></div>
+            </div>
 
-                <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4">
-                    <div className="flex justify-between items-center text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60"><span>Transaction Impact</span></div>
-                    <div className="flex justify-between items-center w-full"><span className="text-[10px] md:text-xs text-muted-foreground font-medium">Health Factor</span><div className="flex items-center gap-2"><span className="text-[10px] md:text-xs font-bold text-white/40">{(currentHF > 5 ? 5.0 : currentHF).toFixed(2)}</span><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className={cn("text-xs md:text-sm font-bold", newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]")}>{newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}</span></div></div>
-                    {(amountUSD > 0) && (
-                        <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden"><motion.div className={cn("h-full bg-gradient-to-r", newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400")} initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }} transition={{ duration: 0.5 }} /></div>
-                    )}
-                    <div className="flex justify-between w-full text-[10px] md:text-xs items-center pt-1 border-t border-white/5"><span className="text-muted-foreground">Borrow APY</span><span className="text-red-400 font-mono font-bold">-{borrowApy.toFixed(2)}%</span></div>
-                </div>
+            {isRisky && amountUSD > 0 && (<div className="flex items-start gap-2 mb-4 p-2 md:p-3 rounded-xl bg-red-500/10 border border-red-500/20 mx-4 md:mx-6"><ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500 shrink-0 mt-0.5" /><div className="text-[10px] md:text-[11px] text-red-200">This borrow amount will put your position at high risk of liquidation. Consider a smaller amount or more collateral.</div></div>)}
 
-                {isRisky && amountUSD > 0 && (<div className="flex items-start gap-2 mb-4 p-2 md:p-3 rounded-xl bg-red-500/10 border border-red-500/20"><ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500 shrink-0 mt-0.5" /><div className="text-[10px] md:text-[11px] text-red-200">This borrow amount will put your position at high risk of liquidation. Consider a smaller amount or more collateral.</div></div>)}
-
-                <Button onClick={handleAction} disabled={isButtonDisabled} className={`w-full h-12 md:h-14 text-base md:text-lg font-bold rounded-xl md:rounded-2xl relative overflow-hidden transition-all ${step === 'success' ? 'bg-emerald-500 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : activeTab === 'borrow' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_20px_rgba(37,99,235,0.2)]' : 'bg-white hover:bg-gray-200 text-black'}`}>
+            <div className="px-4 md:px-6 pb-6">
+                <Button
+                    onClick={handleAction}
+                    disabled={isButtonDisabled}
+                    className={`w-full h-14 md:h-16 text-xl md:text-2xl font-black rounded-2xl md:rounded-3xl transition-all relative overflow-hidden group/btn ${step === 'success'
+                        ? 'bg-emerald-500 hover:bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
+                        : activeTab === 'borrow'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-[0_10px_40px_rgba(37,99,235,0.2)]'
+                            : 'bg-white hover:bg-gray-200 text-black shadow-[0_10px_40px_rgba(255,255,255,0.1)]'
+                        }`}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
                     <AnimatePresence mode="wait">
-                        {step === 'idle' && (<motion.span key="idle" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>{isConnected ? (activeTab === 'borrow' ? 'Borrow' : 'Repay') : 'Connect Wallet'}</motion.span>)}
-                        {step === 'approving' && (<motion.div key="approving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Approving...</span></motion.div>)}
-                        {step === 'mining' && (<motion.div key="mining" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></motion.div>)}
-                        {step === 'success' && (<motion.div key="success" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2 text-white"><div className="bg-white text-emerald-500 rounded-full p-1"><Check className="w-4 h-4 stroke-[4]" /></div><span>Success!</span></motion.div>)}
+                        {step === 'idle' && (
+                            <motion.span
+                                key="idle"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 1.1 }}
+                                className="uppercase italic tracking-tighter"
+                            >
+                                {isConnected ? (activeTab === 'borrow' ? 'Confirm Borrow' : 'Confirm Repay') : 'Connect Wallet'}
+                            </motion.span>
+                        )}
+                        {step === 'approving' && (<motion.div key="approving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-3"><Loader2 className="w-6 h-6 animate-spin" /><span className="uppercase italic">Permissioning...</span></motion.div>)}
+                        {step === 'mining' && (<motion.div key="mining" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-3"><Loader2 className="w-6 h-6 animate-spin" /><span className="uppercase italic">Broadcasting...</span></motion.div>)}
+                        {step === 'success' && (<motion.div key="success" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-3 text-white uppercase italic"><div className="bg-white text-emerald-500 rounded-full p-1"><Check className="w-5 h-5 stroke-[4]" /></div><span>Complete</span></motion.div>)}
                     </AnimatePresence>
                 </Button>
             </div>
