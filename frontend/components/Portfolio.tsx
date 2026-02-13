@@ -218,7 +218,11 @@ export function Portfolio() {
                         {positions.map((pos, idx) => {
                             const netUSD = pos.supplyUSD - pos.borrowUSD;
                             return (
-                                <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                <tr
+                                    key={idx}
+                                    className="hover:bg-white/5 transition-colors cursor-pointer"
+                                    onClick={() => handleRedirect(pos.symbol, protocolId, pos.supply > 0 ? 'earn' : 'borrow')}
+                                >
                                     <td className="py-2 pl-2 font-bold">
                                         <div className="flex items-center gap-2">
                                             <AssetIcon symbol={pos.symbol} size={20} />
@@ -242,15 +246,15 @@ export function Portfolio() {
                                     </td>
 
                                     {/* Mobile/Stacked Position View */}
-                                    <td className="py-2 text-center md:hidden" onClick={() => handleRedirect(pos.symbol, protocolId, pos.supply > 0 ? 'earn' : 'borrow')}>
+                                    <td className="py-2 text-center md:hidden">
                                         {pos.supply > 0 && (
-                                            <div className="mb-1 cursor-pointer hover:text-emerald-400">
+                                            <div className="mb-1">
                                                 <div className="text-emerald-500 font-medium">{pos.supply.toFixed(4)}</div>
                                                 <div className="text-[9px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>
                                             </div>
                                         )}
                                         {pos.borrow > 0 && (
-                                            <div className="cursor-pointer hover:text-red-400" onClick={(e) => { e.stopPropagation(); handleRedirect(pos.symbol, protocolId, 'borrow'); }}>
+                                            <div>
                                                 <div className="text-red-400 font-medium">{pos.borrow.toFixed(4)}</div>
                                                 <div className="text-[9px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>
                                             </div>
@@ -261,12 +265,12 @@ export function Portfolio() {
                                     </td>
 
                                     {/* Desktop Separate Columns */}
-                                    <td className="py-2 text-center hidden md:table-cell cursor-pointer hover:bg-white/5" onClick={() => handleRedirect(pos.symbol, protocolId, 'earn')}>
+                                    <td className="py-2 text-center hidden md:table-cell">
                                         <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
                                         {pos.supplyUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>}
                                     </td>
                                     {protocolId === 'venus' && (
-                                        <td className="py-2 text-center px-1 md:px-4">
+                                        <td className="py-2 text-center px-1 md:px-4" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex justify-center items-center">
                                                 {pos.supply > 0 ? (
                                                     togglingAssets[pos.vTokenAddress] ? (
@@ -284,7 +288,7 @@ export function Portfolio() {
                                             </div>
                                         </td>
                                     )}
-                                    <td className="py-2 text-right hidden md:table-cell cursor-pointer hover:bg-white/5" onClick={() => handleRedirect(pos.symbol, protocolId, 'borrow')}>
+                                    <td className="py-2 text-right hidden md:table-cell">
                                         <div className="text-red-400">{pos.borrow > 0 ? pos.borrow.toFixed(4) : '-'}</div>
                                         {pos.borrowUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>}
                                     </td>
