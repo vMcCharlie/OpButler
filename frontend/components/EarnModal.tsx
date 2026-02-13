@@ -20,6 +20,7 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { formatMoney, formatSmallNumber, getTokenDecimals } from "@/lib/utils";
 import { useTokenPrices } from "@/hooks/useTokenPrices";
 import { useVenusCollateral } from "@/hooks/useVenusCollateral";
+import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 
 interface EarnModalProps {
     isOpen: boolean;
@@ -68,12 +69,12 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
     // =========================================================================
     //                       WALLET BALANCE
     // =========================================================================
-    const { data: nativeBalance } = useBalance({
+    const { data: nativeBalance, refetch: refetchNative } = useBalance({
         address,
         query: { enabled: !!address && isNative }
     });
 
-    const { data: tokenBalanceRaw } = useReadContract({
+    const { data: tokenBalanceRaw, refetch: refetchToken } = useReadContract({
         address: underlyingAddress,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
@@ -174,6 +175,9 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         query: { enabled: !!address && !isNative && !!underlyingAddress && !!approvalTarget && activeTab === 'deposit' }
     });
 
+    // Aggregated health for dashboard/portfolio sync
+    const { refetch: refetchHealth } = useAggregatedHealth();
+
     // =========================================================================
     //                        TX STATE MACHINE
     // =========================================================================
@@ -185,9 +189,13 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                 refetchAllowance();
             } else {
                 setStep("success");
+                // Refresh all relevant state
                 refetchVenus?.();
                 refetchKinza?.();
                 refetchRadiant?.();
+                refetchNative?.();
+                refetchToken?.();
+                refetchHealth?.();
             }
         } else if (isConfirming || isPending) {
             if (step !== 'approving') setStep("mining");

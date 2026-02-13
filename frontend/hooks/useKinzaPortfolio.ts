@@ -51,7 +51,7 @@ export function useKinzaPortfolio() {
         { address: reserve, abi: ERC20_ABI, functionName: 'decimals' },
     ]);
 
-    const { data: activeData } = useReadContracts({
+    const { data: activeData, refetch } = useReadContracts({
         contracts: address && reserves.length > 0 ? contractCalls as any[] : [],
         query: {
             enabled: !!address && reserves.length > 0,
@@ -129,7 +129,8 @@ export function useKinzaPortfolio() {
             totalBorrowUSD,
             netWorthUSD: totalSupplyUSD - totalBorrowUSD,
             positions,
-            isLoading: false
+            isLoading: false,
+            refetch
         };
-    }, [activeData, prices, reserves]);
+    }, [activeData, prices, reserves, refetch]);
 }

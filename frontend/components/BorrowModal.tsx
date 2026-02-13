@@ -21,6 +21,7 @@ import { useTokenPrices } from "@/hooks/useTokenPrices";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
+import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 
 interface BorrowModalProps {
     isOpen: boolean;
@@ -60,9 +61,9 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     const tokenPrice = prices ? prices.getPrice(pool.symbol) : 0;
 
     // Portfolio data for borrowed amount
-    const { positions: venusPositions = [] } = useVenusPortfolio();
-    const { positions: kinzaPositions = [] } = useKinzaPortfolio();
-    const { positions: radiantPositions = [] } = useRadiantPortfolio();
+    const { positions: venusPositions = [], refetch: refetchVenus } = useVenusPortfolio();
+    const { positions: kinzaPositions = [], refetch: refetchKinza } = useKinzaPortfolio();
+    const { positions: radiantPositions = [], refetch: refetchRadiant } = useRadiantPortfolio();
 
     let borrowedAmount = 0;
     let borrowedAmountUSD = 0;
@@ -89,8 +90,8 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     }
 
     // Wallet Balance (for repay)
-    const { data: nativeBalance } = useBalance({ address, query: { enabled: !!address && isNative } });
-    const { data: tokenBalanceRaw } = useReadContract({
+    const { data: nativeBalance, refetch: refetchNative } = useBalance({ address, query: { enabled: !!address && isNative } });
+    const { data: tokenBalanceRaw, refetch: refetchToken } = useReadContract({
         address: underlyingAddress,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
@@ -111,6 +112,9 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
         query: { enabled: !!address && !isNative && !!underlyingAddress && !!approvalTarget && activeTab === 'repay' }
     });
 
+    // Aggregated health for dashboard/portfolio sync
+    const { refetch: refetchHealth } = useAggregatedHealth();
+
     // Transaction hooks
     const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract();
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
@@ -122,6 +126,14 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                 refetchAllowance();
             } else {
                 setStep("success");
+                // Refresh all relevant state
+                refetchVenus?.();
+                refetchKinza?.();
+                refetchRadiant?.();
+                refetchNative?.();
+                refetchToken?.();
+                refetchAllowance?.();
+                refetchHealth?.();
             }
         } else if (isConfirming || isPending) {
             if (step !== 'approving') setStep("mining");

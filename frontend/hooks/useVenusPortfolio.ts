@@ -69,7 +69,7 @@ export function useVenusPortfolio() {
         { address: market, abi: VTOKEN_ABI, functionName: 'underlying' },
     ]);
 
-    const { data: activeData } = useReadContracts({
+    const { data: activeData, refetch } = useReadContracts({
         contracts: address && markets.length > 0 ? contractCalls as any[] : [],
         query: {
             enabled: !!address && markets.length > 0,
@@ -200,8 +200,9 @@ export function useVenusPortfolio() {
             totalBorrowUSD,
             netWorthUSD: totalSupplyUSD - totalBorrowUSD,
             positions,
-            isLoading: false
+            isLoading: false,
+            refetch
         };
 
-    }, [activeData, prices, address, markets]);
+    }, [activeData, prices, address, markets, refetch]);
 }

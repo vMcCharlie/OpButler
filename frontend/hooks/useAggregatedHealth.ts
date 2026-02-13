@@ -44,7 +44,7 @@ export function useAggregatedHealth(targetAddress?: string) {
     });
 
     // 2. Fetch Aggregated Data
-    const { data, isLoading } = useReadContracts({
+    const { data, isLoading, refetch } = useReadContracts({
         contracts: [
             {
                 address: VENUS_COMPTROLLER,
@@ -192,8 +192,9 @@ export function useAggregatedHealth(targetAddress?: string) {
             kinza,
             radiant,
             overallScore,
-            isLoading: false
+            isLoading: false,
+            refetch
         };
-    }, [data, address, prices, venusMarkets]);
+    }, [data, address, prices, venusMarkets, refetch]);
 }
 

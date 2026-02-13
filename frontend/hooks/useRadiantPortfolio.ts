@@ -91,7 +91,7 @@ export function useRadiantPortfolio() {
         { address: t.varDebtToken, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] },
     ]);
 
-    const { data: balanceData } = useReadContracts({
+    const { data: balanceData, refetch } = useReadContracts({
         contracts: address && tokenAddresses.length > 0 ? balanceCalls as any[] : [],
         query: {
             enabled: !!address && tokenAddresses.length > 0,
@@ -156,7 +156,8 @@ export function useRadiantPortfolio() {
             totalBorrowUSD,
             netWorthUSD: totalSupplyUSD - totalBorrowUSD,
             positions,
-            isLoading: false
+            isLoading: false,
+            refetch
         };
-    }, [balanceData, prices, tokenAddresses]);
+    }, [balanceData, prices, tokenAddresses, refetch]);
 }
