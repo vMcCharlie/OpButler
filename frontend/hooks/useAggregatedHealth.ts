@@ -91,7 +91,7 @@ export function useAggregatedHealth(targetAddress?: string) {
     });
 
     return useMemo(() => {
-        const defaultHealth: ProtocolHealth = { healthFactor: 0, isHealthy: true, status: 'inactive', hasPositions: false };
+        const defaultHealth: ProtocolHealth = { healthFactor: 0, isHealthy: true, status: 'inactive', hasPositions: false, borrowPowerUSD: 0, debtUSD: 0 };
 
         if (!data || !address || !prices) return {
             venus: defaultHealth,
