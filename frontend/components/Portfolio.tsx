@@ -200,11 +200,11 @@ export function Portfolio() {
         }
 
         return (
-            <div className="bg-black/20 p-0 rounded-b-lg border-t border-border animate-in slide-in-from-top-2 overflow-hidden">
+            <div className="bg-[#09090b]/60 p-0 rounded-b-xl border-t border-white/10 animate-in slide-in-from-top-2 overflow-hidden shadow-inner">
                 {/* Desktop View */}
                 <table className="w-full text-xs hidden md:table">
                     <thead>
-                        <tr className="text-muted-foreground uppercase tracking-wider text-[10px] text-left bg-white/5 font-black">
+                        <tr className="text-muted-foreground uppercase tracking-wider text-[10px] text-left bg-white/5 font-black border-b border-white/5">
                             <th className="py-3 px-4 md:px-8">Asset</th>
                             <th className="py-3 px-4 text-right">APY</th>
                             <th className="py-3 px-4 text-center hidden md:table-cell">Supplied</th>
@@ -284,7 +284,7 @@ export function Portfolio() {
                         return (
                             <div
                                 key={idx}
-                                className="p-4 bg-black/40 hover:bg-black/60 transition-colors cursor-pointer"
+                                className="p-4 bg-black/20 hover:bg-black/30 transition-colors cursor-pointer border-b border-white/5 last:border-0"
                                 onClick={() => handleRedirect(pos.symbol, protocolId, pos.supply > 0 ? 'earn' : 'borrow')}
                             >
                                 <div className="flex items-center justify-between mb-4">
@@ -506,24 +506,34 @@ export function Portfolio() {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted text-muted-foreground">
                                     <tr>
-                                        <th className="p-4 font-medium">Protocol</th>
-                                        <th className="p-4 font-medium text-right">Liquidity / Collateral</th>
-                                        <th className="p-4 font-medium text-right">Debt</th>
-                                        <th className="p-4 font-medium text-center">Utilization</th>
-                                        <th className="p-4 font-medium text-center">Health</th>
-                                        <th className="p-4 font-medium text-right">Action</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest">Protocol</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Liquidity / Collateral</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Debt</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Utilization</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Health</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
                                     {protocols.map((proto) => (
                                         <React.Fragment key={proto.id}>
-                                            <tr className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => toggleExpand(proto.id)}>
-                                                <td className="p-4 font-bold flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                            <tr
+                                                className={cn(
+                                                    "transition-all cursor-pointer",
+                                                    expandedProtocol === proto.id ? "bg-white/[0.03]" : "hover:bg-muted/50"
+                                                )}
+                                                onClick={() => toggleExpand(proto.id)}
+                                            >
+                                                <td className="p-4 font-bold flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white shadow-sm border border-white/10">
                                                         <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
                                                     </div>
-                                                    {proto.name}
-                                                    {expandedProtocol === proto.id ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-black tracking-tight">{proto.name}</span>
+                                                        <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest leading-none mt-1">
+                                                            {expandedProtocol === proto.id ? 'Hide Details' : 'Show Details'}
+                                                        </span>
+                                                    </div>
+                                                    {expandedProtocol === proto.id ? <ChevronUp size={16} className="text-primary ml-auto" /> : <ChevronDown size={16} className="text-muted-foreground ml-auto" />}
                                                 </td>
                                                 <td className="p-4 text-right font-mono">${proto.supply.toFixed(2)}</td>
                                                 <td className="p-4 text-right font-mono text-red-400">${proto.borrow.toFixed(2)}</td>
@@ -553,22 +563,10 @@ export function Portfolio() {
                                                 <td className="p-4 text-center">
                                                     <HealthBadge health={proto.health} />
                                                 </td>
-                                                <td className="p-4 text-right">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const mappedProtocol = proto.id === 'kinza' ? 'kinza-finance' : proto.id === 'radiant' ? 'radiant-v2' : proto.id;
-                                                            router.push(`/lend/earn?protocol=${mappedProtocol}`);
-                                                        }}
-                                                        className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium"
-                                                    >
-                                                        Manage
-                                                    </button>
-                                                </td>
                                             </tr>
                                             {expandedProtocol === proto.id && (
                                                 <tr>
-                                                    <td colSpan={6} className="p-0 border-b border-border">
+                                                    <td colSpan={5} className="p-0 border-b-2 border-primary/20 bg-primary/[0.01]">
                                                         {renderPositionsTable(proto.positions, proto.id)}
                                                     </td>
                                                 </tr>
@@ -582,7 +580,13 @@ export function Portfolio() {
                         {/* Mobile Card View */}
                         <div className="md:hidden space-y-4">
                             {protocols.map((proto) => (
-                                <div key={proto.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                                <div
+                                    key={proto.id}
+                                    className={cn(
+                                        "rounded-xl border transition-all overflow-hidden",
+                                        expandedProtocol === proto.id ? "border-primary/40 bg-white/[0.04] shadow-lg shadow-black/40" : "border-border bg-card"
+                                    )}
+                                >
                                     <div className="p-4 flex flex-col gap-4 cursor-pointer" onClick={() => toggleExpand(proto.id)}>
                                         {/* Top Row: Identity & Action */}
                                         <div className="flex items-center justify-between">
@@ -637,20 +641,8 @@ export function Portfolio() {
                                         </div>
                                     </div>
                                     {expandedProtocol === proto.id && (
-                                        <div className="border-t border-border">
+                                        <div className="border-t border-white/10 shadow-inner">
                                             {renderPositionsTable(proto.positions, proto.id)}
-                                            <div className="p-3 bg-muted/20 text-center">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const mappedProtocol = proto.id === 'kinza' ? 'kinza-finance' : proto.id === 'radiant' ? 'radiant-v2' : proto.id;
-                                                        router.push(`/lend/earn?protocol=${mappedProtocol}`);
-                                                    }}
-                                                    className="w-full text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-2 rounded-lg transition-colors font-medium"
-                                                >
-                                                    Manage {proto.name}
-                                                </button>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
