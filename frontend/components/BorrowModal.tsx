@@ -43,7 +43,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     const tokenPrice = prices ? prices.getPrice(pool.symbol) : 0;
 
     // User Portfolio Data (for Debt / Wallet Balance)
-    const { data: venusPositions = [] } = useVenusPortfolio();
+    const { positions: venusPositions = [] } = useVenusPortfolio();
 
     // Find gathered position for this pool
     // Note: We use the aggregated key approach or just find by symbol since we're in the modal for a specific pool context

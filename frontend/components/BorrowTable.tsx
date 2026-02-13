@@ -15,9 +15,9 @@ export function BorrowTable() {
     const [selectedPool, setSelectedPool] = useState<any>(null);
 
     // Fetch User Portfolios
-    const { data: venusPositions = [] } = useVenusPortfolio();
-    const { data: kinzaPositions = [] } = useKinzaPortfolio();
-    const { data: radiantPositions = [] } = useRadiantPortfolio();
+    const { positions: venusPositions = [] } = useVenusPortfolio();
+    const { positions: kinzaPositions = [] } = useKinzaPortfolio();
+    const { positions: radiantPositions = [] } = useRadiantPortfolio();
 
     // Map positions for O(1) lookup: key = `${protocol}-${symbol}`
     const positionMap = useMemo(() => {
