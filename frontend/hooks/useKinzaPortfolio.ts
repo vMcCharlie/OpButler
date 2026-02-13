@@ -128,7 +128,8 @@ export function useKinzaPortfolio() {
             totalSupplyUSD,
             totalBorrowUSD,
             netWorthUSD: totalSupplyUSD - totalBorrowUSD,
-            positions
+            positions,
+            isLoading: false
         };
     }, [activeData, prices, reserves]);
 }

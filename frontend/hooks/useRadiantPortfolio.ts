@@ -155,7 +155,8 @@ export function useRadiantPortfolio() {
             totalSupplyUSD,
             totalBorrowUSD,
             netWorthUSD: totalSupplyUSD - totalBorrowUSD,
-            positions
+            positions,
+            isLoading: false
         };
     }, [balanceData, prices, tokenAddresses]);
 }
