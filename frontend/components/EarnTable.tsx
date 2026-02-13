@@ -270,13 +270,21 @@ export function EarnTable() {
                 </div>
             )}
 
-            {selectedPool && (
-                <EarnModal
-                    isOpen={!!selectedPool}
-                    onClose={() => setSelectedPool(null)}
-                    pool={selectedPool}
-                />
-            )}
+            {selectedPool && (() => {
+                const posKey = `${selectedPool.project}-${selectedPool.symbol}`.toUpperCase();
+                const pos = positionMap.get(posKey);
+                return (
+                    <EarnModal
+                        isOpen={!!selectedPool}
+                        onClose={() => setSelectedPool(null)}
+                        pool={{
+                            ...selectedPool,
+                            userDeposited: pos?.supply || 0,
+                            userDepositedUSD: pos?.supplyUSD || 0,
+                        }}
+                    />
+                );
+            })()}
         </div>
     );
 }

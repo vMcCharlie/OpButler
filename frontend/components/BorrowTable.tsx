@@ -294,13 +294,22 @@ export function BorrowTable() {
                 </div>
             )}
 
-            {selectedPool && (
-                <BorrowModal
-                    isOpen={!!selectedPool}
-                    onClose={() => setSelectedPool(null)}
-                    pool={selectedPool}
-                />
-            )}
+            {selectedPool && (() => {
+                const projectKey = selectedPool.project;
+                const positionKey = `${projectKey}-${selectedPool.symbol}`.toUpperCase();
+                const position = positionMap.get(positionKey);
+                return (
+                    <BorrowModal
+                        isOpen={!!selectedPool}
+                        onClose={() => setSelectedPool(null)}
+                        pool={{
+                            ...selectedPool,
+                            userBorrowed: position?.borrow || 0,
+                            userBorrowedUSD: position?.borrowUSD || 0,
+                        }}
+                    />
+                );
+            })()}
         </div>
     );
 }
