@@ -39,7 +39,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     const isNative = pool.symbol === 'BNB';
 
     // Prices
-    const prices = useTokenPrices();
+    const { data: prices } = useTokenPrices();
     const tokenPrice = prices ? prices.getPrice(pool.symbol) : 0;
 
     // User Portfolio Data (for Debt / Wallet Balance)
