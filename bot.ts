@@ -1,56 +1,87 @@
 
-import { Bot, Context, InlineKeyboard } from "grammy";
-import { StrategyManager } from "./index";
-import { createWalletClient, createPublicClient, http, Address, formatEther, formatUnits } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { Bot, InlineKeyboard } from "grammy";
+import { createPublicClient, http, Address, formatUnits, formatEther, parseAbi, getAddress } from "viem";
+import { recoverMessageAddress } from "viem";
 import { bsc } from "viem/chains";
+import { createClient } from "@supabase/supabase-js";
 import "dotenv/config";
 
-// --- Configuration & Security ---
+// ============================================================
+// Configuration & Validation
+// ============================================================
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const ADMIN_ID = process.env.ALLOWED_USER_ID ? parseInt(process.env.ALLOWED_USER_ID) : null;
-const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const DASHBOARD_URL = process.env.DASHBOARD_URL || "https://opbutler.vercel.app";
 
-// Polling intervals in minutes
+if (!BOT_TOKEN) { console.error("❌ TELEGRAM_BOT_TOKEN required"); process.exit(1); }
+if (!SUPABASE_URL || !SUPABASE_KEY) { console.error("❌ SUPABASE_URL and SUPABASE_KEY required"); process.exit(1); }
+
 const VALID_INTERVALS = [60, 120, 360, 720, 960, 1440];
 const INTERVAL_LABELS: Record<number, string> = {
-    60: "1 hour",
-    120: "2 hours",
-    360: "6 hours",
-    720: "12 hours",
-    960: "16 hours",
-    1440: "24 hours"
+    60: "1 hour", 120: "2 hours", 360: "6 hours",
+    720: "12 hours", 960: "16 hours", 1440: "24 hours"
 };
 
-if (!BOT_TOKEN) {
-    console.error("❌ Error: TELEGRAM_BOT_TOKEN is required in .env");
-    process.exit(1);
-}
+// ============================================================
+// Clients
+// ============================================================
 
-// PRIVATE_KEY is now optional - needed only for bot-initiated transactions (not currently used)
-if (PRIVATE_KEY && (!PRIVATE_KEY.startsWith("0x") || PRIVATE_KEY.length !== 66)) {
-    console.warn("⚠️ Warning: Invalid PRIVATE_KEY format. Bot will run in read-only mode.");
-}
-
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error("❌ Error: SUPABASE_URL and SUPABASE_KEY are required in .env");
-    process.exit(1);
-}
-
-// --- Initialization ---
-let manager: StrategyManager;
-import { Account, PublicClient, WalletClient, Transport, Chain, recoverMessageAddress } from "viem";
-import { createClient } from '@supabase/supabase-js';
-
-let account: Account;
-let publicClient: PublicClient<Transport, Chain>;
-let client: WalletClient<Transport, Chain, Account>;
-
-// Initialize Supabase
+const publicClient = createPublicClient({ chain: bsc, transport: http() });
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const bot = new Bot(BOT_TOKEN);
+
+// ============================================================
+// Contract Addresses & ABIs
+// ============================================================
+
+const VENUS_COMPTROLLER = "0xfD36E2c2a6789Db23113685031d7F16329158384" as Address;
+
+const KINZA_POOL = getAddress("0xcb0620b181140e57d1c0d8b724cde623ca963c8c");
+const KINZA_DATA_PROVIDER = getAddress("0xe9381d8cbd9506a23b3e5e95f613dfb6eae0d01c");
+
+const RADIANT_LENDING_POOL = getAddress("0xccf31d54c3a94f67b8ceff8dd771de5846da032c");
+
+const COMPTROLLER_ABI = parseAbi([
+    "function getAccountLiquidity(address account) view returns (uint256, uint256, uint256)",
+    "function getAllMarkets() view returns (address[])",
+    "function getAssetsIn(address account) view returns (address[])",
+    "function oracle() view returns (address)"
+]);
+
+const VTOKEN_ABI = parseAbi([
+    "function getAccountSnapshot(address account) view returns (uint256, uint256, uint256, uint256)",
+    "function symbol() view returns (string)",
+    "function borrowBalanceStored(address account) view returns (uint256)"
+]);
+
+const ORACLE_ABI = parseAbi([
+    "function getUnderlyingPrice(address vToken) view returns (uint256)"
+]);
+
+const AAVE_POOL_ABI = parseAbi([
+    "function getUserAccountData(address user) view returns (uint256, uint256, uint256, uint256, uint256, uint256)",
+    "function getReservesList() view returns (address[])"
+]);
+
+const AAVE_DATA_PROVIDER_ABI = parseAbi([
+    "function getUserReserveData(address asset, address user) view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, bool)"
+]);
+
+const ERC20_ABI = parseAbi([
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)",
+    "function balanceOf(address account) view returns (uint256)"
+]);
+
+const RADIANT_RESERVE_ABI = parseAbi([
+    "function getReserveData(address asset) view returns (uint256, uint128, uint128, uint128, uint128, uint128, uint40, address, address, address, address, uint8)"
+]);
+
+// ============================================================
+// Types
+// ============================================================
 
 interface UserData {
     id: string;
@@ -61,64 +92,526 @@ interface UserData {
     polling_interval: number;
     last_checked: string;
     alerts_enabled: boolean;
+    last_alert_sent?: string;
 }
 
-try {
-    publicClient = createPublicClient({
-        chain: bsc,
-        transport: http()
-    });
+interface AssetPosition {
+    symbol: string;
+    supply: number;
+    supplyUSD: number;
+    borrow: number;
+    borrowUSD: number;
+}
 
-    if (PRIVATE_KEY && PRIVATE_KEY.startsWith("0x") && PRIVATE_KEY.length === 66) {
-        account = privateKeyToAccount(PRIVATE_KEY);
-        client = createWalletClient({
-            account,
-            chain: bsc,
-            transport: http()
-        });
-        manager = new StrategyManager(publicClient, client);
-        console.log("✅ OpButler Core Initialized (Full Access)");
-    } else {
-        manager = new StrategyManager(publicClient);
-        console.log("ℹ️ OpButler Core Initialized (Read-Only Mode)");
+interface ProtocolData {
+    protocol: string;
+    healthFactor: number;
+    totalCollateralUSD: number;
+    totalDebtUSD: number;
+    positions: AssetPosition[];
+    status: "safe" | "warning" | "danger" | "inactive";
+}
+
+// ============================================================
+// Concurrency Guard — Per-User Command Mutex
+// ============================================================
+
+const userLocks = new Map<number, number>(); // chatId -> timestamp
+const LOCK_TIMEOUT_MS = 30_000; // 30 seconds max lock
+
+function acquireLock(chatId: number): boolean {
+    const existing = userLocks.get(chatId);
+    if (existing && Date.now() - existing < LOCK_TIMEOUT_MS) {
+        return false; // Already locked
     }
-    console.log("✅ OpButler Core Initialized");
-} catch (error: any) {
-    console.error(`❌ Critical Initialization Error: ${error.message}`);
-    process.exit(1);
+    userLocks.set(chatId, Date.now());
+    return true;
 }
 
-// Initialize Bot
-const bot = new Bot(BOT_TOKEN);
-
-// --- Helper Functions ---
-function formatUSD(value: number): string {
-    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function releaseLock(chatId: number): void {
+    userLocks.delete(chatId);
 }
 
-function formatHF(hf: number): string {
-    return hf >= 999 ? "∞" : hf.toFixed(2);
+// ============================================================
+// Formatting Helpers
+// ============================================================
+
+function fmt$(v: number): string {
+    return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function getUtilization(collateral: number, debt: number): number {
-    if (collateral === 0) return 0;
-    return (debt / collateral) * 100;
+function fmtHF(hf: number): string {
+    if (hf >= 100) return "∞ (Safe)";
+    return hf.toFixed(2);
 }
 
-// --- Commands ---
+function statusEmoji(status: string): string {
+    return status === "safe" ? "🟢" : status === "warning" ? "🟡" : status === "danger" ? "🔴" : "⚪";
+}
+
+function statusLabel(status: string): string {
+    return status === "safe" ? "Safe" : status === "warning" ? "Warning" : status === "danger" ? "DANGER" : "Inactive";
+}
+
+function classifyHF(hf: number): "safe" | "warning" | "danger" | "inactive" {
+    if (hf > 1.5) return "safe";
+    if (hf > 1.0) return "warning";
+    return "danger";
+}
+
+// ============================================================
+// Multi-Protocol Data Fetching
+// ============================================================
+
+async function fetchVenusData(wallet: Address): Promise<ProtocolData> {
+    const result: ProtocolData = {
+        protocol: "Venus",
+        healthFactor: Infinity,
+        totalCollateralUSD: 0,
+        totalDebtUSD: 0,
+        positions: [],
+        status: "inactive"
+    };
+
+    try {
+        const [, liquidity, shortfall] = await publicClient.readContract({
+            address: VENUS_COMPTROLLER, abi: COMPTROLLER_ABI,
+            functionName: "getAccountLiquidity", args: [wallet]
+        }) as [bigint, bigint, bigint];
+
+        const liq = parseFloat(formatEther(liquidity));
+        const sf = parseFloat(formatEther(shortfall));
+
+        // Get user's markets
+        let assetsIn: Address[] = [];
+        try {
+            assetsIn = await publicClient.readContract({
+                address: VENUS_COMPTROLLER, abi: COMPTROLLER_ABI,
+                functionName: "getAssetsIn", args: [wallet]
+            }) as Address[];
+        } catch { /* User might not be in any markets */ }
+
+        if (assetsIn.length === 0 && liq === 0 && sf === 0) return result;
+
+        // Get oracle address
+        const oracle = await publicClient.readContract({
+            address: VENUS_COMPTROLLER, abi: COMPTROLLER_ABI,
+            functionName: "oracle", args: []
+        }) as Address;
+
+        // Fetch per-asset data
+        const assetResults = await Promise.allSettled(
+            assetsIn.map(async (vToken) => {
+                const [snapshot, underlyingPrice, sym] = await Promise.all([
+                    publicClient.readContract({
+                        address: vToken, abi: VTOKEN_ABI,
+                        functionName: "getAccountSnapshot", args: [wallet]
+                    }) as Promise<[bigint, bigint, bigint, bigint]>,
+                    publicClient.readContract({
+                        address: oracle, abi: ORACLE_ABI,
+                        functionName: "getUnderlyingPrice", args: [vToken]
+                    }) as Promise<bigint>,
+                    publicClient.readContract({
+                        address: vToken, abi: VTOKEN_ABI, functionName: "symbol"
+                    }).catch(() => "UNKNOWN") as Promise<string>
+                ]);
+
+                const vBal = snapshot[1];
+                const borrowBal = snapshot[2];
+                const exchangeRate = snapshot[3];
+
+                const supplyUnderlying = (vBal * exchangeRate) / BigInt(1e18);
+                const supplyUSD = Number(supplyUnderlying) * Number(underlyingPrice) / 1e36;
+                const borrowUSD = Number(borrowBal) * Number(underlyingPrice) / 1e36;
+
+                let symbol = sym.startsWith("v") ? sym.slice(1) : sym;
+                if (symbol === "BNB" || symbol === "WBNB") symbol = "BNB";
+
+                return { symbol, supply: 0, supplyUSD, borrow: 0, borrowUSD };
+            })
+        );
+
+        for (const r of assetResults) {
+            if (r.status === "fulfilled" && (r.value.supplyUSD > 0.001 || r.value.borrowUSD > 0.001)) {
+                result.positions.push(r.value);
+                result.totalCollateralUSD += r.value.supplyUSD;
+                result.totalDebtUSD += r.value.borrowUSD;
+            }
+        }
+
+        // Calculate HF
+        const AVG_CF = 0.75;
+        if (result.totalDebtUSD > 0.001) {
+            result.healthFactor = (result.totalCollateralUSD * AVG_CF) / result.totalDebtUSD;
+        } else if (result.totalCollateralUSD > 0.001) {
+            result.healthFactor = 100;
+        }
+
+        if (sf > 0) result.healthFactor = Math.min(result.healthFactor, 0.5);
+
+        result.status = result.totalCollateralUSD > 0.001 || result.totalDebtUSD > 0.001
+            ? classifyHF(result.healthFactor) : "inactive";
+
+    } catch (err) {
+        console.error("Venus fetch error:", err);
+    }
+
+    return result;
+}
+
+async function fetchKinzaData(wallet: Address): Promise<ProtocolData> {
+    const result: ProtocolData = {
+        protocol: "Kinza",
+        healthFactor: Infinity,
+        totalCollateralUSD: 0,
+        totalDebtUSD: 0,
+        positions: [],
+        status: "inactive"
+    };
+
+    try {
+        const accountData = await publicClient.readContract({
+            address: KINZA_POOL, abi: AAVE_POOL_ABI,
+            functionName: "getUserAccountData", args: [wallet]
+        }) as [bigint, bigint, bigint, bigint, bigint, bigint];
+
+        const totalCollateral = Number(accountData[0]) / 1e8;
+        const totalDebt = Number(accountData[1]) / 1e8;
+        const hf = Number(accountData[5]) / 1e18;
+
+        if (totalCollateral < 0.001 && totalDebt < 0.001) return result;
+
+        result.totalCollateralUSD = totalCollateral;
+        result.totalDebtUSD = totalDebt;
+        result.healthFactor = hf;
+        result.status = classifyHF(hf);
+
+        // Fetch per-asset positions
+        try {
+            const reserves = await publicClient.readContract({
+                address: KINZA_POOL, abi: AAVE_POOL_ABI,
+                functionName: "getReservesList"
+            }) as Address[];
+
+            const posResults = await Promise.allSettled(
+                reserves.map(async (asset) => {
+                    const userData = await publicClient.readContract({
+                        address: KINZA_DATA_PROVIDER, abi: AAVE_DATA_PROVIDER_ABI,
+                        functionName: "getUserReserveData", args: [asset, wallet]
+                    }) as [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, boolean];
+
+                    const aTokenBal = userData[0];
+                    const stableDebt = userData[1];
+                    const variableDebt = userData[2];
+
+                    if (aTokenBal === BigInt(0) && stableDebt === BigInt(0) && variableDebt === BigInt(0)) return null;
+
+                    const [sym, dec] = await Promise.all([
+                        publicClient.readContract({ address: asset, abi: ERC20_ABI, functionName: "symbol" }),
+                        publicClient.readContract({ address: asset, abi: ERC20_ABI, functionName: "decimals" })
+                    ]) as [string, number];
+
+                    const supply = parseFloat(formatUnits(aTokenBal, dec));
+                    const borrow = parseFloat(formatUnits(stableDebt + variableDebt, dec));
+
+                    return { symbol: sym, supply, supplyUSD: 0, borrow, borrowUSD: 0 } as AssetPosition;
+                })
+            );
+
+            for (const r of posResults) {
+                if (r.status === "fulfilled" && r.value !== null) {
+                    result.positions.push(r.value);
+                }
+            }
+        } catch (posErr) {
+            // Per-asset positions are optional — aggregate data is still valid
+            console.warn("Kinza per-asset fetch failed (aggregate data OK):", posErr);
+        }
+
+    } catch (err) {
+        console.error("Kinza fetch error:", err);
+    }
+
+    return result;
+}
+
+async function fetchRadiantData(wallet: Address): Promise<ProtocolData> {
+    const result: ProtocolData = {
+        protocol: "Radiant",
+        healthFactor: Infinity,
+        totalCollateralUSD: 0,
+        totalDebtUSD: 0,
+        positions: [],
+        status: "inactive"
+    };
+
+    try {
+        const accountData = await publicClient.readContract({
+            address: RADIANT_LENDING_POOL, abi: AAVE_POOL_ABI,
+            functionName: "getUserAccountData", args: [wallet]
+        }) as [bigint, bigint, bigint, bigint, bigint, bigint];
+
+        const totalCollateral = Number(accountData[0]) / 1e8;
+        const totalDebt = Number(accountData[1]) / 1e8;
+        const hf = Number(accountData[5]) / 1e18;
+
+        if (totalCollateral < 0.001 && totalDebt < 0.001) return result;
+
+        result.totalCollateralUSD = totalCollateral;
+        result.totalDebtUSD = totalDebt;
+        result.healthFactor = hf;
+        result.status = classifyHF(hf);
+
+        // Fetch per-asset positions via getReserveData + ERC20 balanceOf
+        try {
+            const reserves = await publicClient.readContract({
+                address: RADIANT_LENDING_POOL, abi: AAVE_POOL_ABI,
+                functionName: "getReservesList"
+            }) as Address[];
+
+            const posResults = await Promise.allSettled(
+                reserves.map(async (asset) => {
+                    const reserveData = await publicClient.readContract({
+                        address: RADIANT_LENDING_POOL, abi: RADIANT_RESERVE_ABI,
+                        functionName: "getReserveData", args: [asset]
+                    }) as unknown as any[];
+
+                    const aTokenAddr = reserveData[7] as Address;
+                    const variableDebtAddr = reserveData[9] as Address;
+
+                    const [aBal, dBal, sym, dec] = await Promise.all([
+                        publicClient.readContract({ address: aTokenAddr, abi: ERC20_ABI, functionName: "balanceOf", args: [wallet] }),
+                        publicClient.readContract({ address: variableDebtAddr, abi: ERC20_ABI, functionName: "balanceOf", args: [wallet] }),
+                        publicClient.readContract({ address: asset, abi: ERC20_ABI, functionName: "symbol" }),
+                        publicClient.readContract({ address: asset, abi: ERC20_ABI, functionName: "decimals" })
+                    ]) as [bigint, bigint, string, number];
+
+                    if (aBal === BigInt(0) && dBal === BigInt(0)) return null;
+
+                    const supply = parseFloat(formatUnits(aBal, dec));
+                    const borrow = parseFloat(formatUnits(dBal, dec));
+
+                    return { symbol: sym, supply, supplyUSD: 0, borrow, borrowUSD: 0 } as AssetPosition;
+                })
+            );
+
+            for (const r of posResults) {
+                if (r.status === "fulfilled" && r.value !== null) {
+                    result.positions.push(r.value);
+                }
+            }
+        } catch (posErr) {
+            console.warn("Radiant per-asset fetch failed (aggregate data OK):", posErr);
+        }
+
+    } catch (err) {
+        console.error("Radiant fetch error:", err);
+    }
+
+    return result;
+}
+
+async function fetchAllProtocols(wallet: Address): Promise<ProtocolData[]> {
+    const [venus, kinza, radiant] = await Promise.allSettled([
+        fetchVenusData(wallet),
+        fetchKinzaData(wallet),
+        fetchRadiantData(wallet)
+    ]);
+
+    return [
+        venus.status === "fulfilled" ? venus.value : { protocol: "Venus", healthFactor: Infinity, totalCollateralUSD: 0, totalDebtUSD: 0, positions: [], status: "inactive" as const },
+        kinza.status === "fulfilled" ? kinza.value : { protocol: "Kinza", healthFactor: Infinity, totalCollateralUSD: 0, totalDebtUSD: 0, positions: [], status: "inactive" as const },
+        radiant.status === "fulfilled" ? radiant.value : { protocol: "Radiant", healthFactor: Infinity, totalCollateralUSD: 0, totalDebtUSD: 0, positions: [], status: "inactive" as const },
+    ];
+}
+
+// ============================================================
+// Suggestion Engine
+// ============================================================
+
+function generateSuggestions(proto: ProtocolData, targetHF: number = 1.5): string {
+    if (proto.status === "inactive" || proto.healthFactor >= targetHF) return "";
+
+    const debt = proto.totalDebtUSD;
+    const collateral = proto.totalCollateralUSD;
+    if (debt < 0.01) return "";
+
+    // For Venus: HF = (Collateral * CF) / Debt → need (targetHF * Debt) / CF collateral
+    // For Aave: HF = (Collateral * LT) / Debt → same pattern
+    const avgFactor = proto.protocol === "Venus" ? 0.75 : 0.80; // Average LT
+
+    // Option 1: Repay debt → newDebt = (Collateral * Factor) / targetHF
+    const targetDebt = (collateral * avgFactor) / targetHF;
+    const repayAmount = Math.max(0, debt - targetDebt);
+
+    // Option 2: Add collateral → newCollateral = (targetHF * Debt) / Factor
+    const targetCollateral = (targetHF * debt) / avgFactor;
+    const addAmount = Math.max(0, targetCollateral - collateral);
+
+    let msg = `\n💡 *To reach HF ${targetHF.toFixed(1)} on ${proto.protocol}:*\n`;
+
+    if (repayAmount > 0.01) {
+        const repayPct = ((repayAmount / debt) * 100).toFixed(1);
+        msg += `  • Repay ~$${fmt$(repayAmount)} of debt (${repayPct}% of total)\n`;
+    }
+
+    if (addAmount > 0.01) {
+        const addPct = collateral > 0 ? ((addAmount / collateral) * 100).toFixed(1) : "N/A";
+        msg += `  • Deposit ~$${fmt$(addAmount)} more collateral (+${addPct}%)\n`;
+    }
+
+    // Specific asset suggestions if we have positions
+    if (proto.positions.length > 0) {
+        const borrowedAssets = proto.positions.filter(p => p.borrow > 0);
+        const suppliedAssets = proto.positions.filter(p => p.supply > 0);
+
+        if (borrowedAssets.length > 0 && repayAmount > 0.01) {
+            const topBorrow = borrowedAssets[0];
+            msg += `  → e.g., repay some ${topBorrow.symbol} debt\n`;
+        }
+        if (suppliedAssets.length > 0 && addAmount > 0.01) {
+            const topSupply = suppliedAssets[0];
+            msg += `  → e.g., deposit more ${topSupply.symbol}\n`;
+        }
+    }
+
+    return msg;
+}
+
+// ============================================================
+// Message Builders
+// ============================================================
+
+function buildPositionsMessage(protocols: ProtocolData[]): string {
+    const activeProtocols = protocols.filter(p => p.status !== "inactive");
+    const totalCollateral = protocols.reduce((s, p) => s + p.totalCollateralUSD, 0);
+    const totalDebt = protocols.reduce((s, p) => s + p.totalDebtUSD, 0);
+    const netWorth = totalCollateral - totalDebt;
+
+    let msg = `📊 *Your DeFi Positions*\n\n`;
+    msg += `💰 Net Worth: *$${fmt$(netWorth)}*\n`;
+    msg += `📈 Total Supplied: $${fmt$(totalCollateral)}\n`;
+    msg += `📉 Total Borrowed: $${fmt$(totalDebt)}\n\n`;
+
+    if (activeProtocols.length === 0) {
+        msg += `_No active positions found across Venus, Kinza, or Radiant._\n`;
+        return msg;
+    }
+
+    msg += `━━━━━━━━━━━━━━━━━━\n`;
+
+    for (const proto of protocols) {
+        const emoji = statusEmoji(proto.status);
+        const label = statusLabel(proto.status);
+
+        msg += `\n${emoji} *${proto.protocol}*  ─  HF: *${fmtHF(proto.healthFactor)}*  (${label})\n`;
+
+        if (proto.status === "inactive") {
+            msg += `   _No active positions_\n`;
+            continue;
+        }
+
+        msg += `   Supply: $${fmt$(proto.totalCollateralUSD)}  │  Debt: $${fmt$(proto.totalDebtUSD)}\n`;
+
+        if (proto.positions.length > 0) {
+            for (const pos of proto.positions) {
+                let line = `   • ${pos.symbol}: `;
+                const parts: string[] = [];
+                if (pos.supply > 0) parts.push(`supply ${pos.supply.toFixed(4)}`);
+                if (pos.supplyUSD > 0.01) parts.push(`($${fmt$(pos.supplyUSD)})`);
+                if (pos.borrow > 0) parts.push(`borrow ${pos.borrow.toFixed(4)}`);
+                if (pos.borrowUSD > 0.01) parts.push(`($${fmt$(pos.borrowUSD)})`);
+                line += parts.join(" / ");
+                msg += line + "\n";
+            }
+        }
+    }
+
+    return msg;
+}
+
+function buildRiskMessage(protocols: ProtocolData[]): string {
+    const activeProtocols = protocols.filter(p => p.status !== "inactive");
+
+    if (activeProtocols.length === 0) {
+        return "✅ *Risk Analysis*\n\n_No active positions found. Nothing to analyze._\n";
+    }
+
+    const dangerProtocols = activeProtocols.filter(p => p.status === "danger");
+    const warningProtocols = activeProtocols.filter(p => p.status === "warning");
+    const safeProtocols = activeProtocols.filter(p => p.status === "safe");
+
+    let msg = `🛡️ *Risk Analysis*\n\n`;
+
+    // Overall assessment
+    if (dangerProtocols.length > 0) {
+        msg += `🚨 *CRITICAL* — ${dangerProtocols.length} protocol(s) at liquidation risk!\n\n`;
+    } else if (warningProtocols.length > 0) {
+        msg += `⚠️ *CAUTION* — ${warningProtocols.length} protocol(s) need attention.\n\n`;
+    } else {
+        msg += `✅ *ALL SAFE* — Your positions are healthy.\n\n`;
+    }
+
+    // Per-protocol breakdown
+    for (const proto of activeProtocols) {
+        const emoji = statusEmoji(proto.status);
+        msg += `${emoji} *${proto.protocol}* — HF: *${fmtHF(proto.healthFactor)}*\n`;
+        msg += `   Supply: $${fmt$(proto.totalCollateralUSD)}  │  Debt: $${fmt$(proto.totalDebtUSD)}\n`;
+
+        if (proto.totalDebtUSD > 0.01) {
+            const util = (proto.totalDebtUSD / proto.totalCollateralUSD * 100).toFixed(1);
+            msg += `   Utilization: ${util}%\n`;
+        }
+
+        const suggestions = generateSuggestions(proto);
+        if (suggestions) msg += suggestions;
+
+        msg += `\n`;
+    }
+
+    return msg;
+}
+
+function buildAlertMessage(proto: ProtocolData, threshold: number): string {
+    let msg = `🚨 *LIQUIDATION ALERT* 🚨\n\n`;
+    msg += `Your *${proto.protocol}* Health Factor has dropped to *${fmtHF(proto.healthFactor)}*!\n`;
+    msg += `Your threshold is set to: *${threshold.toFixed(2)}*\n\n`;
+
+    msg += `📊 *Position Summary:*\n`;
+    msg += `• Collateral: $${fmt$(proto.totalCollateralUSD)}\n`;
+    msg += `• Debt: $${fmt$(proto.totalDebtUSD)}\n`;
+    if (proto.totalCollateralUSD > 0) {
+        msg += `• Utilization: ${(proto.totalDebtUSD / proto.totalCollateralUSD * 100).toFixed(1)}%\n`;
+    }
+
+    const suggestions = generateSuggestions(proto);
+    if (suggestions) msg += suggestions;
+
+    msg += `\n⚠️ *Act now to avoid liquidation!*`;
+
+    return msg;
+}
+
+// ============================================================
+// Bot Commands
+// ============================================================
 
 bot.command("start", async (ctx) => {
     const keyboard = new InlineKeyboard()
         .url("Open Dashboard", `${DASHBOARD_URL}/settings`);
 
     await ctx.reply(
-        `🤖 **Welcome to OpButler!**\n\n` +
-        `I provide **24/7 automated monitoring** for your DeFi positions on Venus, Kinza, and Radiant.\n\n` +
-        `**Commands:**\n` +
-        `• /settings - View/update alert settings\n` +
-        `• /setinterval - Change polling frequency\n` +
-        `• /id - Get your Telegram User ID\n\n` +
-        `**Setup:**\n` +
+        `🤖 *Welcome to OpButler!*\n\n` +
+        `I provide *24/7 monitoring* for your DeFi positions on Venus, Kinza, and Radiant (BSC).\n\n` +
+        `*Commands:*\n` +
+        `• /positions — View all your DeFi positions\n` +
+        `• /risk — Detailed risk analysis with suggestions\n` +
+        `• /settings — View/update alert settings\n` +
+        `• /setinterval — Change polling frequency\n` +
+        `• /setalert <value> — Set HF alert threshold\n` +
+        `• /togglealerts — Enable/disable alerts\n` +
+        `• /id — Get your Telegram User ID\n\n` +
+        `*Setup:*\n` +
         `1. Open Dashboard > Settings\n` +
         `2. Enter your Telegram ID: \`${ctx.from?.id}\`\n` +
         `3. Sign the message & verify with:\n` +
@@ -128,7 +621,10 @@ bot.command("start", async (ctx) => {
 });
 
 bot.command("id", (ctx) => {
-    ctx.reply(`Your Telegram ID is: \`${ctx.from?.id}\`\n\nUse this when linking your wallet on the dashboard.`, { parse_mode: "Markdown" });
+    ctx.reply(
+        `Your Telegram ID is: \`${ctx.from?.id}\`\n\nUse this when linking your wallet on the dashboard.`,
+        { parse_mode: "Markdown" }
+    );
 });
 
 bot.command("verify", async (ctx) => {
@@ -147,51 +643,111 @@ bot.command("verify", async (ctx) => {
             signature: signature as `0x${string}`
         });
 
-        // Upsert User into Supabase with default settings
         const { error } = await supabase
-            .from('users')
+            .from("users")
             .upsert({
                 chat_id: chatId,
                 username: ctx.from?.username,
                 wallet_address: recoveredAddress.toLowerCase(),
                 alert_threshold: 1.1,
-                polling_interval: 60, // Default: 1 hour
+                polling_interval: 60,
                 alerts_enabled: true,
                 last_checked: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'chat_id'
-            });
+            }, { onConflict: "chat_id" });
 
         if (error) {
-            console.error('Supabase Error:', error);
-            throw new Error('Database error');
+            console.error("Supabase Error:", error);
+            throw new Error("Database error");
         }
 
         await ctx.reply(
-            `✅ **Wallet Linked Successfully!**\n\n` +
+            `✅ *Wallet Linked Successfully!*\n\n` +
             `🔗 Wallet: \`${recoveredAddress}\`\n` +
             `⏰ Polling: Every 1 hour\n` +
             `⚠️ Alert when HF < 1.1\n\n` +
             `I am now monitoring your positions 24/7!`,
             { parse_mode: "Markdown" }
         );
-
     } catch (error) {
         console.error("Verification failed:", error);
         await ctx.reply("❌ Verification failed. Invalid signature or database error.");
     }
 });
 
-// --- Commands Removed as per requirement (/positions, /risk) ---
+// /positions — View all positions with concurrency guard
+bot.command("positions", async (ctx) => {
+    const chatId = ctx.from?.id;
+    if (!chatId) return;
 
-// /settings - View current settings
+    if (!acquireLock(chatId)) {
+        return ctx.reply("⏳ Already fetching your positions. Please wait...");
+    }
+
+    try {
+        const { data: user } = await supabase
+            .from("users").select("*").eq("chat_id", chatId).single();
+
+        if (!user) {
+            return ctx.reply("❌ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
+        }
+
+        await ctx.reply("🔄 Fetching positions across Venus, Kinza, and Radiant...");
+
+        const protocols = await fetchAllProtocols(user.wallet_address as Address);
+        const message = buildPositionsMessage(protocols);
+
+        const keyboard = new InlineKeyboard()
+            .url("Open Dashboard", `${DASHBOARD_URL}/portfolio`);
+
+        await ctx.reply(message, { parse_mode: "Markdown", reply_markup: keyboard });
+    } catch (error) {
+        console.error(`/positions error for ${chatId}:`, error);
+        await ctx.reply("❌ Failed to fetch positions. Please try again in a moment.");
+    } finally {
+        releaseLock(chatId);
+    }
+});
+
+// /risk — Risk analysis with suggestions
+bot.command("risk", async (ctx) => {
+    const chatId = ctx.from?.id;
+    if (!chatId) return;
+
+    if (!acquireLock(chatId)) {
+        return ctx.reply("⏳ Already analyzing your positions. Please wait...");
+    }
+
+    try {
+        const { data: user } = await supabase
+            .from("users").select("*").eq("chat_id", chatId).single();
+
+        if (!user) {
+            return ctx.reply("❌ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
+        }
+
+        await ctx.reply("🔄 Analyzing risk across all protocols...");
+
+        const protocols = await fetchAllProtocols(user.wallet_address as Address);
+        const message = buildRiskMessage(protocols);
+
+        const keyboard = new InlineKeyboard()
+            .url("Manage Positions", `${DASHBOARD_URL}/portfolio`);
+
+        await ctx.reply(message, { parse_mode: "Markdown", reply_markup: keyboard });
+    } catch (error) {
+        console.error(`/risk error for ${chatId}:`, error);
+        await ctx.reply("❌ Failed to analyze risk. Please try again in a moment.");
+    } finally {
+        releaseLock(chatId);
+    }
+});
+
+// /settings — View current settings
 bot.command("settings", async (ctx) => {
     const { data: user } = await supabase
-        .from('users')
-        .select('*')
-        .eq('chat_id', ctx.from?.id)
-        .single();
+        .from("users").select("*")
+        .eq("chat_id", ctx.from?.id).single();
 
     if (!user) {
         return ctx.reply("❌ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
@@ -200,20 +756,22 @@ bot.command("settings", async (ctx) => {
     const intervalLabel = INTERVAL_LABELS[user.polling_interval] || `${user.polling_interval} min`;
 
     await ctx.reply(
-        `⚙️ **Your Settings**\n\n` +
+        `⚙️ *Your Settings*\n\n` +
         `🔗 Wallet: \`${user.wallet_address}\`\n` +
-        `⏰ Polling Interval: **${intervalLabel}**\n` +
-        `⚠️ Alert Threshold: HF < **${user.alert_threshold}**\n` +
+        `⏰ Polling Interval: *${intervalLabel}*\n` +
+        `⚠️ Alert Threshold: HF < *${user.alert_threshold}*\n` +
         `🔔 Alerts: ${user.alerts_enabled ? "✅ Enabled" : "❌ Disabled"}\n\n` +
-        `**Commands:**\n` +
-        `• /setinterval - Change polling frequency\n` +
-        `• /setalert <value> - Change HF threshold\n` +
-        `• /togglealerts - Enable/disable alerts`,
+        `*Commands:*\n` +
+        `• /positions — View DeFi positions\n` +
+        `• /risk — Risk analysis\n` +
+        `• /setinterval — Change polling frequency\n` +
+        `• /setalert <value> — Change HF threshold\n` +
+        `• /togglealerts — Enable/disable alerts`,
         { parse_mode: "Markdown" }
     );
 });
 
-// /setinterval - Change polling interval with inline keyboard
+// /setinterval — Change polling interval
 bot.command("setinterval", async (ctx) => {
     const keyboard = new InlineKeyboard()
         .text("1 hour", "interval_60").text("2 hours", "interval_120").row()
@@ -221,203 +779,205 @@ bot.command("setinterval", async (ctx) => {
         .text("16 hours", "interval_960").text("24 hours", "interval_1440");
 
     await ctx.reply(
-        "⏰ **Select Polling Interval**\n\n" +
-        "How often should I check your positions?",
+        "⏰ *Select Polling Interval*\n\nHow often should I check your positions?",
         { parse_mode: "Markdown", reply_markup: keyboard }
     );
 });
 
-// Handle interval selection callbacks
 bot.callbackQuery(/^interval_(\d+)$/, async (ctx) => {
     const interval = parseInt(ctx.match![1]);
-
     if (!VALID_INTERVALS.includes(interval)) {
         return ctx.answerCallbackQuery({ text: "Invalid interval", show_alert: true });
     }
 
     const { error } = await supabase
-        .from('users')
-        .update({
-            polling_interval: interval,
-            updated_at: new Date().toISOString()
-        })
-        .eq('chat_id', ctx.from.id);
+        .from("users")
+        .update({ polling_interval: interval, updated_at: new Date().toISOString() })
+        .eq("chat_id", ctx.from.id);
 
-    if (error) {
-        return ctx.answerCallbackQuery({ text: "Failed to update", show_alert: true });
-    }
+    if (error) return ctx.answerCallbackQuery({ text: "Failed to update", show_alert: true });
 
     await ctx.answerCallbackQuery({ text: `Updated to ${INTERVAL_LABELS[interval]}` });
     await ctx.editMessageText(
-        `✅ **Polling Interval Updated**\n\n` +
-        `Your positions will now be checked every **${INTERVAL_LABELS[interval]}**.`,
+        `✅ *Polling Interval Updated*\n\nYour positions will now be checked every *${INTERVAL_LABELS[interval]}*.`,
         { parse_mode: "Markdown" }
     );
 });
 
-// /setalert - Set alert threshold
+// /setalert — Set alert threshold  
 bot.command("setalert", async (ctx) => {
     const value = parseFloat(ctx.match);
-
     if (isNaN(value) || value < 1.0 || value > 2.0) {
         return ctx.reply(
-            "⚠️ Please provide a valid threshold between 1.0 and 2.0.\n\n" +
-            "Example: `/setalert 1.2`",
+            "⚠️ Please provide a valid threshold between 1.0 and 2.0.\n\nExample: `/setalert 1.2`",
             { parse_mode: "Markdown" }
         );
     }
 
     const { error } = await supabase
-        .from('users')
-        .update({
-            alert_threshold: value,
-            updated_at: new Date().toISOString()
-        })
-        .eq('chat_id', ctx.from?.id);
+        .from("users")
+        .update({ alert_threshold: value, updated_at: new Date().toISOString() })
+        .eq("chat_id", ctx.from?.id);
 
-    if (error) {
-        return ctx.reply("❌ Failed to update threshold.");
-    }
-
-    await ctx.reply(`✅ Alert threshold set to HF < **${value}**`, { parse_mode: "Markdown" });
+    if (error) return ctx.reply("❌ Failed to update threshold.");
+    await ctx.reply(`✅ Alert threshold set to HF < *${value}*`, { parse_mode: "Markdown" });
 });
 
-// /togglealerts - Enable/disable alerts
+// /togglealerts — Enable/disable alerts
 bot.command("togglealerts", async (ctx) => {
     const { data: user } = await supabase
-        .from('users')
-        .select('alerts_enabled')
-        .eq('chat_id', ctx.from?.id)
-        .single();
+        .from("users").select("alerts_enabled")
+        .eq("chat_id", ctx.from?.id).single();
 
-    if (!user) {
-        return ctx.reply("❌ No wallet linked.");
-    }
+    if (!user) return ctx.reply("❌ No wallet linked.");
 
     const newState = !user.alerts_enabled;
-
     await supabase
-        .from('users')
-        .update({
-            alerts_enabled: newState,
-            updated_at: new Date().toISOString()
-        })
-        .eq('chat_id', ctx.from?.id);
+        .from("users")
+        .update({ alerts_enabled: newState, updated_at: new Date().toISOString() })
+        .eq("chat_id", ctx.from?.id);
 
     await ctx.reply(
         newState
-            ? "🔔 **Alerts Enabled**\nYou will receive liquidation warnings."
-            : "🔕 **Alerts Disabled**\nYou won't receive automatic alerts.",
+            ? "🔔 *Alerts Enabled*\nYou will receive liquidation warnings."
+            : "🔕 *Alerts Disabled*\nYou won't receive automatic alerts.",
         { parse_mode: "Markdown" }
     );
 });
 
-// /status - Account status (alias for settings)
-bot.command("status", async (ctx) => {
-    return ctx.reply("Use /settings to view your account status and alert configuration.");
-});
+// /status alias
+bot.command("status", (ctx) => ctx.reply("Use /settings to view your account status and alert configuration."));
 
-// --- Catch-all Handler for Invalid Commands/Messages ---
+// Catch-all
 bot.on("message", async (ctx) => {
     await ctx.reply(
-        "🤔 **I don't recognize that command or message.**\n\n" +
-        "My goal is to monitor your DeFi positions and alert you if your Health Factor drops.\n\n" +
-        "Type /start to see available commands or link your wallet.",
+        "🤔 *I don't recognize that command.*\n\n" +
+        "Commands: /positions, /risk, /settings, /start\n" +
+        "Type /start to see all available commands.",
         { parse_mode: "Markdown" }
     );
 });
 
-// --- Smart Polling Background Job ---
-// Runs every 5 seconds to ensure high responsiveness
-const POLLING_CHECK_INTERVAL = 5 * 1000; // Fast 5s heartbeat
+// ============================================================
+// Background Health Monitor (Polling Loop)
+// ============================================================
 
-setInterval(async () => {
-    const now = new Date();
+const POLLING_HEARTBEAT_MS = 60_000; // 60 seconds
+const ALERT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+const USER_STAGGER_MS = 500; // 500ms between users to avoid RPC rate limits
+let pollingMutex = false;
 
-    // Fetch users who need to be checked
-    const { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('alerts_enabled', true);
+async function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-    if (error || !users) {
-        console.error("Error fetching users:", error);
+async function runPollingCycle(): Promise<void> {
+    if (pollingMutex) {
+        console.log("⏭️ Skipping poll — previous cycle still running");
         return;
     }
 
-    const checkResults = await Promise.allSettled(users.map(async (user) => {
-        // Calculate if it's time to check this user
-        const lastChecked = new Date(user.last_checked);
-        const intervalMs = user.polling_interval * 60 * 1000;
-        const timeSinceLastCheck = now.getTime() - lastChecked.getTime();
+    pollingMutex = true;
 
-        if (timeSinceLastCheck < intervalMs) {
-            return false; // Not time to check yet
+    try {
+        const now = new Date();
+
+        const { data: users, error } = await supabase
+            .from("users")
+            .select("*")
+            .eq("alerts_enabled", true);
+
+        if (error || !users || users.length === 0) {
+            if (error) console.error("Error fetching users:", error);
+            return;
         }
 
-        try {
-            const health = await manager.getAccountHealth(user.wallet_address as Address);
+        let checkedCount = 0;
 
-            // Update last_checked timestamp
-            await supabase
-                .from('users')
-                .update({ last_checked: now.toISOString() })
-                .eq('chat_id', user.chat_id);
+        for (const user of users) {
+            // Check if it's time for this user
+            const lastChecked = new Date(user.last_checked);
+            const intervalMs = user.polling_interval * 60 * 1000;
+            if (now.getTime() - lastChecked.getTime() < intervalMs) continue;
 
-            // Check if alert needed
-            if (health.healthFactor < user.alert_threshold) {
-                const collateral = health.totalCollateralUSD;
-                const debt = health.totalDebtUSD;
-                const utilization = getUtilization(collateral, debt);
+            try {
+                const protocols = await fetchAllProtocols(user.wallet_address as Address);
 
-                let alertMessage = `🚨 **LIQUIDATION ALERT** 🚨\n\n`;
-                alertMessage += `Your Health Factor has dropped to **${formatHF(health.healthFactor)}**!\n\n`;
+                // Update last_checked
+                await supabase
+                    .from("users")
+                    .update({ last_checked: now.toISOString() })
+                    .eq("chat_id", user.chat_id);
 
-                alertMessage += `📊 **Position Summary:**\n`;
-                alertMessage += `• Collateral: $${formatUSD(collateral)}\n`;
-                alertMessage += `• Debt: $${formatUSD(debt)}\n`;
-                alertMessage += `• Utilization: ${utilization.toFixed(1)}%\n\n`;
+                // Check each protocol for alerts
+                for (const proto of protocols) {
+                    if (proto.status === "inactive") continue;
+                    if (proto.healthFactor >= user.alert_threshold) continue;
 
-                if (health.suggestions) {
-                    alertMessage += `💡 **To reach HF ${health.suggestions.targetHF}:**\n`;
-                    if (health.suggestions.repayAmount > 0) {
-                        alertMessage += `• Repay ~$${formatUSD(health.suggestions.repayAmount)} debt\n`;
+                    // Check cooldown
+                    if (user.last_alert_sent) {
+                        const lastAlert = new Date(user.last_alert_sent);
+                        if (now.getTime() - lastAlert.getTime() < ALERT_COOLDOWN_MS) {
+                            continue; // Still in cooldown
+                        }
                     }
-                    if (health.suggestions.addCollateralAmount > 0) {
-                        alertMessage += `• Add ~$${formatUSD(health.suggestions.addCollateralAmount)} collateral\n`;
+
+                    // Send alert
+                    const alertMsg = buildAlertMessage(proto, user.alert_threshold);
+                    const keyboard = new InlineKeyboard()
+                        .url("Manage Position", `${DASHBOARD_URL}/portfolio`);
+
+                    try {
+                        await bot.api.sendMessage(user.chat_id, alertMsg, {
+                            parse_mode: "Markdown",
+                            reply_markup: keyboard
+                        });
+
+                        // Update cooldown
+                        await supabase
+                            .from("users")
+                            .update({ last_alert_sent: now.toISOString() })
+                            .eq("chat_id", user.chat_id);
+
+                        console.log(`🚨 Alert sent to ${user.chat_id} for ${proto.protocol} (HF: ${proto.healthFactor.toFixed(2)})`);
+                    } catch (sendErr) {
+                        console.error(`Failed to send alert to ${user.chat_id}:`, sendErr);
                     }
-                    alertMessage += `\n`;
+
+                    break; // One alert per user per cycle (don't spam)
                 }
 
-                alertMessage += `⚠️ Act now to avoid liquidation!`;
-
-                const keyboard = new InlineKeyboard()
-                    .url("Open Dashboard", `${DASHBOARD_URL}/dashboard`);
-
-                await bot.api.sendMessage(user.chat_id, alertMessage, {
-                    parse_mode: "Markdown",
-                    reply_markup: keyboard
-                });
+                checkedCount++;
+            } catch (userErr) {
+                console.error(`Error checking user ${user.chat_id}:`, userErr);
+                // Continue to next user — don't crash the loop
             }
-            return true;
-        } catch (e) {
-            console.error(`Error checking user ${user.chat_id}:`, e);
-            return false;
+
+            // Stagger between users
+            if (users.length > 1) await sleep(USER_STAGGER_MS);
         }
-    }));
 
-    const checkedCount = checkResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
-
-    if (checkedCount > 0) {
-        console.log(`🔍 Checked ${checkedCount} users at ${now.toLocaleTimeString()}`);
+        if (checkedCount > 0) {
+            console.log(`🔍 Checked ${checkedCount} user(s) at ${now.toLocaleTimeString()}`);
+        }
+    } catch (err) {
+        console.error("Polling cycle error:", err);
+    } finally {
+        pollingMutex = false;
     }
-}, POLLING_CHECK_INTERVAL);
+}
 
-// --- Error Handling ---
+// ============================================================
+// Error Handling & Start
+// ============================================================
+
 bot.catch((err) => {
     console.error("Bot Error:", err);
 });
 
-// --- Start Bot ---
+// Start polling loop
+setInterval(runPollingCycle, POLLING_HEARTBEAT_MS);
+
+// Start bot
 bot.start();
-console.log("🤖 OpButler Bot Started with Smart Polling!");
+console.log("🤖 OpButler Bot Started — Monitoring Venus, Kinza, Radiant on BSC");
