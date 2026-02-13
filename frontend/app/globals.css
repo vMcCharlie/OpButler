@@ -161,4 +161,9 @@
   h6 {
     @apply font-outfit;
   }
+
+  /* Remove distracting focus outlines from charts and other interactive elements */
+  *:focus {
+    outline: none !important;
+  }
 }

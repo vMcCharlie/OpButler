@@ -261,8 +261,8 @@ export function Portfolio() {
     ];
 
     return (
-        <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
-            <div className="flex items-center justify-between">
+        <div className="container py-12 pb-24 space-y-8 max-w-screen-2xl mx-auto px-0 md:px-16">
+            <div className="flex items-center justify-between px-4 md:px-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">My Portfolio</h1>
                     <div className="text-sm text-muted-foreground">Detailed breakdown of your DeFi positions across BNB Chain.</div>
@@ -275,7 +275,7 @@ export function Portfolio() {
             </div>
 
             {/* Main Stats Grid */}
-            <div className="grid gap-6 md:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-4 px-4 md:px-0">
                 {/* Net Worth */}
                 <Card className="border-l-4 border-l-primary/80 bg-gradient-to-br from-primary/5 via-card to-card">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -339,39 +339,42 @@ export function Portfolio() {
                 </Card>
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Protocol Allocation Chart */}
-                <Card className="col-span-1 -mx-4 rounded-none border-x-0 md:mx-0 md:rounded-xl md:border border-border bg-card">
-                    <CardHeader>
-                        <CardTitle>Protocol Allocation</CardTitle>
+                <Card className="lg:col-span-1 mx-4 md:mx-0 border border-border bg-card">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-lg md:text-2xl">Protocol Allocation</CardTitle>
                     </CardHeader>
-                    <CardContent className="h-[300px] relative">
+                    <CardContent className="pb-6">
                         {allocationData.length > 0 ? (
                             <>
-                                <CenterHealthLabel score={overallScore} />
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={allocationData}
-                                            innerRadius={70}
-                                            outerRadius={95}
-                                            paddingAngle={4}
-                                            dataKey="value"
-                                            cornerRadius={8}
-                                            stroke="none"
-                                        >
-                                            {allocationData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <RechartsTooltip
-                                            content={<CustomTooltip />}
-                                            wrapperStyle={{ zIndex: 40 }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                                <div className="h-[240px] w-full relative outline-none focus:outline-none">
+                                    <CenterHealthLabel score={overallScore} />
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                className="outline-none focus:outline-none"
+                                                data={allocationData}
+                                                innerRadius={65}
+                                                outerRadius={90}
+                                                paddingAngle={4}
+                                                dataKey="value"
+                                                cornerRadius={8}
+                                                stroke="none"
+                                            >
+                                                {allocationData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip
+                                                content={<CustomTooltip />}
+                                                wrapperStyle={{ zIndex: 40 }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
                                 {/* Legend */}
-                                <div className="flex justify-center gap-4 -mt-2">
+                                <div className="flex justify-center gap-4 mt-4">
                                     {allocationData.map((entry, index) => (
                                         <div key={index} className="flex items-center gap-1.5 text-xs">
                                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
@@ -393,7 +396,7 @@ export function Portfolio() {
                 </Card>
 
                 {/* Protocol Breakdown Table */}
-                <Card className="col-span-2 border border-border bg-card">
+                <Card className="lg:col-span-2 mx-4 md:mx-0 border border-border bg-card">
                     <CardHeader>
                         <CardTitle>Protocol Breakdown</CardTitle>
                     </CardHeader>
