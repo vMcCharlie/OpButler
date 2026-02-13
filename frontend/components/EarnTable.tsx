@@ -26,14 +26,26 @@ export function EarnTable() {
     const positionMap = useMemo(() => {
         const map = new Map<string, any>();
 
+        const addPosition = (key: string, pos: any) => {
+            if (map.has(key)) {
+                const existing = map.get(key);
+                existing.supply += pos.supply;
+                existing.supplyUSD += pos.supplyUSD;
+                existing.borrow += pos.borrow;
+                existing.borrowUSD += pos.borrowUSD;
+            } else {
+                map.set(key, { ...pos });
+            }
+        };
+
         venusPositions.forEach((pos: any) => {
-            map.set(`venus-${pos.symbol}`.toUpperCase(), pos);
+            addPosition(`venus-${pos.symbol}`.toUpperCase(), pos);
         });
         kinzaPositions.forEach((pos: any) => {
-            map.set(`kinza-finance-${pos.symbol}`.toUpperCase(), pos);
+            addPosition(`kinza-finance-${pos.symbol}`.toUpperCase(), pos);
         });
         radiantPositions.forEach((pos: any) => {
-            map.set(`radiant-v2-${pos.symbol}`.toUpperCase(), pos);
+            addPosition(`radiant-v2-${pos.symbol}`.toUpperCase(), pos);
         });
 
         return map;

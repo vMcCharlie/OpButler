@@ -46,45 +46,78 @@ export function useYields() {
         queryFn: fetchYields,
         select: (data) => {
             // Filter for BSC and specific projects AND allowed pool IDs
-            return data.filter(pool => {
+            // 1. Filter relevant pools
+            const filtered = data.filter(pool => {
                 const isBSC = pool.chain === 'BSC';
                 const isProject =
-                    pool.project === 'venus-core-pool' ||
-                    pool.project === 'venus-isolated-pool' ||
                     pool.project === 'venus' ||
+                    pool.project === 'venus-core-pool' ||
                     pool.project === 'kinza-finance' ||
                     pool.project === 'radiant-v2';
+
+                // Exclude Venus Isolated Pools as they are closing
+                const isIsolated = pool.project === 'venus-isolated-pool';
 
                 // Check if the pool is in our allowed list
                 const isAllowed = ALLOWED_POOL_IDS.has(pool.pool);
 
-                return isBSC && isProject && isAllowed;
-            }).map(pool => {
-                // Determine Fallback LTV based on asset type
-                // Stables: 80% (0.8) -> Max Lev 5x
-                // Majors (BNB, ETH, BTC): 75% (0.75) -> Max Lev 4x
-                // Others: 60% (0.6) -> Max Lev 2.5x
-                let fallbackLtv = 0.6;
-                const symbolUpper = pool.symbol.toUpperCase();
-                if (['USDT', 'USDC', 'FDUSD', 'DAI', 'BUSD'].includes(symbolUpper)) {
-                    fallbackLtv = 0.8;
-                } else if (['BNB', 'WBNB', 'ETH', 'WETH', 'BTC', 'BTCB', 'WBTC', 'SOLVBTC'].includes(symbolUpper)) {
-                    fallbackLtv = 0.75;
-                }
-
-                return {
-                    ...pool,
-                    symbol: NORMALIZE_SYMBOL[pool.symbol] || pool.symbol,
-                    project: pool.project.includes('venus') ? 'venus' : pool.project,
-                    // Fallback Estimation for visual demo purposes if API doesn't provide it
-                    apyBaseBorrow: pool.apyBaseBorrow || (pool.apyBase ? pool.apyBase * 1.5 : 0),
-                    apyRewardBorrow: pool.apyRewardBorrow || 0,
-                    totalSupplyUsd: pool.totalSupplyUsd || pool.tvlUsd,
-                    // Estimate Borrowed amount from TVL if missing (assuming ~40% utilization of supplied capital)
-                    totalBorrowUsd: pool.totalBorrowUsd || (pool.tvlUsd ? pool.tvlUsd * 0.4 : 0),
-                    ltv: pool.ltv || fallbackLtv // Use API LTV if available, otherwise fallback
-                };
+                return isBSC && isProject && !isIsolated && isAllowed;
             });
+
+            // 2. Aggregate Duplicates (Same Project + Symbol)
+            // Key: `${project}-${symbol}`
+            const aggregatedMap = new Map<string, any>();
+
+            filtered.forEach(pool => {
+                const symbol = NORMALIZE_SYMBOL[pool.symbol] || pool.symbol;
+                const project = pool.project.includes('venus') ? 'venus' : pool.project;
+                const key = `${project}-${symbol}`;
+
+                if (aggregatedMap.has(key)) {
+                    const existing = aggregatedMap.get(key);
+
+                    // Weighted Average APY calculation
+                    const totalTvl = existing.tvlUsd + pool.tvlUsd;
+                    const weightedApy = totalTvl > 0
+                        ? (existing.apy * existing.tvlUsd + pool.apy * pool.tvlUsd) / totalTvl
+                        : existing.apy;
+
+                    // Update existing entry
+                    existing.tvlUsd += pool.tvlUsd;
+                    existing.totalSupplyUsd = (existing.totalSupplyUsd || 0) + (pool.totalSupplyUsd || pool.tvlUsd);
+                    existing.totalBorrowUsd = (existing.totalBorrowUsd || 0) + (pool.totalBorrowUsd || ((pool.tvlUsd || 0) * 0.4));
+                    existing.apy = weightedApy;
+
+                    // Keep max LTV if different (safer to show what's possible, or min? Lets stick to first found for now or max)
+                    existing.ltv = Math.max(existing.ltv || 0, pool.ltv || 0);
+
+                } else {
+                    // Initialize new entry
+                    let fallbackLtv = 0.6;
+                    const symbolUpper = symbol.toUpperCase();
+                    if (['USDT', 'USDC', 'FDUSD', 'DAI', 'BUSD'].includes(symbolUpper)) {
+                        fallbackLtv = 0.8;
+                    } else if (['BNB', 'WBNB', 'ETH', 'WETH', 'BTC', 'BTCB', 'WBTC', 'SOLVBTC'].includes(symbolUpper)) {
+                        fallbackLtv = 0.75;
+                    }
+
+                    aggregatedMap.set(key, {
+                        ...pool,
+                        symbol,
+                        project,
+                        tvlUsd: pool.tvlUsd,
+                        apy: pool.apy,
+                        apyBaseBorrow: pool.apyBaseBorrow || (pool.apyBase ? pool.apyBase * 1.5 : 0),
+                        apyRewardBorrow: pool.apyRewardBorrow || 0,
+                        totalSupplyUsd: pool.totalSupplyUsd || pool.tvlUsd,
+                        totalBorrowUsd: pool.totalBorrowUsd || (pool.tvlUsd ? pool.tvlUsd * 0.4 : 0),
+                        ltv: pool.ltv || fallbackLtv
+                    });
+                }
+            });
+
+            return Array.from(aggregatedMap.values());
         },
     });
 }
+```
