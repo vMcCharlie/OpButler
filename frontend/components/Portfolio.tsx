@@ -436,11 +436,11 @@ export function Portfolio() {
                 </Card>
 
                 {/* Protocol Breakdown Table */}
-                <Card className="lg:col-span-2 mx-4 md:mx-0 border border-border bg-card">
-                    <CardHeader>
+                <Card className="lg:col-span-2 mx-1 md:mx-0 border border-border bg-card">
+                    <CardHeader className="p-3 md:p-6 pb-2 md:pb-4">
                         <CardTitle>Protocol Breakdown</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-2 md:p-6">
                         {/* Desktop Table */}
                         <div className="rounded-md border border-border overflow-hidden hidden md:block">
                             <table className="w-full text-sm text-left">
@@ -516,7 +516,7 @@ export function Portfolio() {
                         <div className="md:hidden space-y-4">
                             {protocols.map((proto) => (
                                 <div key={proto.id} className="rounded-xl border border-border bg-card overflow-hidden">
-                                    <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleExpand(proto.id)}>
+                                    <div className="p-3 md:p-4 flex items-center justify-between cursor-pointer" onClick={() => toggleExpand(proto.id)}>
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full overflow-hidden bg-white border border-white/10">
                                                 <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
