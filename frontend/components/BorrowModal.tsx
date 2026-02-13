@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Loader2, Check, X, ArrowUpDown, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { parseUnits } from "viem";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useBalance } from "wagmi";
+import { parseUnits, formatUnits } from "viem";
 import { VENUS_VTOKENS, VTOKEN_ABI } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, formatTokenAmount } from "@/lib/utils";
+import { useTokenPrices } from "@/hooks/useTokenPrices";
+import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 
 interface BorrowModalProps {
     isOpen: boolean;
@@ -26,7 +28,7 @@ interface BorrowModalProps {
 }
 
 export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
-    const { isConnected } = useAccount();
+    const { isConnected, address } = useAccount();
     const { openConnectModal } = useConnectModal();
     const [amount, setAmount] = useState("");
     const [activeTab, setActiveTab] = useState<"borrow" | "repay">("borrow");
@@ -35,6 +37,31 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     const isVenus = pool.project === 'venus';
     const vTokenAddress = isVenus ? VENUS_VTOKENS[pool.symbol] : undefined;
     const isNative = pool.symbol === 'BNB';
+
+    // Prices
+    const prices = useTokenPrices();
+    const tokenPrice = prices ? prices.getPrice(pool.symbol) : 0;
+
+    // User Portfolio Data (for Debt / Wallet Balance)
+    const { data: venusPositions = [] } = useVenusPortfolio();
+
+    // Find gathered position for this pool
+    // Note: We use the aggregated key approach or just find by symbol since we're in the modal for a specific pool context
+    // But `pool` passed here might be aggregated.
+    // Let's match by symbol roughly or use `venusPositions` logic
+    const userPosition = venusPositions.find((p: any) => p.symbol === pool.symbol);
+    const borrowedAmount = userPosition?.borrow || 0;
+    const borrowedAmountUSD = userPosition?.borrowUSD || 0;
+
+    // Wallet Balance
+    const { data: balanceData } = useBalance({
+        address: address,
+        token: isNative ? undefined : undefined // TODO: Handle Underlying Token Address fetch
+    });
+    // Valid for BNB, but for others we need token address. 
+    // For now assuming BNB or just 0 for visual parity until we fix token address fetching completely.
+    const walletBalance = isNative && balanceData ? parseFloat(balanceData.formatted) : 0;
+
 
     const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
@@ -116,18 +143,20 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="absolute top-6 right-6 text-muted-foreground hover:text-white transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
+                    {/* Removed duplicate Close button */}
                 </div>
 
                 {/* Stats Card */}
                 <div className="px-6 mb-6">
-                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 grid grid-cols-2 gap-y-4">
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 grid grid-cols-2 gap-y-4 gap-x-8">
                         <div>
-                            <div className="text-[10px] uppercase text-blue-400 font-bold mb-1">Total Borrowed</div>
-                            <div className="text-lg font-mono text-blue-400">$0.00</div> {/* Placeholder */}
-                            <div className="text-[10px] text-muted-foreground">Your Debt</div>
+                            <div className="text-[10px] uppercase text-blue-400 font-bold mb-1">Your Debt</div>
+                            <div className="text-lg font-mono text-blue-400">
+                                {borrowedAmount > 0 ? `${formatTokenAmount(borrowedAmount)} ${pool.symbol}` : '0'}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                                ≈ {formatMoney(borrowedAmountUSD)}
+                            </div>
                         </div>
                         <div className="text-right">
                             <div className="text-[10px] uppercase text-muted-foreground font-bold mb-1">Health Factor</div>
@@ -186,12 +215,17 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                 <div className="px-6 pb-6">
                     <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 mb-4">
                         <div className="flex justify-between text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
-                            <span>{activeTab === 'borrow' ? 'Borrow Amount' : 'Repay Amount'}</span>
+                            <span>
+                                {activeTab === 'borrow' ? 'Borrow Amount' : 'Repay Amount'}
+                            </span>
                             <div className="flex gap-2">
-                                <span>Max: 0.00</span>
+                                <span>
+                                    {activeTab === 'repay' ? 'Wallet: ' : 'Available: '}
+                                    {activeTab === 'repay' ? formatTokenAmount(walletBalance) : '-'} {pool.symbol}
+                                </span>
                                 <div className="flex gap-1">
-                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded" onClick={() => { }}>SAFE</button>
-                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded" onClick={() => { }}>MAX</button>
+                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded" onClick={() => setAmount((walletBalance / 2).toString())}>HALF</button>
+                                    <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded" onClick={() => setAmount(walletBalance.toString())}>MAX</button>
                                 </div>
                             </div>
                         </div>
@@ -208,6 +242,10 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                             />
+                        </div>
+                        {/* Dynamic USD Calculation */}
+                        <div className="text-right text-xs text-muted-foreground mt-1">
+                            ≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}
                         </div>
                     </div>
 
