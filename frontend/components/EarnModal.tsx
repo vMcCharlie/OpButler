@@ -237,7 +237,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
 
                 {/* Stats Card */}
                 <div className="px-6 mb-6">
-                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 grid grid-cols-2 gap-y-4">
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 grid grid-cols-2 gap-y-4 gap-x-8">
                         <div>
                             <div className="text-[10px] uppercase text-emerald-400 font-bold mb-1">Your Earnings</div>
                             <div className="text-lg font-mono text-emerald-400">-</div> {/* Placeholder */}
