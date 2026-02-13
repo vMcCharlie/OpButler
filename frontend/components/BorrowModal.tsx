@@ -51,6 +51,7 @@ export function BorrowModalContent({ onClose, pool, isEmbedded = false }: Borrow
     const [amount, setAmount] = useState("");
     const [activeTab, setActiveTab] = useState<"borrow" | "repay">("borrow");
     const [step, setStep] = useState<"idle" | "approving" | "mining" | "success">("idle");
+    const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
     // Protocol detection
     const isVenus = pool.project === 'venus';
@@ -193,123 +194,162 @@ export function BorrowModalContent({ onClose, pool, isEmbedded = false }: Borrow
     const availableLiquidity = (pool.tvlUsd || 0) - (pool.totalBorrowUsd || 0);
 
     return (
-        <>
-            {!isEmbedded && (
-                <div className="p-4 md:p-6 pb-2 md:pb-4 border-b border-white/5 bg-[#09090b] sticky top-0 z-20">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
-                            <div>
-                                <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
-                                <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground">
-                                    <span className="uppercase">{protocolDisplay}</span>
-                                    <span className="w-1 h-1 bg-white/20 rounded-full" />
-                                    <span className="text-blue-400 font-medium">Borrow Market</span>
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Scrollable Content Body */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
+                {!isEmbedded && (
+                    <div className="p-4 md:p-6 pb-2 md:pb-4 border-b border-white/5 bg-[#09090b] sticky top-0 z-20">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
+                                <div>
+                                    <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
+                                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground">
+                                        <span className="uppercase">{protocolDisplay}</span>
+                                        <span className="w-1 h-1 bg-white/20 rounded-full" />
+                                        <span className="text-blue-400 font-medium">Borrow Market</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted-foreground hover:text-white">
-                            <X size={20} />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            <div className="px-4 md:px-6 pt-4 md:pt-6 mb-3 md:mb-5">
-                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 md:p-5 space-y-3.5 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                        <AssetIcon symbol={pool.symbol} className="w-20 h-20 -mr-6 -mt-6 rotate-12 opacity-50" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                        <div>
-                            <div className="text-[9px] md:text-[10px] uppercase text-blue-400/50 font-black tracking-tighter mb-1">Your Debt</div>
-                            <div className="text-xl md:text-2xl font-black font-mono tracking-tighter text-blue-400">
-                                {borrowedAmount > 0 ? <>{formatSmallNumber(borrowedAmount)} <span className="text-[10px] md:text-xs opacity-60 ml-0.5">{pool.symbol}</span></> : '0'}
-                            </div>
-                            <div className="text-[10px] md:text-xs text-muted-foreground/40 font-bold">≈ {formatMoney(borrowedAmountUSD)}</div>
-                        </div>
-                        <div className="text-right flex flex-col items-end justify-center">
-                            <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/50 font-black tracking-tighter mb-1.5">Health Factor</div>
-                            <div className={cn(
-                                "px-2 py-0.5 rounded-full border flex items-center gap-1",
-                                borrowedAmount > 0 ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
-                            )}>
-                                <div className={cn("w-1 h-1 rounded-full animate-pulse", borrowedAmount > 0 ? "bg-amber-500" : "bg-emerald-500")} />
-                                <span className="text-[10px] md:text-xs font-black uppercase italic">{borrowedAmount > 0 ? 'MONITOR' : 'SAFE'}</span>
-                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted-foreground hover:text-white">
+                                <X size={20} />
+                            </button>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5 relative z-10">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/40 font-black tracking-widest mb-0.5">Borrow APY</span>
-                            <span className="text-blue-400 font-black font-mono text-sm md:text-base flex items-center gap-1">
-                                -{borrowApy.toFixed(2)}%
-                                <ArrowUpDown className="w-2.5 h-2.5 opacity-50" />
-                            </span>
-                        </div>
-                        <div className="flex flex-col text-right">
-                            <span className="text-[9px] uppercase text-muted-foreground/40 font-black tracking-widest mb-0.5">Liquidity</span>
-                            <span className="text-white font-black text-sm md:text-base tracking-tight">{formatMoney(availableLiquidity)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="px-4 md:px-6 mb-4">
-                <div className="bg-[#121216] rounded-xl p-1 flex relative">
-                    <motion.div className="absolute top-1 bottom-1 bg-[#1a1a20] rounded-lg shadow-sm" initial={false} animate={{ left: activeTab === 'borrow' ? '4px' : '50%', width: 'calc(50% - 4px)' }} transition={{ type: "spring", stiffness: 300, damping: 30 }} />
-                    <button onClick={() => { setActiveTab('borrow'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'borrow' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Borrow</button>
-                    <button onClick={() => { setActiveTab('repay'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'repay' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Repay</button>
-                </div>
-            </div>
-
-            <div className="px-4 md:px-6 pb-5 text-white">
-                <div className="bg-black/40 border border-white/5 rounded-2xl p-3.5 md:p-5 mb-4 shadow-inner relative overflow-hidden group">
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-[10px] md:text-xs uppercase text-muted-foreground/60 font-black tracking-widest italic">{activeTab === 'borrow' ? 'Borrow' : 'Repay'}</span>
-                        <div className="flex gap-1.5">
-                            {activeTab === 'borrow' && (
-                                <button onClick={() => setAmount(toPlainString(safeMaxAmount))} className="text-[9px] md:text-[10px] text-amber-400 font-black italic border border-amber-400/20 px-2 py-1 rounded-md hover:bg-amber-400/10 transition-colors uppercase tracking-tighter bg-amber-400/5">Safe Max</button>
-                            )}
-                            <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setHalf}>Half</button>
-                            <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setMax}>Max</button>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/10 transition-transform group-focus-within:scale-95 duration-500">
-                            <AssetIcon symbol={pool.symbol} className="w-5 h-5 md:w-6 md:h-6" />
-                            <span className="font-black text-xs md:text-sm">{pool.symbol}</span>
-                        </div>
-                        <input
-                            type="number"
-                            placeholder="0.00"
-                            className="bg-transparent text-right text-3xl md:text-4xl font-black font-mono tracking-tighter w-full outline-none placeholder:text-white/5 text-white"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] md:text-xs mt-4 pt-3 border-t border-white/[0.03]">
-                        <div className="text-muted-foreground/40 font-bold uppercase italic">
-                            {activeTab === 'repay' ? 'Wallet' : 'Available'}
-                            <span className="text-white/60 font-black ml-1.5 not-italic">{formatSmallNumber(activeTab === 'repay' ? walletBalance : availableLiquidity / (tokenPrice || 1))}</span>
-                        </div>
-                        <div className="text-muted-foreground/30 font-black italic">≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}</div>
-                    </div>
-                </div>
-            </div>
-            <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4 mx-4 md:mx-6">
-                <div className="flex justify-between items-center text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60"><span>Transaction Impact</span></div>
-                <div className="flex justify-between items-center w-full"><span className="text-[10px] md:text-xs text-muted-foreground font-medium">Health Factor</span><div className="flex items-center gap-2"><span className="text-[10px] md:text-xs font-bold text-white/40">{(currentHF > 5 ? 5.0 : currentHF).toFixed(2)}</span><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className={cn("text-xs md:text-sm font-bold", newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]")}>{newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}</span></div></div>
-                {(amountUSD > 0) && (
-                    <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden"><motion.div className={cn("h-full bg-gradient-to-r", newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400")} initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }} transition={{ duration: 0.5 }} /></div>
                 )}
-                <div className="flex justify-between w-full text-[10px] md:text-xs items-center pt-1 border-t border-white/5"><span className="text-muted-foreground">Borrow APY</span><span className="text-red-400 font-mono font-bold">-{borrowApy.toFixed(2)}%</span></div>
+
+                <div className="px-4 md:px-6 pt-4 md:pt-6 mb-3 md:mb-5">
+                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-0 shadow-2xl relative overflow-hidden">
+                        {/* Compact Header for Collapsible Stats */}
+                        <button
+                            onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+                            className="w-full text-left p-3 md:p-4 flex items-center justify-between group/stats relative z-20"
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                    <AssetIcon symbol={pool.symbol} size={16} className="opacity-80" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] uppercase text-blue-400/50 font-black tracking-tighter">Your Debt</span>
+                                    <span className="text-sm font-black font-mono tracking-tight text-white">
+                                        {borrowedAmount > 0 ? <>{formatSmallNumber(borrowedAmount)} {pool.symbol}</> : '0.00'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="hidden sm:flex flex-col text-right">
+                                    <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest">Health Factor</span>
+                                    <span className={cn("text-xs font-black italic", borrowedAmount > 0 ? "text-amber-400" : "text-emerald-400")}>
+                                        {borrowedAmount > 0 ? 'MONITOR' : 'SAFE'}
+                                    </span>
+                                </div>
+                                <motion.div
+                                    animate={{ rotate: isStatsExpanded ? 180 : 0 }}
+                                    className="p-1 rounded-full bg-white/5 border border-white/10 text-muted-foreground group-hover/stats:text-white transition-colors"
+                                >
+                                    <ArrowUpDown size={14} />
+                                </motion.div>
+                            </div>
+                        </button>
+
+                        <AnimatePresence>
+                            {isStatsExpanded && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden border-t border-white/5 bg-white/[0.01]"
+                                >
+                                    <div className="p-3 md:p-5 pt-4 space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/30 font-black tracking-tighter mb-1">Debt Value (USD)</div>
+                                                <div className="text-lg font-black font-mono tracking-tighter text-blue-400">
+                                                    {formatMoney(borrowedAmountUSD)}
+                                                </div>
+                                            </div>
+                                            <div className="text-right flex flex-col items-end justify-center">
+                                                <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/30 font-black tracking-tighter mb-1.5">Raw Health</div>
+                                                <span className={cn("text-sm font-black font-mono", currentHF < 1.1 ? "text-red-400" : currentHF < 1.5 ? "text-amber-400" : "text-emerald-400")}>
+                                                    {currentHF.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest mb-0.5">Borrow APY</span>
+                                                <span className="text-blue-400 font-black font-mono text-sm">-{borrowApy.toFixed(2)}%</span>
+                                            </div>
+                                            <div className="flex flex-col text-right">
+                                                <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest mb-0.5">Liquidity</span>
+                                                <span className="text-white font-black text-sm tracking-tight">{formatMoney(availableLiquidity)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+
+                <div className="px-4 md:px-6 mb-4">
+                    <div className="bg-[#121216] rounded-xl p-1 flex relative">
+                        <motion.div className="absolute top-1 bottom-1 bg-[#1a1a20] rounded-lg shadow-sm" initial={false} animate={{ left: activeTab === 'borrow' ? '4px' : '50%', width: 'calc(50% - 4px)' }} transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        <button onClick={() => { setActiveTab('borrow'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'borrow' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Borrow</button>
+                        <button onClick={() => { setActiveTab('repay'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'repay' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Repay</button>
+                    </div>
+                </div>
+
+                <div className="px-4 md:px-6 pb-5 text-white">
+                    <div className="bg-black/40 border border-white/5 rounded-2xl p-3.5 md:p-5 mb-4 shadow-inner relative overflow-hidden group">
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[10px] md:text-xs uppercase text-muted-foreground/60 font-black tracking-widest italic">{activeTab === 'borrow' ? 'Borrow' : 'Repay'}</span>
+                            <div className="flex gap-1.5">
+                                {activeTab === 'borrow' && (
+                                    <button onClick={() => setAmount(toPlainString(safeMaxAmount))} className="text-[9px] md:text-[10px] text-amber-400 font-black italic border border-amber-400/20 px-2 py-1 rounded-md hover:bg-amber-400/10 transition-colors uppercase tracking-tighter bg-amber-400/5">Safe Max</button>
+                                )}
+                                <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setHalf}>Half</button>
+                                <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setMax}>Max</button>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/10 transition-transform group-focus-within:scale-95 duration-500">
+                                <AssetIcon symbol={pool.symbol} className="w-5 h-5 md:w-6 md:h-6" />
+                                <span className="font-black text-xs md:text-sm">{pool.symbol}</span>
+                            </div>
+                            <input
+                                type="number"
+                                placeholder="0.00"
+                                className="bg-transparent text-right text-3xl md:text-4xl font-black font-mono tracking-tighter w-full outline-none placeholder:text-white/5 text-white"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] md:text-xs mt-4 pt-3 border-t border-white/[0.03]">
+                            <div className="text-muted-foreground/40 font-bold uppercase italic">
+                                {activeTab === 'repay' ? 'Wallet' : 'Available'}
+                                <span className="text-white/60 font-black ml-1.5 not-italic">{formatSmallNumber(activeTab === 'repay' ? walletBalance : availableLiquidity / (tokenPrice || 1))}</span>
+                            </div>
+                            <div className="text-muted-foreground/30 font-black italic">≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4 mx-4 md:mx-6">
+                    <div className="flex justify-between items-center text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60"><span>Transaction Impact</span></div>
+                    <div className="flex justify-between items-center w-full"><span className="text-[10px] md:text-xs text-muted-foreground font-medium">Health Factor</span><div className="flex items-center gap-2"><span className="text-[10px] md:text-xs font-bold text-white/40">{(currentHF > 5 ? 5.0 : currentHF).toFixed(2)}</span><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className={cn("text-xs md:text-sm font-bold", newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]")}>{newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}</span></div></div>
+                    {(amountUSD > 0) && (
+                        <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden"><motion.div className={cn("h-full bg-gradient-to-r", newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400")} initial={{ width: 0 }} animate={{ width: `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }} transition={{ duration: 0.5 }} /></div>
+                    )}
+                    <div className="flex justify-between w-full text-[10px] md:text-xs items-center pt-1 border-t border-white/5"><span className="text-muted-foreground">Borrow APY</span><span className="text-red-400 font-mono font-bold">-{borrowApy.toFixed(2)}%</span></div>
+                </div>
+
+                {isRisky && amountUSD > 0 && (<div className="flex items-start gap-2 mb-4 p-2 md:p-3 rounded-xl bg-red-500/10 border border-red-500/20 mx-4 md:mx-6"><ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500 shrink-0 mt-0.5" /><div className="text-[10px] md:text-[11px] text-red-200">This borrow amount will put your position at high risk of liquidation. Consider a smaller amount or more collateral.</div></div>)}
             </div>
 
-            {isRisky && amountUSD > 0 && (<div className="flex items-start gap-2 mb-4 p-2 md:p-3 rounded-xl bg-red-500/10 border border-red-500/20 mx-4 md:mx-6"><ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500 shrink-0 mt-0.5" /><div className="text-[10px] md:text-[11px] text-red-200">This borrow amount will put your position at high risk of liquidation. Consider a smaller amount or more collateral.</div></div>)}
-
-            <div className="px-4 md:px-6 pb-6">
+            {/* Sticky Footer */}
+            <div className="p-4 md:p-6 pb-5 md:pb-6 border-t border-white/5 bg-[#09090b]/90 backdrop-blur-md shrink-0">
                 <Button
                     onClick={handleAction}
                     disabled={isButtonDisabled}
@@ -339,7 +379,7 @@ export function BorrowModalContent({ onClose, pool, isEmbedded = false }: Borrow
                     </AnimatePresence>
                 </Button>
             </div>
-        </>
+        </div>
     );
 }
 

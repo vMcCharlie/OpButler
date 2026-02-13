@@ -39,12 +39,12 @@ export function MarketModal({ isOpen, onClose, initialMode, pool }: MarketModalP
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="w-[95vw] sm:max-w-[420px] max-h-[90vh] overflow-y-auto bg-[#09090b] border-white/10 text-white p-0 gap-0 rounded-3xl scrollbar-hide">
+            <DialogContent className="w-[95vw] sm:max-w-[420px] h-[90vh] md:h-auto md:max-h-[90vh] bg-[#09090b] border-white/10 text-white p-0 gap-0 rounded-3xl overflow-hidden flex flex-col">
                 <div className="sr-only">
                     <DialogTitle>{pool.symbol} Market - {protocolDisplay}</DialogTitle>
                 </div>
                 {/* Unified Header */}
-                <div className="p-4 md:p-6 pb-3 md:pb-4 border-b border-white/5 bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-30">
+                <div className="p-4 md:p-6 pb-3 md:pb-4 border-b border-white/5 bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2.5 md:gap-3">
                             <div className="relative">
@@ -102,7 +102,7 @@ export function MarketModal({ isOpen, onClose, initialMode, pool }: MarketModalP
                     </div>
                 </div>
 
-                <div className="relative">
+                <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
                     <AnimatePresence mode="wait">
                         {isSwitching ? (
                             <motion.div
@@ -110,7 +110,7 @@ export function MarketModal({ isOpen, onClose, initialMode, pool }: MarketModalP
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="h-[400px] flex flex-col items-center justify-center gap-3"
+                                className="flex-1 flex flex-col items-center justify-center gap-3"
                             >
                                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground animate-pulse font-medium">Updating Market Data...</span>
@@ -121,6 +121,7 @@ export function MarketModal({ isOpen, onClose, initialMode, pool }: MarketModalP
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.2 }}
+                                className="flex-1 flex flex-col min-h-0"
                             >
                                 {mode === "earn" ? (
                                     <EarnModalContent pool={pool} onClose={onClose} isEmbedded={true} />

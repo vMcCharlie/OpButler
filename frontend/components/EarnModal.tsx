@@ -49,6 +49,7 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
     const [amount, setAmount] = useState("");
     const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
     const [step, setStep] = useState<"idle" | "approving" | "mining" | "success">("idle");
+    const [isStatsExpanded, setIsStatsExpanded] = useState(false);
     const { data: prices } = useTokenPrices();
 
     // Protocol detection
@@ -295,145 +296,185 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
     const protocolDisplay = isVenus ? 'Venus' : isKinza ? 'Kinza' : isRadiant ? 'Radiant' : pool.project;
 
     return (
-        <>
-            {!isEmbedded && (
-                <div className="p-4 md:p-6 pb-2 md:pb-4 border-b border-white/5 bg-[#09090b] sticky top-0 z-20">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
-                            <div>
-                                <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
-                                <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground">
-                                    <span className="uppercase">{protocolDisplay}</span>
-                                    <span className="w-1 h-1 bg-white/20 rounded-full" />
-                                    <span className="text-emerald-400 font-medium">Earn Market</span>
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Scrollable Content Body */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
+                {!isEmbedded && (
+                    <div className="p-4 md:p-6 pb-2 md:pb-4 border-b border-white/5 bg-[#09090b] sticky top-0 z-20">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
+                                <div>
+                                    <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
+                                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground">
+                                        <span className="uppercase">{protocolDisplay}</span>
+                                        <span className="w-1 h-1 bg-white/20 rounded-full" />
+                                        <span className="text-emerald-400 font-medium">Earn Market</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted-foreground hover:text-white">
-                            <X size={20} />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            <div className="px-4 md:px-6 pt-4 md:pt-6 mb-3 md:mb-5">
-                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 md:p-5 space-y-3.5 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                        <AssetIcon symbol={pool.symbol} className="w-20 h-20 -mr-6 -mt-6 rotate-12" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                        <div>
-                            <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/50 font-black tracking-tighter mb-1">Your Position</div>
-                            <div className="text-xl md:text-2xl font-black font-mono tracking-tighter text-white">
-                                {formatSmallNumber(depositedAmount)} <span className="text-[10px] md:text-xs text-muted-foreground ml-0.5">{pool.symbol}</span>
-                            </div>
-                            <div className="text-[10px] md:text-xs text-muted-foreground/40 font-bold">≈ {formatMoney(depositedAmountUSD)}</div>
-                        </div>
-                        <div className="text-right flex flex-col items-end justify-center">
-                            {isVenus && (
-                                <>
-                                    <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/50 font-black tracking-tighter mb-1.5">Collateral</div>
-                                    {collateral.isLoading ? (
-                                        <Loader2 className="w-3 h-3 animate-spin text-muted-foreground/20" />
-                                    ) : collateral.isCollateral ? (
-                                        <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
-                                            <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                                            <span className="text-[10px] md:text-xs font-black text-emerald-500 uppercase italic">ACTIVE</span>
-                                        </div>
-                                    ) : (
-                                        <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] md:text-xs font-black text-muted-foreground/40 uppercase italic">DISABLED</div>
-                                    )}
-                                </>
-                            )}
+                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted-foreground hover:text-white">
+                                <X size={20} />
+                            </button>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5 relative z-10">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/40 font-black tracking-widest mb-0.5">Yield APY</span>
-                            <span className="text-emerald-400 font-black font-mono text-sm md:text-base flex items-center gap-1">
-                                {pool.apy.toFixed(2)}%
-                                <div className="w-1 h-1 rounded-full bg-emerald-400" />
-                            </span>
-                        </div>
-                        <div className="flex flex-col text-right">
-                            <span className="text-[9px] uppercase text-muted-foreground/40 font-black tracking-widest mb-0.5">Market Size</span>
-                            <span className="text-white font-black text-sm md:text-base tracking-tight">{formatMoney(pool.tvlUsd)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="px-4 md:px-6 mb-4">
-                <div className="bg-[#121216] rounded-xl p-1 flex relative">
-                    <motion.div className="absolute top-1 bottom-1 bg-[#1a1a20] rounded-lg shadow-sm" initial={false} animate={{ left: activeTab === 'deposit' ? '4px' : '50%', width: 'calc(50% - 4px)' }} transition={{ type: "spring", stiffness: 300, damping: 30 }} />
-                    <button onClick={() => { setActiveTab('deposit'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'deposit' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Deposit</button>
-                    <button onClick={() => { setActiveTab('withdraw'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'withdraw' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Withdraw</button>
-                </div>
-            </div>
-
-            <div className="px-4 md:px-6 pb-5 text-white">
-                <div className="bg-black/40 border border-white/5 rounded-2xl p-3.5 md:p-5 mb-4 shadow-inner relative overflow-hidden group">
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-[10px] md:text-xs uppercase text-muted-foreground/60 font-black tracking-widest italic">{activeTab === 'deposit' ? 'Supply' : 'Withdraw'}</span>
-                        <div className="flex gap-1.5">
-                            {activeTab === 'withdraw' && (
-                                <button onClick={() => setAmount(toPlainString(maxSafe))} className="text-[9px] md:text-[10px] text-emerald-400 font-black italic border border-emerald-400/20 px-2 py-1 rounded-md hover:bg-emerald-400/10 transition-colors uppercase tracking-tighter bg-emerald-400/5">Safe Max</button>
-                            )}
-                            <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setHalf}>Half</button>
-                            <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setMax}>Max</button>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/10 transition-transform group-focus-within:scale-95 duration-500">
-                            <AssetIcon symbol={pool.symbol} className="w-5 h-5 md:w-6 md:h-6" />
-                            <span className="font-black text-xs md:text-sm">{pool.symbol}</span>
-                        </div>
-                        <input
-                            type="number"
-                            placeholder="0.00"
-                            className="bg-transparent text-right text-3xl md:text-4xl font-black font-mono tracking-tighter w-full outline-none placeholder:text-white/5 text-white"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] md:text-xs mt-4 pt-3 border-t border-white/[0.03]">
-                        <div className="text-muted-foreground/40 font-bold uppercase italic">
-                            {activeTab === 'deposit' ? 'Balance' : 'Available'}
-                            <span className="text-white/60 font-black ml-1.5 not-italic">{formatSmallNumber(activeTab === 'deposit' ? walletBalance : maxWithdrawableAvailable)}</span>
-                        </div>
-                        <div className="text-muted-foreground/30 font-black italic">≈ {formatMoney(amountNum * tokenPrice)}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4 mx-4 md:mx-6">
-                <div className="flex justify-between items-center text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-                    <span>{activeTab === 'deposit' ? 'Asset Quality & Impact' : 'Transaction Impact'}</span>
-                </div>
-                <div className="flex justify-between items-center w-full">
-                    <span className="text-[10px] md:text-xs text-muted-foreground font-medium">{activeTab === 'deposit' ? 'Collateral Buffer' : 'Health Factor'}</span>
-                    {activeTab === 'deposit' ? (
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs md:text-sm font-bold text-[#CEFF00]">{((pool.ltv || 0) * 100).toFixed(0)}% LTV</span>
-                            {(parseFloat(amount) || 0) > 0 && (<><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className="text-[10px] md:text-xs font-bold text-white/60">HF: {newHF > 5 ? '> 5.0' : newHF.toFixed(2)}</span></>)}
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2"><span className="text-[10px] md:text-xs font-bold text-white/40">{(activeHealth.healthFactor || 10) > 5 ? '5.0' : activeHealth.healthFactor.toFixed(2)}</span><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className={cn("text-xs md:text-sm font-bold", newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]")}>{newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}</span></div>
-                    )}
-                </div>
-                {((activeTab === 'withdraw' && withdrawUSD > 0) || (activeTab === 'deposit' && (parseFloat(amount) || 0) > 0)) && (
-                    <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden"><motion.div className={cn("h-full bg-gradient-to-r", activeTab === 'deposit' ? "from-emerald-600 to-[#CEFF00]" : (newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400"))} initial={{ width: 0 }} animate={{ width: activeTab === 'deposit' ? '100%' : `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }} transition={{ duration: 0.5 }} /></div>
                 )}
-                <div className="flex justify-between w-full text-[10px] md:text-xs items-center pt-1 border-t border-white/5"><span className="text-muted-foreground">Earning APY</span><span className="text-emerald-400 font-mono font-bold">{pool.apy.toFixed(2)}%</span></div>
+
+                <div className="px-4 md:px-6 pt-4 md:pt-6 mb-3 md:mb-5">
+                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-0 shadow-2xl relative overflow-hidden">
+                        {/* Compact Header for Collapsible Stats */}
+                        <button
+                            onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+                            className="w-full text-left p-3 md:p-4 flex items-center justify-between group/stats relative z-20"
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 rounded-lg bg-white/5 flex items-center justify-center">
+                                    <AssetIcon symbol={pool.symbol} size={16} className="opacity-80" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] uppercase text-muted-foreground/50 font-black tracking-tighter">Your Position</span>
+                                    <span className="text-sm font-black font-mono tracking-tight text-white">
+                                        {formatSmallNumber(depositedAmount)} {pool.symbol}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="hidden sm:flex flex-col text-right">
+                                    <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest">Yield APY</span>
+                                    <span className="text-emerald-400 font-black font-mono text-xs">+{pool.apy.toFixed(2)}%</span>
+                                </div>
+                                <motion.div
+                                    animate={{ rotate: isStatsExpanded ? 180 : 0 }}
+                                    className="p-1 rounded-full bg-white/5 border border-white/10 text-muted-foreground group-hover/stats:text-white transition-colors"
+                                >
+                                    <ArrowUpDown size={14} />
+                                </motion.div>
+                            </div>
+                        </button>
+
+                        <AnimatePresence>
+                            {isStatsExpanded && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden border-t border-white/5 bg-white/[0.01]"
+                                >
+                                    <div className="p-3 md:p-5 pt-4 space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/30 font-black tracking-tighter mb-1">Total Value (USD)</div>
+                                                <div className="text-lg font-black font-mono tracking-tighter text-white">
+                                                    {formatMoney(depositedAmountUSD)}
+                                                </div>
+                                            </div>
+                                            <div className="text-right flex flex-col items-end justify-center">
+                                                {isVenus && (
+                                                    <>
+                                                        <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground/30 font-black tracking-tighter mb-1.5">Collateral</div>
+                                                        {collateral.isLoading ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground/20" />
+                                                        ) : collateral.isCollateral ? (
+                                                            <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
+                                                                <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                                                                <span className="text-[10px] md:text-xs font-black text-emerald-500 uppercase italic">ACTIVE</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] md:text-xs font-black text-muted-foreground/40 uppercase italic">DISABLED</div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest mb-0.5">Market Size</span>
+                                                <span className="text-white font-black text-sm tracking-tight">{formatMoney(pool.tvlUsd)}</span>
+                                            </div>
+                                            <div className="flex flex-col text-right">
+                                                <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest mb-0.5">Protocol</span>
+                                                <span className="text-white/60 font-black text-[10px] uppercase italic tracking-tighter">{protocolDisplay}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+
+                <div className="px-4 md:px-6 mb-4">
+                    <div className="bg-[#121216] rounded-xl p-1 flex relative">
+                        <motion.div className="absolute top-1 bottom-1 bg-[#1a1a20] rounded-lg shadow-sm" initial={false} animate={{ left: activeTab === 'deposit' ? '4px' : '50%', width: 'calc(50% - 4px)' }} transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                        <button onClick={() => { setActiveTab('deposit'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'deposit' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Deposit</button>
+                        <button onClick={() => { setActiveTab('withdraw'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'withdraw' ? 'text-white' : 'text-muted-foreground hover:text-white/70'}`}>Withdraw</button>
+                    </div>
+                </div>
+
+                <div className="px-4 md:px-6 pb-5 text-white">
+                    <div className="bg-black/40 border border-white/5 rounded-2xl p-3.5 md:p-5 mb-4 shadow-inner relative overflow-hidden group">
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[10px] md:text-xs uppercase text-muted-foreground/60 font-black tracking-widest italic">{activeTab === 'deposit' ? 'Supply' : 'Withdraw'}</span>
+                            <div className="flex gap-1.5">
+                                {activeTab === 'withdraw' && (
+                                    <button onClick={() => setAmount(toPlainString(maxSafe))} className="text-[9px] md:text-[10px] text-emerald-400 font-black italic border border-emerald-400/20 px-2 py-1 rounded-md hover:bg-emerald-400/10 transition-colors uppercase tracking-tighter bg-emerald-400/5">Safe Max</button>
+                                )}
+                                <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setHalf}>Half</button>
+                                <button className="text-[9px] md:text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-all font-black uppercase text-muted-foreground/60 hover:text-white border border-white/10" onClick={setMax}>Max</button>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/10 transition-transform group-focus-within:scale-95 duration-500">
+                                <AssetIcon symbol={pool.symbol} className="w-5 h-5 md:w-6 md:h-6" />
+                                <span className="font-black text-xs md:text-sm">{pool.symbol}</span>
+                            </div>
+                            <input
+                                type="number"
+                                placeholder="0.00"
+                                className="bg-transparent text-right text-3xl md:text-4xl font-black font-mono tracking-tighter w-full outline-none placeholder:text-white/5 text-white"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] md:text-xs mt-4 pt-3 border-t border-white/[0.03]">
+                            <div className="text-muted-foreground/40 font-bold uppercase italic">
+                                {activeTab === 'deposit' ? 'Balance' : 'Available'}
+                                <span className="text-white/60 font-black ml-1.5 not-italic">{formatSmallNumber(activeTab === 'deposit' ? walletBalance : maxWithdrawableAvailable)}</span>
+                            </div>
+                            <div className="text-muted-foreground/30 font-black italic">≈ {formatMoney(amountNum * tokenPrice)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4 mx-4 md:mx-6">
+                    <div className="flex justify-between items-center text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                        <span>{activeTab === 'deposit' ? 'Asset Quality & Impact' : 'Transaction Impact'}</span>
+                    </div>
+                    <div className="flex justify-between items-center w-full">
+                        <span className="text-[10px] md:text-xs text-muted-foreground font-medium">{activeTab === 'deposit' ? 'Collateral Buffer' : 'Health Factor'}</span>
+                        {activeTab === 'deposit' ? (
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs md:text-sm font-bold text-[#CEFF00]">{((pool.ltv || 0) * 100).toFixed(0)}% LTV</span>
+                                {(parseFloat(amount) || 0) > 0 && (<><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className="text-[10px] md:text-xs font-bold text-white/60">HF: {newHF > 5 ? '> 5.0' : newHF.toFixed(2)}</span></>)}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2"><span className="text-[10px] md:text-xs font-bold text-white/40">{(activeHealth.healthFactor || 10) > 5 ? '5.0' : activeHealth.healthFactor.toFixed(2)}</span><ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" /><span className={cn("text-xs md:text-sm font-bold", newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]")}>{newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}</span></div>
+                        )}
+                    </div>
+                    {((activeTab === 'withdraw' && withdrawUSD > 0) || (activeTab === 'deposit' && (parseFloat(amount) || 0) > 0)) && (
+                        <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden"><motion.div className={cn("h-full bg-gradient-to-r", activeTab === 'deposit' ? "from-emerald-600 to-[#CEFF00]" : (newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400"))} initial={{ width: 0 }} animate={{ width: activeTab === 'deposit' ? '100%' : `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }} transition={{ duration: 0.5 }} /></div>
+                    )}
+                    <div className="flex justify-between w-full text-[10px] md:text-xs items-center pt-1 border-t border-white/5"><span className="text-muted-foreground">Earning APY</span><span className="text-emerald-400 font-mono font-bold">{pool.apy.toFixed(2)}%</span></div>
+                </div>
+
+                {isRisky && activeTab === 'withdraw' && (
+                    <div className="p-2 md:p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex gap-2 md:gap-3 items-start mb-4 mx-4 md:mx-6"><ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400 mt-0.5 flex-shrink-0" /><p className="text-[10px] md:text-[11px] text-red-200">Warning: This withdrawal will put your account at risk of liquidation. Repay some debt or leave more collateral to stay safe.</p></div>
+                )}
             </div>
 
-            {isRisky && activeTab === 'withdraw' && (
-                <div className="p-2 md:p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex gap-2 md:gap-3 items-start mb-4 mx-4 md:mx-6"><ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400 mt-0.5 flex-shrink-0" /><p className="text-[10px] md:text-[11px] text-red-200">Warning: This withdrawal will put your account at risk of liquidation. Repay some debt or leave more collateral to stay safe.</p></div>
-            )}
-
-            <div className="px-4 md:px-6 pb-6">
+            {/* Sticky Footer */}
+            <div className="p-4 md:p-6 pb-5 md:pb-6 border-t border-white/5 bg-[#09090b]/90 backdrop-blur-md shrink-0">
                 <Button
                     onClick={handleAction}
                     disabled={isButtonDisabled}
@@ -463,7 +504,7 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
                     </AnimatePresence>
                 </Button>
             </div>
-        </>
+        </div>
     );
 }
 
