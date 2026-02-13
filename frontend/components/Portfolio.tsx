@@ -195,10 +195,9 @@ export function Portfolio() {
                     <thead>
                         <tr className="text-muted-foreground uppercase tracking-wider text-[10px] text-left">
                             <th className="pb-2 pl-2">Asset</th>
-                            <th className="pb-2 text-right">Supply APY</th>
+                            <th className="pb-2 text-right">APY</th>
                             <th className="pb-2 text-center">Supplied</th>
                             {protocolId === 'venus' && <th className="pb-2 text-center px-4">Collateral</th>}
-                            <th className="pb-2 text-right">Borrow APY</th>
                             <th className="pb-2 text-right">Borrowed</th>
                             <th className="pb-2 text-right">Value (USD)</th>
                         </tr>
@@ -210,8 +209,16 @@ export function Portfolio() {
                                     <AssetIcon symbol={pos.symbol} size={20} />
                                     {pos.symbol}
                                 </td>
-                                <td className="py-2 text-right font-mono text-emerald-400">
-                                    {pos.apy ? `+${pos.apy.toFixed(2)}%` : '-'}
+                                <td className="py-2 text-right font-mono leading-tight">
+                                    {pos.apy > 0 && (
+                                        <div className="text-emerald-400">+{pos.apy.toFixed(2)}%</div>
+                                    )}
+                                    {pos.borrowApy > 0 && (
+                                        <div className="text-red-400">-{pos.borrowApy.toFixed(2)}%</div>
+                                    )}
+                                    {!(pos.apy > 0) && !(pos.borrowApy > 0) && (
+                                        <span className="text-muted-foreground/30">—</span>
+                                    )}
                                 </td>
                                 <td className="py-2 text-center">
                                     <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
@@ -236,9 +243,6 @@ export function Portfolio() {
                                         </div>
                                     </td>
                                 )}
-                                <td className="py-2 text-right font-mono text-red-400">
-                                    {pos.borrowApy ? `-${pos.borrowApy.toFixed(2)}%` : '-'}
-                                </td>
                                 <td className="py-2 text-right">
                                     <div className="text-red-400">{pos.borrow > 0 ? pos.borrow.toFixed(4) : '-'}</div>
                                     {pos.borrowUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>}
