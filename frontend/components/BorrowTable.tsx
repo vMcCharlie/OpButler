@@ -172,7 +172,7 @@ export function BorrowTable() {
 
                                 {/* Liquidity */}
                                 <div className="hidden md:block col-span-2 text-right font-mono text-emerald-400 text-sm">
-                                    ${formatMoney(availableLiquidity)}
+                                    {formatMoney(availableLiquidity)}
                                 </div>
 
                                 {/* Your Debt */}
