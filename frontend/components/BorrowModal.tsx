@@ -354,13 +354,6 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                         <div className="flex justify-between text-[9px] md:text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
                             <span>{activeTab === 'borrow' ? 'Borrow Amount' : 'Repay Amount'}</span>
                             <div className="flex gap-2">
-                                <span className="hidden xs:inline">
-                                    {activeTab === 'repay' ? 'Wallet' : 'Available'}:{' '}
-                                    {formatSmallNumber(
-                                        activeTab === 'repay' ? walletBalance :
-                                            availableLiquidity / (tokenPrice || 1)
-                                    )} {pool.symbol}
-                                </span>
                                 {activeTab === 'repay' && (
                                     <div className="flex gap-1">
                                         <button className="text-[9px] md:text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setHalf}>HALF</button>
@@ -387,8 +380,19 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                             </div>
                             <input type="number" placeholder="0.00" className="bg-transparent text-right text-xl md:text-2xl font-mono font-bold w-full outline-none text-white placeholder:text-muted-foreground/30" value={amount} onChange={(e) => setAmount(e.target.value)} />
                         </div>
-                        <div className="text-right text-[10px] md:text-xs text-muted-foreground mt-2">
-                            ≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}
+                        <div className="flex justify-between items-center text-[10px] md:text-xs mt-2">
+                            <div className="text-muted-foreground/60 font-medium">
+                                {activeTab === 'repay' ? 'Wallet: ' : 'Available: '}
+                                <span className="text-white font-bold ml-1">
+                                    {formatSmallNumber(
+                                        activeTab === 'repay' ? walletBalance :
+                                            availableLiquidity / (tokenPrice || 1)
+                                    )} {pool.symbol}
+                                </span>
+                            </div>
+                            <div className="text-muted-foreground">
+                                ≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}
+                            </div>
                         </div>
 
                         {writeError && step === 'idle' && (

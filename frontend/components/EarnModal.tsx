@@ -428,10 +428,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         <div className="flex justify-between text-[9px] md:text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
                             <span>{activeTab === 'deposit' ? 'Deposit Amount' : 'Withdraw Amount'}</span>
                             <div className="flex gap-2">
-                                <span className="hidden xs:inline">
-                                    {activeTab === 'deposit' ? 'Wallet' : 'Available'}:{' '}
-                                    {formatSmallNumber(activeTab === 'deposit' ? walletBalance : maxWithdrawableAvailable)} {pool.symbol}
-                                </span>
                                 {activeTab === 'withdraw' && (
                                     <button
                                         onClick={() => setAmount(toPlainString(maxSafe))}
@@ -457,8 +453,16 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                 value={amount} onChange={(e) => setAmount(e.target.value)}
                             />
                         </div>
-                        <div className="text-right text-[10px] md:text-xs text-muted-foreground mt-2">
-                            ≈ {formatMoney(amountNum * tokenPrice)}
+                        <div className="flex justify-between items-center text-[10px] md:text-xs mt-2">
+                            <div className="text-muted-foreground/60 font-medium">
+                                {activeTab === 'deposit' ? 'Wallet: ' : 'Available: '}
+                                <span className="text-white font-bold ml-1">
+                                    {formatSmallNumber(activeTab === 'deposit' ? walletBalance : maxWithdrawableAvailable)} {pool.symbol}
+                                </span>
+                            </div>
+                            <div className="text-muted-foreground">
+                                ≈ {formatMoney(amountNum * tokenPrice)}
+                            </div>
                         </div>
                     </div>
 

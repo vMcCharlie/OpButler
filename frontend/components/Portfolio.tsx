@@ -15,6 +15,8 @@ import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
 import { TrendingUp, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Heart, Activity, Loader2 } from "lucide-react";
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { VENUS_COMPTROLLER, COMPTROLLER_ABI } from '@/lib/pool-config';
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 // --- Health Factor Badge ---
 function HealthBadge({ health }: { health: ProtocolHealth }) {
@@ -291,9 +293,9 @@ export function Portfolio() {
     };
 
     const protocols = [
-        { id: 'venus', name: 'Venus', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: venusHealth, positions: venusPositions },
-        { id: 'kinza', name: 'Kinza', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: kinzaHealth, positions: kinzaPositions },
-        { id: 'radiant', name: 'Radiant', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: radiantHealth, positions: radiantPositions },
+        { id: 'venus', name: 'Venus', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: venusHealth, positions: venusPositions, utilization: venusHealth.borrowPowerUSD > 0 ? (venusHealth.debtUSD / venusHealth.borrowPowerUSD) * 100 : 0 },
+        { id: 'kinza', name: 'Kinza', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: kinzaHealth, positions: kinzaPositions, utilization: kinzaHealth.borrowPowerUSD > 0 ? (kinzaHealth.debtUSD / kinzaHealth.borrowPowerUSD) * 100 : 0 },
+        { id: 'radiant', name: 'Radiant', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: radiantHealth, positions: radiantPositions, utilization: radiantHealth.borrowPowerUSD > 0 ? (radiantHealth.debtUSD / radiantHealth.borrowPowerUSD) * 100 : 0 },
     ];
 
     return (
@@ -447,6 +449,7 @@ export function Portfolio() {
                                         <th className="p-4 font-medium">Protocol</th>
                                         <th className="p-4 font-medium text-right">Liquidity / Collateral</th>
                                         <th className="p-4 font-medium text-right">Debt</th>
+                                        <th className="p-4 font-medium text-center">Utilization</th>
                                         <th className="p-4 font-medium text-center">Health</th>
                                         <th className="p-4 font-medium text-right">Action</th>
                                     </tr>
@@ -464,6 +467,29 @@ export function Portfolio() {
                                                 </td>
                                                 <td className="p-4 text-right font-mono">${proto.supply.toFixed(2)}</td>
                                                 <td className="p-4 text-right font-mono text-red-400">${proto.borrow.toFixed(2)}</td>
+                                                <td className="p-4 min-w-[140px]">
+                                                    <div className="flex flex-col gap-1.5 px-2">
+                                                        <div className="flex justify-between items-center text-[10px] font-mono">
+                                                            <span className="text-muted-foreground">Credit Used</span>
+                                                            <span className={cn(
+                                                                "font-bold",
+                                                                proto.utilization > 90 ? "text-red-400" : proto.utilization > 70 ? "text-amber-400" : "text-emerald-400"
+                                                            )}>
+                                                                {proto.utilization.toFixed(1)}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                                            <motion.div
+                                                                className={cn(
+                                                                    "h-full rounded-full transition-all duration-500",
+                                                                    proto.utilization > 90 ? "bg-red-500" : proto.utilization > 70 ? "bg-amber-500" : "bg-emerald-500"
+                                                                )}
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${Math.min(100, proto.utilization)}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
                                                 <td className="p-4 text-center">
                                                     <HealthBadge health={proto.health} />
                                                 </td>
@@ -500,10 +526,31 @@ export function Portfolio() {
                                                     {proto.name}
                                                     <HealthBadge health={proto.health} />
                                                 </div>
-                                                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                                                     <span>Sup: ${proto.supply.toFixed(2)}</span>
                                                     <span>•</span>
-                                                    <span>Brw: ${proto.borrow.toFixed(2)}</span>
+                                                    <span className="text-red-400">Debt: ${proto.borrow.toFixed(2)}</span>
+                                                </div>
+                                                <div className="mt-2 w-full max-w-[180px]">
+                                                    <div className="flex justify-between items-center text-[9px] mb-1">
+                                                        <span className="text-muted-foreground/60 uppercase">Utilization</span>
+                                                        <span className={cn(
+                                                            "font-bold",
+                                                            proto.utilization > 90 ? "text-red-400" : proto.utilization > 70 ? "text-amber-400" : "text-emerald-400"
+                                                        )}>
+                                                            {proto.utilization.toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                                        <motion.div
+                                                            className={cn(
+                                                                "h-full rounded-full",
+                                                                proto.utilization > 90 ? "bg-red-500" : proto.utilization > 70 ? "bg-amber-500" : "bg-emerald-500"
+                                                            )}
+                                                            initial={{ width: 0 }}
+                                                            animate={{ width: `${Math.min(100, proto.utilization)}%` }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
