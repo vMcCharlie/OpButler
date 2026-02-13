@@ -142,7 +142,7 @@ export function EarnTable() {
             {viewMode === 'list' && (
                 <>
                     {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-2 text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-2 md:px-6 py-2 text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <div className="col-span-5 md:col-span-4">Vault</div>
                         <div className="col-span-3 md:col-span-2 text-right">APY</div>
                         <div className="hidden md:block col-span-2 text-right">Deposited</div>
@@ -174,7 +174,7 @@ export function EarnTable() {
                                     className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-xl md:rounded-2xl transition-all duration-300 cursor-pointer"
                                     onClick={() => setSelectedPool(pool)}
                                 >
-                                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-3 md:py-5 items-center">
+                                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-2 md:px-6 py-3 md:py-5 items-center">
                                         {/* Vault */}
                                         <div className="col-span-5 md:col-span-4 flex items-center gap-2 md:gap-4">
                                             <div className="relative flex-shrink-0">

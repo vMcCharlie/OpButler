@@ -71,8 +71,8 @@ export function LendHeader() {
     }, [yields]);
 
     return (
-        <div className="relative w-full rounded-3xl p-[1px] bg-gradient-to-r from-white/10 via-[#CEFF00]/30 to-white/10 mb-8 overflow-hidden font-outfit shadow-2xl">
-            <div className="relative w-full h-full rounded-3xl bg-[#09090b]/80 backdrop-blur-xl p-4 md:p-8 overflow-hidden">
+        <div className="relative w-full rounded-3xl p-[1px] bg-gradient-to-r from-white/10 via-[#CEFF00]/30 to-white/10 mb-4 md:mb-8 overflow-hidden font-outfit shadow-2xl">
+            <div className="relative w-full h-full rounded-3xl bg-[#09090b]/80 backdrop-blur-xl p-3 md:p-8 overflow-hidden">
                 {/* Background Gradient/Glow */}
                 <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-[#CEFF00]/10 rounded-full blur-[80px] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />

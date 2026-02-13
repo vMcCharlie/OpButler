@@ -150,7 +150,7 @@ export function BorrowTable() {
             {viewMode === 'list' && (
                 <>
                     {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-4 px-6 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="grid grid-cols-12 gap-4 px-3 md:px-6 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         <div className="col-span-6 md:col-span-4">Asset</div>
                         <div className="col-span-3 md:col-span-2 text-right">Borrow APY</div>
                         <div className="hidden md:block col-span-2 text-right">Max LTV</div>
@@ -189,7 +189,7 @@ export function BorrowTable() {
                                     onClick={() => setSelectedPool(pool)}
                                     className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300 cursor-pointer"
                                 >
-                                    <div className="grid grid-cols-12 gap-4 px-6 py-5 items-center">
+                                    <div className="grid grid-cols-12 gap-4 px-3 md:px-6 py-4 md:py-5 items-center">
                                         {/* Asset */}
                                         <div className="col-span-6 md:col-span-4 flex items-center gap-4">
                                             <div className="relative flex-shrink-0">
