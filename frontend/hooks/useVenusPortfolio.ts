@@ -7,6 +7,7 @@ import allowedAssets from '@/lib/allowedAssets.json';
 
 const COMPTROLLER_ABI = parseAbi([
     'function getAllMarkets() view returns (address[])',
+    'function getAssetsIn(address account) view returns (address[])',
 ]);
 
 const VTOKEN_ABI = parseAbi([
@@ -37,7 +38,18 @@ export function useVenusPortfolio() {
         }
     });
 
+    const { data: assetsIn } = useReadContract({
+        address: VENUS_COMPTROLLER as `0x${string}`,
+        abi: COMPTROLLER_ABI,
+        functionName: 'getAssetsIn',
+        args: address ? [address] : undefined,
+        query: {
+            enabled: !!address,
+        }
+    });
+
     const markets = (allMarkets as `0x${string}`[]) || [];
+    const enteredMarkets = (assetsIn as `0x${string}`[]) || [];
 
     // 2. Multicall for User Data
     // We need: Balance, Borrow, ExchangeRate, Symbol.
@@ -166,8 +178,12 @@ export function useVenusPortfolio() {
                 const supplyAPY = assetConfig ? assetConfig.apy : 0;
                 const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
 
+                const isCollateral = enteredMarkets.some(m => m.toLowerCase() === markets[i].toLowerCase());
+
                 positions.push({
                     symbol,
+                    vTokenAddress: markets[i],
+                    isCollateral,
                     supply: supplyNum,
                     supplyUSD,
                     borrow: borrowNum,

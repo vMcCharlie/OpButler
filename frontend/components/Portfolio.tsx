@@ -5,12 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccount, useReadContract } from 'wagmi';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { AssetIcon } from "@/components/ui/asset-icon";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/use-toast";
 import { useAggregatedHealth, ProtocolHealth } from "@/hooks/useAggregatedHealth";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
 import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
-import { TrendingUp, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Heart, Activity } from "lucide-react";
+import { TrendingUp, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Heart, Activity, Loader2 } from "lucide-react";
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { VENUS_COMPTROLLER, COMPTROLLER_ABI } from '@/lib/pool-config';
 
 // --- Health Factor Badge ---
 function HealthBadge({ health }: { health: ProtocolHealth }) {
@@ -135,7 +139,53 @@ export function Portfolio() {
     };
     const overallStatus = getOverallStatus();
 
-    const renderPositionsTable = (positions: any[]) => {
+    const { toast } = useToast();
+    const { writeContractAsync } = useWriteContract();
+    const [togglingAssets, setTogglingAssets] = useState<Record<string, boolean>>({});
+
+    const handleCollateralToggle = async (vTokenAddress: string, symbol: string, currentStatus: boolean) => {
+        if (!address) return;
+
+        setTogglingAssets(prev => ({ ...prev, [vTokenAddress]: true }));
+        try {
+            if (currentStatus) {
+                // Exit Market
+                const hash = await writeContractAsync({
+                    address: VENUS_COMPTROLLER as `0x${string}`,
+                    abi: COMPTROLLER_ABI,
+                    functionName: 'exitMarket',
+                    args: [vTokenAddress as `0x${string}`],
+                });
+                toast({
+                    title: "Transaction Sent",
+                    description: `Disabling ${symbol} as collateral...`,
+                });
+            } else {
+                // Enter Market
+                const hash = await writeContractAsync({
+                    address: VENUS_COMPTROLLER as `0x${string}`,
+                    abi: COMPTROLLER_ABI,
+                    functionName: 'enterMarkets',
+                    args: [[vTokenAddress as `0x${string}`]],
+                });
+                toast({
+                    title: "Transaction Sent",
+                    description: `Enabling ${symbol} as collateral...`,
+                });
+            }
+        } catch (error: any) {
+            console.error("Collateral toggle error:", error);
+            toast({
+                title: "Error",
+                description: error.shortMessage || "Failed to toggle collateral",
+                variant: "destructive",
+            });
+        } finally {
+            setTogglingAssets(prev => ({ ...prev, [vTokenAddress]: false }));
+        }
+    };
+
+    const renderPositionsTable = (positions: any[], protocolId: string) => {
         if (!positions || positions.length === 0) {
             return <div className="p-4 text-center text-muted-foreground text-xs">No active positions found.</div>;
         }
@@ -146,7 +196,8 @@ export function Portfolio() {
                         <tr className="text-muted-foreground uppercase tracking-wider text-[10px] text-left">
                             <th className="pb-2 pl-2">Asset</th>
                             <th className="pb-2 text-right">Supply APY</th>
-                            <th className="pb-2 text-right">Supplied</th>
+                            <th className="pb-2 text-center">Supplied</th>
+                            {protocolId === 'venus' && <th className="pb-2 text-center px-4">Collateral</th>}
                             <th className="pb-2 text-right">Borrow APY</th>
                             <th className="pb-2 text-right">Borrowed</th>
                             <th className="pb-2 text-right">Value (USD)</th>
@@ -162,10 +213,25 @@ export function Portfolio() {
                                 <td className="py-2 text-right font-mono text-emerald-400">
                                     {pos.apy ? `+${pos.apy.toFixed(2)}%` : '-'}
                                 </td>
-                                <td className="py-2 text-right">
+                                <td className="py-2 text-center">
                                     <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
                                     {pos.supplyUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>}
                                 </td>
+                                {protocolId === 'venus' && (
+                                    <td className="py-2 text-center px-4">
+                                        <div className="flex justify-center items-center">
+                                            {togglingAssets[pos.vTokenAddress] ? (
+                                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                            ) : (
+                                                <Switch
+                                                    checked={pos.isCollateral}
+                                                    onCheckedChange={() => handleCollateralToggle(pos.vTokenAddress, pos.symbol, pos.isCollateral)}
+                                                    disabled={togglingAssets[pos.vTokenAddress]}
+                                                />
+                                            )}
+                                        </div>
+                                    </td>
+                                )}
                                 <td className="py-2 text-right font-mono text-red-400">
                                     {pos.borrowApy ? `-${pos.borrowApy.toFixed(2)}%` : '-'}
                                 </td>
@@ -365,7 +431,7 @@ export function Portfolio() {
                                             {expandedProtocol === proto.id && (
                                                 <tr>
                                                     <td colSpan={5} className="p-0">
-                                                        {renderPositionsTable(proto.positions)}
+                                                        {renderPositionsTable(proto.positions, proto.id)}
                                                     </td>
                                                 </tr>
                                             )}
@@ -400,7 +466,7 @@ export function Portfolio() {
                                     </div>
                                     {expandedProtocol === proto.id && (
                                         <div className="border-t border-border">
-                                            {renderPositionsTable(proto.positions)}
+                                            {renderPositionsTable(proto.positions, proto.id)}
                                             <div className="p-3 bg-muted/20 text-center">
                                                 <button className="w-full text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-2 rounded-lg transition-colors font-medium">
                                                     Manage {proto.name}
