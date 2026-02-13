@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useYields } from "@/hooks/useYields";
 import { useVenusPortfolio } from '@/hooks/useVenusPortfolio';
 import { useKinzaPortfolio } from '@/hooks/useKinzaPortfolio';
@@ -8,7 +9,7 @@ import { useRadiantPortfolio } from '@/hooks/useRadiantPortfolio';
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { ChevronRight, LayoutGrid, List } from 'lucide-react';
 import { Card } from "@/components/ui/card";
-import { EarnModal } from "./EarnModal";
+import { MarketModal } from "./MarketModal";
 import { formatMoney, formatTokenAmount } from "@/lib/utils";
 
 export function EarnTable() {
@@ -19,6 +20,17 @@ export function EarnTable() {
 
     const [selectedPool, setSelectedPool] = useState<any>(null);
     const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const handleClose = () => {
+        setSelectedPool(null);
+        // Clear URL search parameters to prevent the deep-linking useEffect from re-opening it
+        if (searchParams.get('asset')) {
+            router.replace(pathname, { scroll: false });
+        }
+    };
 
     const isLoading = isYieldsLoading || isVenusLoading || isKinzaLoading || isRadiantLoading;
 
@@ -66,6 +78,30 @@ export function EarnTable() {
                 return b.apy - a.apy;
             });
     }, [yields]);
+
+    const lastUrlKey = useRef<string | null>(null);
+
+    // Handle Deep Linking (Auto-open modal)
+    useEffect(() => {
+        const assetQuery = searchParams.get('asset');
+        const protocolQuery = searchParams.get('protocol');
+        const currentUrlKey = assetQuery ? `${assetQuery}-${protocolQuery || 'any'}` : null;
+
+        if (earningsData.length > 0) {
+            if (currentUrlKey && currentUrlKey !== lastUrlKey.current) {
+                const foundPool = earningsData.find(pool =>
+                    pool.symbol.toUpperCase() === assetQuery!.toUpperCase() &&
+                    (!protocolQuery || pool.project.toLowerCase() === protocolQuery.toLowerCase())
+                );
+                if (foundPool) {
+                    setSelectedPool(foundPool);
+                    lastUrlKey.current = currentUrlKey;
+                }
+            } else if (!currentUrlKey) {
+                lastUrlKey.current = null;
+            }
+        }
+    }, [earningsData, searchParams]);
 
     if (isLoading) {
         return (
@@ -278,13 +314,16 @@ export function EarnTable() {
                 const posKey = `${selectedPool.project}-${selectedPool.symbol}`.toUpperCase();
                 const pos = positionMap.get(posKey);
                 return (
-                    <EarnModal
+                    <MarketModal
                         isOpen={!!selectedPool}
-                        onClose={() => setSelectedPool(null)}
+                        onClose={handleClose}
+                        initialMode="earn"
                         pool={{
                             ...selectedPool,
                             userDeposited: pos?.supply || 0,
                             userDepositedUSD: pos?.supplyUSD || 0,
+                            userBorrowed: pos?.borrow || 0,
+                            userBorrowedUSD: pos?.borrowUSD || 0,
                         }}
                     />
                 );

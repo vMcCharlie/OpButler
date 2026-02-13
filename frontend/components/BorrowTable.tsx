@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useYields } from "@/hooks/useYields";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { ChevronRight, LayoutGrid, List } from 'lucide-react';
 import { Card } from "@/components/ui/card";
-import { BorrowModal } from "./BorrowModal";
+import { MarketModal } from "./MarketModal";
 import { formatMoney, formatTokenAmount } from "@/lib/utils";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
@@ -15,6 +16,17 @@ export function BorrowTable() {
     const { data: yields, isLoading } = useYields();
     const [selectedPool, setSelectedPool] = useState<any>(null);
     const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const handleClose = () => {
+        setSelectedPool(null);
+        // Clear URL search parameters to prevent the deep-linking useEffect from re-opening it
+        if (searchParams.get('asset')) {
+            router.replace(pathname, { scroll: false });
+        }
+    };
 
     // Fetch User Portfolios
     const { positions: venusPositions = [] } = useVenusPortfolio();
@@ -74,6 +86,30 @@ export function BorrowTable() {
                 return availableB - availableA;
             });
     }, [yields, positionMap]);
+
+    const lastUrlKey = useRef<string | null>(null);
+
+    // Handle Deep Linking (Auto-open modal)
+    useEffect(() => {
+        const assetQuery = searchParams.get('asset');
+        const protocolQuery = searchParams.get('protocol');
+        const currentUrlKey = assetQuery ? `${assetQuery}-${protocolQuery || 'any'}` : null;
+
+        if (borrowData.length > 0) {
+            if (currentUrlKey && currentUrlKey !== lastUrlKey.current) {
+                const foundPool = borrowData.find(pool =>
+                    pool.symbol.toUpperCase() === assetQuery!.toUpperCase() &&
+                    (!protocolQuery || pool.project.toLowerCase() === protocolQuery.toLowerCase())
+                );
+                if (foundPool) {
+                    setSelectedPool(foundPool);
+                    lastUrlKey.current = currentUrlKey;
+                }
+            } else if (!currentUrlKey) {
+                lastUrlKey.current = null;
+            }
+        }
+    }, [borrowData, searchParams]);
 
     if (isLoading) {
         return (
@@ -295,17 +331,19 @@ export function BorrowTable() {
             )}
 
             {selectedPool && (() => {
-                const projectKey = selectedPool.project;
-                const positionKey = `${projectKey}-${selectedPool.symbol}`.toUpperCase();
-                const position = positionMap.get(positionKey);
+                const posKey = `${selectedPool.project}-${selectedPool.symbol}`.toUpperCase();
+                const pos = positionMap.get(posKey);
                 return (
-                    <BorrowModal
+                    <MarketModal
                         isOpen={!!selectedPool}
-                        onClose={() => setSelectedPool(null)}
+                        onClose={handleClose}
+                        initialMode="borrow"
                         pool={{
                             ...selectedPool,
-                            userBorrowed: position?.borrow || 0,
-                            userBorrowedUSD: position?.borrowUSD || 0,
+                            userBorrowed: pos?.borrow || 0,
+                            userBorrowedUSD: pos?.borrowUSD || 0,
+                            userDeposited: pos?.supply || 0,
+                            userDepositedUSD: pos?.supplyUSD || 0,
                         }}
                     />
                 );

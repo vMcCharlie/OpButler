@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from 'next/navigation';
 import { useAccount, useReadContract } from 'wagmi';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { AssetIcon } from "@/components/ui/asset-icon";
@@ -87,6 +88,7 @@ function CenterHealthLabel({ score }: { score: number }) {
 
 export function Portfolio() {
     const { address } = useAccount();
+    const router = useRouter();
     const [expandedProtocol, setExpandedProtocol] = useState<string | null>(null);
 
     // Smart Wallet
@@ -188,9 +190,15 @@ export function Portfolio() {
     };
 
     const renderPositionsTable = (positions: any[], protocolId: string) => {
+        const handleRedirect = (asset: string, protocol: string, type: 'earn' | 'borrow') => {
+            const mappedProtocol = protocol === 'kinza' ? 'kinza-finance' : protocol === 'radiant' ? 'radiant-v2' : protocol;
+            router.push(`/lend/${type}?asset=${asset}&protocol=${mappedProtocol}`);
+        };
+
         if (!positions || positions.length === 0) {
             return <div className="p-4 text-center text-muted-foreground text-xs">No active positions found.</div>;
         }
+
         return (
             <div className="bg-muted/30 p-2 md:p-4 rounded-b-lg border-t border-border animate-in slide-in-from-top-2">
                 <table className="w-full text-xs">
@@ -234,15 +242,15 @@ export function Portfolio() {
                                     </td>
 
                                     {/* Mobile/Stacked Position View */}
-                                    <td className="py-2 text-center md:hidden">
+                                    <td className="py-2 text-center md:hidden" onClick={() => handleRedirect(pos.symbol, protocolId, pos.supply > 0 ? 'earn' : 'borrow')}>
                                         {pos.supply > 0 && (
-                                            <div className="mb-1">
+                                            <div className="mb-1 cursor-pointer hover:text-emerald-400">
                                                 <div className="text-emerald-500 font-medium">{pos.supply.toFixed(4)}</div>
                                                 <div className="text-[9px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>
                                             </div>
                                         )}
                                         {pos.borrow > 0 && (
-                                            <div>
+                                            <div className="cursor-pointer hover:text-red-400" onClick={(e) => { e.stopPropagation(); handleRedirect(pos.symbol, protocolId, 'borrow'); }}>
                                                 <div className="text-red-400 font-medium">{pos.borrow.toFixed(4)}</div>
                                                 <div className="text-[9px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>
                                             </div>
@@ -253,7 +261,7 @@ export function Portfolio() {
                                     </td>
 
                                     {/* Desktop Separate Columns */}
-                                    <td className="py-2 text-center hidden md:table-cell">
+                                    <td className="py-2 text-center hidden md:table-cell cursor-pointer hover:bg-white/5" onClick={() => handleRedirect(pos.symbol, protocolId, 'earn')}>
                                         <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
                                         {pos.supplyUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>}
                                     </td>
@@ -276,7 +284,7 @@ export function Portfolio() {
                                             </div>
                                         </td>
                                     )}
-                                    <td className="py-2 text-right hidden md:table-cell">
+                                    <td className="py-2 text-right hidden md:table-cell cursor-pointer hover:bg-white/5" onClick={() => handleRedirect(pos.symbol, protocolId, 'borrow')}>
                                         <div className="text-red-400">{pos.borrow > 0 ? pos.borrow.toFixed(4) : '-'}</div>
                                         {pos.borrowUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>}
                                     </td>
@@ -494,7 +502,14 @@ export function Portfolio() {
                                                     <HealthBadge health={proto.health} />
                                                 </td>
                                                 <td className="p-4 text-right">
-                                                    <button className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const mappedProtocol = proto.id === 'kinza' ? 'kinza-finance' : proto.id === 'radiant' ? 'radiant-v2' : proto.id;
+                                                            router.push(`/lend/earn?protocol=${mappedProtocol}`);
+                                                        }}
+                                                        className="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-full transition-colors font-medium"
+                                                    >
                                                         Manage
                                                     </button>
                                                 </td>
@@ -560,7 +575,14 @@ export function Portfolio() {
                                         <div className="border-t border-border">
                                             {renderPositionsTable(proto.positions, proto.id)}
                                             <div className="p-3 bg-muted/20 text-center">
-                                                <button className="w-full text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-2 rounded-lg transition-colors font-medium">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const mappedProtocol = proto.id === 'kinza' ? 'kinza-finance' : proto.id === 'radiant' ? 'radiant-v2' : proto.id;
+                                                        router.push(`/lend/earn?protocol=${mappedProtocol}`);
+                                                    }}
+                                                    className="w-full text-xs bg-primary/20 hover:bg-primary/30 text-primary px-3 py-2 rounded-lg transition-colors font-medium"
+                                                >
                                                     Manage {proto.name}
                                                 </button>
                                             </div>
