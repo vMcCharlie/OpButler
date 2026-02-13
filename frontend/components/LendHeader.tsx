@@ -71,8 +71,8 @@ export function LendHeader() {
     }, [yields]);
 
     return (
-        <div className="relative w-full rounded-3xl p-[3px] bg-gradient-to-r from-[#CEFF00]/40 via-blue-500/40 to-[#CEFF00]/40 mb-8 overflow-hidden font-outfit">
-            <div className="relative w-full h-full rounded-3xl bg-[#13131a] p-6 md:p-8 overflow-hidden">
+        <div className="relative w-full rounded-3xl p-[1px] bg-gradient-to-r from-white/10 via-[#CEFF00]/30 to-white/10 mb-8 overflow-hidden font-outfit shadow-2xl">
+            <div className="relative w-full h-full rounded-3xl bg-[#09090b]/80 backdrop-blur-xl p-4 md:p-8 overflow-hidden">
                 {/* Background Gradient/Glow */}
                 <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-[#CEFF00]/10 rounded-full blur-[80px] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
@@ -97,39 +97,30 @@ export function LendHeader() {
                     <div className="w-full max-w-lg h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
 
                     {/* Metrics Grid - Adjusted for mobile */}
-                    <div className="grid grid-cols-3 w-full max-w-3xl gap-1 md:gap-8 px-1 md:px-0">
+                    <div className="grid grid-cols-3 w-full max-w-2xl gap-2 md:gap-8 px-0 md:px-0">
                         <div className="flex flex-col items-center">
-                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">
-                                <span className="md:hidden">Supply</span>
-                                <span className="hidden md:inline">Total Supply</span>
+                            <span className="text-[8px] md:text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1 opacity-70">
+                                Total Supply
                             </span>
-                            <div className="text-sm md:text-2xl font-bold text-white whitespace-nowrap">
+                            <div className="text-sm md:text-2xl font-bold text-white tracking-tight">
                                 <Counter value={metrics.totalSupply} prefix="$" />
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center relative border-l border-white/5 md:border-none pl-1 md:pl-0">
-                            {/* Desktop Divider - Vertical line */}
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
-
-                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">
-                                <span className="md:hidden">Available</span>
-                                <span className="hidden md:inline">Total Available</span>
+                        <div className="flex flex-col items-center">
+                            <span className="text-[8px] md:text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1 opacity-70">
+                                Available
                             </span>
-                            <div className="text-sm md:text-2xl font-bold text-emerald-400 whitespace-nowrap">
+                            <div className="text-sm md:text-2xl font-bold text-emerald-400 tracking-tight">
                                 <Counter value={metrics.totalAvailable} prefix="$" />
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center relative border-l border-white/5 md:border-none pl-1 md:pl-0">
-                            {/* Desktop Divider - Vertical line */}
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-white/10 -ml-4 hidden md:block" />
-
-                            <span className="text-[9px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 text-center whitespace-nowrap">
-                                <span className="md:hidden">Borrowed</span>
-                                <span className="hidden md:inline">Total Borrowed</span>
+                        <div className="flex flex-col items-center">
+                            <span className="text-[8px] md:text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1 opacity-70">
+                                Borrowed
                             </span>
-                            <div className="text-sm md:text-2xl font-bold text-blue-400 whitespace-nowrap">
+                            <div className="text-sm md:text-2xl font-bold text-blue-400 tracking-tight">
                                 <Counter value={metrics.totalBorrowed} prefix="$" />
                             </div>
                         </div>
@@ -137,18 +128,21 @@ export function LendHeader() {
 
                     {/* Utilization Bar */}
                     {!isLoading && totalBorrowPowerUSD > 0 && (
-                        <div className="w-full max-w-2xl mt-8 px-4">
-                            <div className="flex justify-between items-end mb-2">
-                                <div className="flex flex-col items-start text-xs font-bold uppercase tracking-wider">
-                                    <span className="text-muted-foreground mb-1">Total Borrow Power</span>
-                                    <span className="text-white text-lg">
+                        <div className="w-full max-w-2xl mt-6 md:mt-8 px-2 md:px-0">
+                            <div className="flex items-end justify-between mb-2">
+                                <div className="flex flex-col items-start gap-0.5">
+                                    <span className="text-[9px] md:text-xs font-bold uppercase tracking-wider text-muted-foreground opacity-70">Total Borrow Power</span>
+                                    <span className="text-sm md:text-xl font-black text-white leading-none">
                                         {formatMoney(maxSafeBorrowPower)}
-                                        <span className="text-[10px] text-muted-foreground ml-1">(Safe Max)</span>
+                                        <span className="text-[8px] md:text-[10px] text-muted-foreground/60 ml-1 font-medium italic">SAFE MAX</span>
                                     </span>
                                 </div>
-                                <div className="flex flex-col items-end text-xs font-bold uppercase tracking-wider">
-                                    <span className="text-muted-foreground mb-1">Utilization</span>
-                                    <span className={cn("text-lg", isUtilizationHigh ? "text-red-400" : "text-[#CEFF00]")}>
+                                <div className="flex flex-col items-end gap-0.5">
+                                    <span className="text-[9px] md:text-xs font-bold uppercase tracking-wider text-muted-foreground opacity-70">Utilization</span>
+                                    <span className={cn(
+                                        "text-sm md:text-xl font-black leading-none",
+                                        isUtilizationHigh ? "text-red-400" : "text-[#CEFF00]"
+                                    )}>
                                         {utilization.toFixed(1)}%
                                     </span>
                                 </div>
@@ -166,18 +160,18 @@ export function LendHeader() {
                                 />
                             </div>
 
-                            <div className="flex justify-between mt-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground gap-4">
-                                <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#F0B90B]" />
-                                    <span>Venus: {formatMoney(venus.borrowPowerUSD * 0.95)}</span>
+                            <div className="flex flex-wrap md:flex-nowrap justify-center md:justify-between mt-4 text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground gap-2 md:gap-4">
+                                <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/5 px-2 py-1.5 rounded-lg">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#F0B90B] shadow-[0_0_8px_rgba(240,185,11,0.5)]" />
+                                    <span>Venus: <span className="text-white/90">{formatMoney(venus.debtUSD)}</span> / <span className="text-white/60">{formatMoney(venus.borrowPowerUSD * 0.95)}</span></span>
                                 </div>
-                                <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
-                                    <span>Kinza: {formatMoney(kinza.borrowPowerUSD * 0.95)}</span>
+                                <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/5 px-2 py-1.5 rounded-lg">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                    <span>Kinza: <span className="text-white/90">{formatMoney(kinza.debtUSD)}</span> / <span className="text-white/60">{formatMoney(kinza.borrowPowerUSD * 0.95)}</span></span>
                                 </div>
-                                <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#A855F7]" />
-                                    <span>Radiant: {formatMoney(radiant.borrowPowerUSD * 0.95)}</span>
+                                <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/5 px-2 py-1.5 rounded-lg">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#A855F7] shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                                    <span>Radiant: <span className="text-white/90">{formatMoney(radiant.debtUSD)}</span> / <span className="text-white/60">{formatMoney(radiant.borrowPowerUSD * 0.95)}</span></span>
                                 </div>
                             </div>
                         </div>

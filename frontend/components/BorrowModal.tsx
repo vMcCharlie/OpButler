@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { Loader2, Check, ArrowUpDown, AlertTriangle, ShieldAlert, ArrowRight, Info } from "lucide-react";
+import { Loader2, Check, ArrowUpDown, AlertTriangle, ShieldAlert, ArrowRight, Info, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useBalance } from "wagmi";
 import { parseUnits, formatUnits, maxUint256 } from "viem";
@@ -289,16 +289,21 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
             <DialogContent className="w-[95vw] sm:max-w-[420px] max-h-[90vh] overflow-y-auto bg-[#09090b] border-white/10 text-white p-0 gap-0 rounded-3xl scrollbar-hide">
                 {/* Header */}
                 <div className="p-4 md:p-6 pb-2 md:pb-4 border-b border-white/5 bg-[#09090b] sticky top-0 z-20">
-                    <div className="flex items-center gap-3">
-                        <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
-                        <div>
-                            <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
-                            <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground">
-                                <span className="uppercase">{protocolDisplay}</span>
-                                <span className="w-1 h-1 bg-white/20 rounded-full" />
-                                <span className="text-blue-400 font-medium">Borrow Market</span>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
+                            <div>
+                                <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
+                                <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground">
+                                    <span className="uppercase">{protocolDisplay}</span>
+                                    <span className="w-1 h-1 bg-white/20 rounded-full" />
+                                    <span className="text-blue-400 font-medium">Borrow Market</span>
+                                </div>
                             </div>
                         </div>
+                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-muted-foreground hover:text-white">
+                            <X size={20} />
+                        </button>
                     </div>
                 </div>
 
