@@ -82,11 +82,33 @@ export function useYields() {
                         ? (existing.apy * existing.tvlUsd + pool.apy * pool.tvlUsd) / totalTvl
                         : existing.apy;
 
+                    // Weighted Average Borrow APY Logic
+                    const existingBorrow = existing.totalBorrowUsd || ((existing.tvlUsd || 0) * 0.4);
+                    const poolBorrow = pool.totalBorrowUsd || ((pool.tvlUsd || 0) * 0.4);
+                    const totalBorrow = existingBorrow + poolBorrow;
+
+
+                    const existingBaseBorrow = existing.apyBaseBorrow || (existing.apyBase ? existing.apyBase * 1.5 : 0);
+                    const poolBaseBorrow = pool.apyBaseBorrow || (pool.apyBase ? pool.apyBase * 1.5 : 0);
+
+                    const existingRewardBorrow = existing.apyRewardBorrow || 0;
+                    const poolRewardBorrow = pool.apyRewardBorrow || 0;
+
+                    const weightedBaseBorrow = totalBorrow > 0
+                        ? (existingBaseBorrow * existingBorrow + poolBaseBorrow * poolBorrow) / totalBorrow
+                        : existingBaseBorrow;
+
+                    const weightedRewardBorrow = totalBorrow > 0
+                        ? (existingRewardBorrow * existingBorrow + poolRewardBorrow * poolBorrow) / totalBorrow
+                        : existingRewardBorrow;
+
                     // Update existing entry
                     existing.tvlUsd += pool.tvlUsd;
                     existing.totalSupplyUsd = (existing.totalSupplyUsd || 0) + (pool.totalSupplyUsd || pool.tvlUsd);
-                    existing.totalBorrowUsd = (existing.totalBorrowUsd || 0) + (pool.totalBorrowUsd || ((pool.tvlUsd || 0) * 0.4));
+                    existing.totalBorrowUsd = totalBorrow;
                     existing.apy = weightedApy;
+                    existing.apyBaseBorrow = weightedBaseBorrow;
+                    existing.apyRewardBorrow = weightedRewardBorrow;
 
                     // Keep max LTV if different (safer to show what's possible, or min? Lets stick to first found for now or max)
                     existing.ltv = Math.max(existing.ltv || 0, pool.ltv || 0);
