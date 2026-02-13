@@ -11,3 +11,9 @@ export const formatMoney = (num: number) => {
     if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`;
     return `$${num.toFixed(0)}`;
 };
+
+export const formatTokenAmount = (num: number) => {
+    if (num === 0) return '0';
+    if (num < 0.0001) return '<0.0001';
+    return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+};

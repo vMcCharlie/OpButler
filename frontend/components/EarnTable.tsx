@@ -9,7 +9,7 @@ import { AssetIcon } from "@/components/ui/asset-icon";
 import { ChevronRight, LayoutGrid, List } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { EarnModal } from "./EarnModal";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, formatTokenAmount } from "@/lib/utils";
 
 export function EarnTable() {
     const { data: yields, isLoading: isYieldsLoading } = useYields();
@@ -27,13 +27,13 @@ export function EarnTable() {
         const map = new Map<string, any>();
 
         venusPositions.forEach((pos: any) => {
-            map.set(`venus-${pos.symbol}`, pos);
+            map.set(`venus-${pos.symbol}`.toUpperCase(), pos);
         });
         kinzaPositions.forEach((pos: any) => {
-            map.set(`kinza-finance-${pos.symbol}`, pos);
+            map.set(`kinza-finance-${pos.symbol}`.toUpperCase(), pos);
         });
         radiantPositions.forEach((pos: any) => {
-            map.set(`radiant-v2-${pos.symbol}`, pos);
+            map.set(`radiant-v2-${pos.symbol}`.toUpperCase(), pos);
         });
 
         return map;
@@ -113,10 +113,8 @@ export function EarnTable() {
                                     pool.project === 'kinza-finance' ? '/kinza.png' :
                                         pool.project === 'radiant-v2' ? '/radiant.jpeg' : null;
 
-                            // Lookup position
-                            // Note: hooks return standardized symbols (e.g. 'BNB', 'BTCB')
-                            // Ensure pool.symbol matches hook symbol standards if needed
-                            const userPosition = positionMap.get(`${pool.project}-${pool.symbol}`);
+                            // Lookup position (Case-insensitive matching)
+                            const userPosition = positionMap.get(`${pool.project}-${pool.symbol}`.toUpperCase());
                             const depositedAmount = userPosition ? userPosition.supply : 0;
                             const depositedUSD = userPosition ? userPosition.supplyUSD : 0;
 
@@ -154,8 +152,8 @@ export function EarnTable() {
                                         <div className="hidden md:block col-span-2 text-right font-mono text-sm">
                                             {depositedAmount > 0 ? (
                                                 <div className="flex flex-col items-end">
-                                                    <span className="text-white font-medium">{formatMoney(depositedAmount)} {pool.symbol}</span>
-                                                    <span className="text-xs text-muted-foreground">${formatMoney(depositedUSD)}</span>
+                                                    <span className="text-white font-medium">{formatTokenAmount(depositedAmount)} {pool.symbol}</span>
+                                                    <span className="text-xs text-muted-foreground">{formatMoney(depositedUSD)}</span>
                                                 </div>
                                             ) : (
                                                 <span className="text-muted-foreground">-</span>
@@ -170,8 +168,8 @@ export function EarnTable() {
                                         {/* TVL */}
                                         <div className="col-span-4 md:col-span-2 flex items-center justify-end pl-0 md:pl-4 gap-1">
                                             <div className="flex flex-col items-end flex-1 min-w-0">
-                                                <span className="font-bold text-white text-[10px] md:text-sm max-w-full truncate">{formatMoney(pool.tvlUsd)} <span className="hidden sm:inline">{pool.symbol}</span></span>
-                                                <span className="text-[9px] md:text-xs text-muted-foreground">${formatMoney(pool.tvlUsd)}</span>
+                                                <span className="font-bold text-white text-[10px] md:text-sm max-w-full truncate">{formatMoney(pool.tvlUsd)}</span>
+                                                <span className="text-[9px] md:text-xs text-muted-foreground">{formatMoney(pool.tvlUsd)}</span>
                                             </div>
 
                                             <div
@@ -235,11 +233,11 @@ export function EarnTable() {
                                     <div className="grid grid-cols-2 gap-4 py-4 border-t border-white/5">
                                         <div>
                                             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total Supplied</div>
-                                            <div className="font-mono font-medium">{formatMoney(pool.tvlUsd)} <span className="text-xs text-muted-foreground">{pool.symbol}</span></div>
+                                            <div className="font-mono font-medium">{formatMoney(pool.tvlUsd)}</div>
                                         </div>
                                         <div className="text-right">
                                             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">TVL (USD)</div>
-                                            <div className="font-mono font-medium">${formatMoney(pool.tvlUsd)}</div>
+                                            <div className="font-mono font-medium">{formatMoney(pool.tvlUsd)}</div>
                                         </div>
                                     </div>
 
