@@ -278,6 +278,7 @@ export function Portfolio() {
                     <CardContent className="h-[300px] relative">
                         {allocationData.length > 0 ? (
                             <>
+                                <CenterHealthLabel score={overallScore} />
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
@@ -293,10 +294,12 @@ export function Portfolio() {
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
-                                        <RechartsTooltip content={<CustomTooltip />} />
+                                        <RechartsTooltip
+                                            content={<CustomTooltip />}
+                                            wrapperStyle={{ zIndex: 40 }}
+                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
-                                <CenterHealthLabel score={overallScore} />
                                 {/* Legend */}
                                 <div className="flex justify-center gap-4 -mt-2">
                                     {allocationData.map((entry, index) => (
