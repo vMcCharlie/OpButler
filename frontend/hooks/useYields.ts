@@ -61,7 +61,7 @@ export function useYields() {
                 // Check if the pool is in our allowed list
                 const isAllowed = ALLOWED_POOL_IDS.has(pool.pool);
 
-                return isBSC && isProject && !isIsolated && isAllowed;
+                return isBSC && isProject && isAllowed;
             });
 
             // 2. Aggregate Duplicates (Same Project + Symbol)
