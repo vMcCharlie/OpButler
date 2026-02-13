@@ -214,6 +214,10 @@ export function EarnTable() {
                                 pool.project === 'kinza-finance' ? '/kinza.png' :
                                     pool.project === 'radiant-v2' ? '/radiant.jpeg' : null;
 
+                        // Lookup position (Case-insensitive matching)
+                        const userPosition = positionMap.get(`${pool.project}-${pool.symbol}`.toUpperCase());
+                        const depositedUSD = userPosition ? userPosition.supplyUSD : 0;
+
                         return (
                             <Card
                                 key={`${pool.pool}-${pool.project}`}
@@ -246,8 +250,8 @@ export function EarnTable() {
 
                                     <div className="grid grid-cols-2 gap-4 py-4 border-t border-white/5">
                                         <div>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total Supplied</div>
-                                            <div className="font-mono font-medium">{formatMoney(pool.tvlUsd)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">My Deposit</div>
+                                            <div className="font-mono font-medium">{formatMoney(depositedUSD)}</div>
                                         </div>
                                         <div className="text-right">
                                             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">TVL (USD)</div>
