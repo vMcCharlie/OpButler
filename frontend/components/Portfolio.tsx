@@ -341,7 +341,7 @@ export function Portfolio() {
 
             <div className="grid gap-8 lg:grid-cols-3">
                 {/* Protocol Allocation Chart */}
-                <Card className="col-span-1 border border-border bg-card">
+                <Card className="col-span-1 -mx-4 rounded-none border-x-0 md:mx-0 md:rounded-xl md:border border-border bg-card">
                     <CardHeader>
                         <CardTitle>Protocol Allocation</CardTitle>
                     </CardHeader>
