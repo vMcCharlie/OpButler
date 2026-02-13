@@ -286,56 +286,56 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[420px] bg-[#09090b] border-white/10 text-white p-0 gap-0 overflow-hidden rounded-3xl">
+            <DialogContent className="w-[95vw] sm:max-w-[420px] max-h-[90vh] overflow-y-auto bg-[#09090b] border-white/10 text-white p-0 gap-0 rounded-3xl scrollbar-hide">
                 {/* Header */}
-                <div className="p-6 pb-4">
+                <div className="p-4 md:p-6 pb-2 md:pb-4 border-b border-white/5 bg-[#09090b] sticky top-0 z-20">
                     <div className="flex items-center gap-3">
-                        <AssetIcon symbol={pool.symbol} className="w-10 h-10" />
+                        <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
                         <div>
-                            <h2 className="text-xl font-bold">{pool.symbol}</h2>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <h2 className="text-lg md:text-xl font-bold">{pool.symbol}</h2>
+                            <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground">
                                 <span className="uppercase">{protocolDisplay}</span>
                                 <span className="w-1 h-1 bg-white/20 rounded-full" />
-                                <span className="text-blue-400">Borrow Market</span>
+                                <span className="text-blue-400 font-medium">Borrow Market</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Stats */}
-                <div className="px-6 mb-6">
-                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 grid grid-cols-2 gap-y-4 gap-x-8">
+                <div className="px-4 md:px-6 pt-4 md:pt-6 mb-4 md:mb-6">
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 grid grid-cols-2 gap-y-3 md:gap-y-4 gap-x-6 md:gap-x-8">
                         <div>
-                            <div className="text-[10px] uppercase text-blue-400 font-bold mb-1">Your Debt</div>
-                            <div className="text-lg font-mono text-blue-400">
+                            <div className="text-[9px] md:text-[10px] uppercase text-blue-400 font-bold mb-1">Your Debt</div>
+                            <div className="text-base md:text-lg font-mono text-blue-400 tracking-tight">
                                 {borrowedAmount > 0 ? <>{formatSmallNumber(borrowedAmount)} {pool.symbol}</> : '0'}
                             </div>
-                            <div className="text-[10px] text-muted-foreground">≈ {formatMoney(borrowedAmountUSD)}</div>
+                            <div className="text-[9px] md:text-[10px] text-muted-foreground">≈ {formatMoney(borrowedAmountUSD)}</div>
                         </div>
                         <div className="text-right">
-                            <div className="text-[10px] uppercase text-muted-foreground font-bold mb-1">Health Factor</div>
-                            <div className="text-lg font-bold font-mono text-emerald-400">
+                            <div className="text-[9px] md:text-[10px] uppercase text-muted-foreground font-bold mb-1">Health Factor</div>
+                            <div className="text-base md:text-lg font-bold font-mono text-emerald-400">
                                 {borrowedAmount > 0 ? 'Monitor' : 'Safe'}
                             </div>
                         </div>
 
-                        <div className="col-span-2 h-[1px] bg-white/5 my-1" />
+                        <div className="col-span-2 h-[1px] bg-white/5 my-0.5 md:my-1" />
 
                         <div className="flex justify-between items-center">
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">Borrow APY <ArrowUpDown className="w-3 h-3" /></span>
-                            <span className="text-blue-400 font-bold font-mono text-sm bg-blue-400/10 px-2 py-0.5 rounded-full border border-blue-400/20">
+                            <span className="text-[10px] md:text-xs text-muted-foreground flex items-center gap-1">Borrow APY <ArrowUpDown className="w-2.5 h-2.5" /></span>
+                            <span className="text-blue-400 font-bold font-mono text-[11px] md:text-sm bg-blue-400/10 px-1.5 md:px-2 py-0.5 rounded-full border border-blue-400/20">
                                 -{borrowApy.toFixed(2)}%
                             </span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-xs text-muted-foreground">Available Liquidity</span>
-                            <span className="text-white font-bold text-sm">{formatMoney(availableLiquidity)}</span>
+                            <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">Available Liquidity</span>
+                            <span className="text-white font-bold text-[11px] md:text-sm">{formatMoney(availableLiquidity)}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="px-6 mb-4">
+                <div className="px-4 md:px-6 mb-4">
                     <div className="bg-[#121216] rounded-xl p-1 flex relative">
                         <motion.div
                             className="absolute top-1 bottom-1 bg-[#1a1a20] rounded-lg shadow-sm"
@@ -343,18 +343,18 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                             animate={{ left: activeTab === 'borrow' ? '4px' : '50%', width: 'calc(50% - 4px)' }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
-                        <button onClick={() => { setActiveTab('borrow'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-2 text-sm font-bold transition-colors ${activeTab === 'borrow' ? 'text-white' : 'text-muted-foreground'}`}>Borrow</button>
-                        <button onClick={() => { setActiveTab('repay'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-2 text-sm font-bold transition-colors ${activeTab === 'repay' ? 'text-white' : 'text-muted-foreground'}`}>Repay</button>
+                        <button onClick={() => { setActiveTab('borrow'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'borrow' ? 'text-white' : 'text-muted-foreground'}`}>Borrow</button>
+                        <button onClick={() => { setActiveTab('repay'); setAmount(''); resetWrite(); setStep('idle'); }} className={`flex-1 relative z-10 py-1.5 md:py-2 text-sm font-bold transition-colors ${activeTab === 'repay' ? 'text-white' : 'text-muted-foreground'}`}>Repay</button>
                     </div>
                 </div>
 
                 {/* Input */}
-                <div className="px-6 pb-6">
-                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 mb-4">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
+                <div className="px-4 md:px-6 pb-6">
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 mb-4">
+                        <div className="flex justify-between text-[9px] md:text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
                             <span>{activeTab === 'borrow' ? 'Borrow Amount' : 'Repay Amount'}</span>
                             <div className="flex gap-2">
-                                <span>
+                                <span className="hidden xs:inline">
                                     {activeTab === 'repay' ? 'Wallet' : 'Available'}:{' '}
                                     {formatSmallNumber(
                                         activeTab === 'repay' ? walletBalance :
@@ -363,15 +363,15 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                                 </span>
                                 {activeTab === 'repay' && (
                                     <div className="flex gap-1">
-                                        <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setHalf}>HALF</button>
-                                        <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setMax}>MAX</button>
+                                        <button className="text-[9px] md:text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setHalf}>HALF</button>
+                                        <button className="text-[9px] md:text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setMax}>MAX</button>
                                     </div>
                                 )}
                                 {activeTab === 'borrow' && (
                                     <div className="flex gap-1">
                                         <button
                                             onClick={() => setAmount(toPlainString(safeMaxAmount))}
-                                            className="text-[10px] text-[#CEFF00] font-bold border border-[#CEFF00]/30 px-2 py-0.5 rounded hover:bg-[#CEFF00]/10"
+                                            className="text-[9px] md:text-[10px] text-[#CEFF00] font-bold border border-[#CEFF00]/30 px-2 py-0.5 rounded hover:bg-[#CEFF00]/10"
                                         >
                                             SAFE MAX
                                         </button>
@@ -380,37 +380,37 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 bg-black/40 px-2 py-1.5 rounded-lg border border-white/5">
-                                <AssetIcon symbol={pool.symbol} className="w-6 h-6" />
-                                <span className="font-bold text-sm">{pool.symbol}</span>
+                        <div className="flex items-center gap-2 md:gap-4">
+                            <div className="flex items-center gap-1.5 md:gap-2 bg-black/40 px-1.5 md:px-2 py-1 md:py-1.5 rounded-lg border border-white/5 flex-shrink-0">
+                                <AssetIcon symbol={pool.symbol} className="w-5 h-5 md:w-6 md:h-6" />
+                                <span className="font-bold text-xs md:text-sm">{pool.symbol}</span>
                             </div>
-                            <input type="number" placeholder="0.00" className="bg-transparent text-right text-2xl font-mono font-bold w-full outline-none text-white placeholder:text-muted-foreground/30" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                            <input type="number" placeholder="0.00" className="bg-transparent text-right text-xl md:text-2xl font-mono font-bold w-full outline-none text-white placeholder:text-muted-foreground/30" value={amount} onChange={(e) => setAmount(e.target.value)} />
                         </div>
-                        <div className="text-right text-xs text-muted-foreground mt-2">
+                        <div className="text-right text-[10px] md:text-xs text-muted-foreground mt-2">
                             ≈ {formatMoney(parseFloat(amount || '0') * tokenPrice)}
                         </div>
 
                         {writeError && step === 'idle' && (
-                            <div className="text-xs text-red-400 mt-2 flex items-center gap-1">
+                            <div className="text-[10px] md:text-xs text-red-400 mt-2 flex items-center gap-1">
                                 <AlertTriangle className="w-3 h-3" />
-                                {writeError.message.slice(0, 100)}
+                                <span className="truncate">{writeError.message}</span>
                             </div>
                         )}
                     </div>
 
-                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 space-y-3 mb-4">
-                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4">
+                        <div className="flex justify-between items-center text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
                             <span>Transaction Impact</span>
                         </div>
 
                         <div className="flex justify-between items-center w-full">
-                            <span className="text-xs text-muted-foreground font-medium">Health Factor</span>
+                            <span className="text-[10px] md:text-xs text-muted-foreground font-medium">Health Factor</span>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-white/40">{(currentHF > 5 ? 5.0 : currentHF).toFixed(2)}</span>
-                                <ArrowRight className="w-3 h-3 text-muted-foreground/30" />
+                                <span className="text-[10px] md:text-xs font-bold text-white/40">{(currentHF > 5 ? 5.0 : currentHF).toFixed(2)}</span>
+                                <ArrowRight className="w-2.5 h-2.5 md:w-3 md:h-3 text-muted-foreground/30" />
                                 <span className={cn(
-                                    "text-sm font-bold",
+                                    "text-xs md:text-sm font-bold",
                                     newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]"
                                 )}>
                                     {newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}
@@ -432,16 +432,16 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                             </div>
                         )}
 
-                        <div className="flex justify-between w-full text-xs items-center pt-1 border-t border-white/5">
+                        <div className="flex justify-between w-full text-[10px] md:text-xs items-center pt-1 border-t border-white/5">
                             <span className="text-muted-foreground">Borrow APY</span>
                             <span className="text-red-400 font-mono font-bold">-{borrowApy.toFixed(2)}%</span>
                         </div>
                     </div>
 
                     {isRisky && amountUSD > 0 && (
-                        <div className="flex items-start gap-2 mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                            <ShieldAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                            <div className="text-[11px] text-red-200">
+                        <div className="flex items-start gap-2 mb-4 p-2 md:p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                            <ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500 shrink-0 mt-0.5" />
+                            <div className="text-[10px] md:text-[11px] text-red-200">
                                 This borrow amount will put your position at high risk of liquidation.
                                 Consider a smaller amount or more collateral.
                             </div>
@@ -452,8 +452,8 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                     <Button
                         onClick={handleAction}
                         disabled={isButtonDisabled}
-                        className={`w-full h-14 text-lg font-bold rounded-xl relative overflow-hidden transition-all ${step === 'success' ? 'bg-emerald-500 hover:bg-emerald-500' :
-                            activeTab === 'borrow' ? 'bg-blue-500 hover:bg-blue-600 text-white' :
+                        className={`w-full h-12 md:h-14 text-base md:text-lg font-bold rounded-xl md:rounded-2xl relative overflow-hidden transition-all ${step === 'success' ? 'bg-emerald-500 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' :
+                            activeTab === 'borrow' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_20px_rgba(37,99,235,0.2)]' :
                                 'bg-white hover:bg-gray-200 text-black'
                             }`}
                     >
