@@ -82,7 +82,9 @@ export function EarnTable() {
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                    {/* Removed "Earn" Badge as requested */}
+                    <button className="px-4 py-1.5 rounded-full bg-[#1A1A1E] text-white text-sm font-medium border border-emerald-500/20 text-emerald-400">
+                        Earn
+                    </button>
                 </div>
                 <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
                     <button
