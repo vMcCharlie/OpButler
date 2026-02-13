@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Loader2, Check, ArrowUpDown, AlertTriangle, Shield, ExternalLink } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts, useBalance } from "wagmi";
 import { parseUnits, formatUnits, maxUint256 } from "viem";
@@ -12,6 +13,7 @@ import {
     VENUS_VTOKENS, VTOKEN_ABI, VBNB_ABI, ERC20_ABI,
     KINZA_POOL, KINZA_POOL_ABI,
     RADIANT_LENDING_POOL, RADIANT_POOL_ABI,
+    WETH_GATEWAY_ABI, KINZA_GATEWAY, RADIANT_GATEWAY,
     getUnderlyingAddress, getApprovalTarget,
 } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
@@ -33,6 +35,7 @@ interface EarnModalProps {
 }
 
 export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
+    const { toast } = useToast();
     const { address, isConnected } = useAccount();
     const { openConnectModal } = useConnectModal();
     const [amount, setAmount] = useState("");
@@ -189,7 +192,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         } else if (isConfirming || isPending) {
             if (step !== 'approving') setStep("mining");
         }
-    }, [isConfirmed, isConfirming, isPending]);
+    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant]);
 
     // =========================================================================
     //                      DEPOSIT / WITHDRAW HANDLERS
@@ -205,73 +208,108 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         try {
             if (activeTab === 'deposit') {
                 // --- Check approval first (ERC20 only) ---
-                if (!isNative && underlyingAddress && approvalTarget) {
-                    const allowance = currentAllowance || BigInt(0);
-                    if (allowance < amountBig) {
-                        setStep('approving');
-                        writeContract({
-                            address: underlyingAddress,
-                            abi: ERC20_ABI,
-                            functionName: 'approve',
-                            args: [approvalTarget, maxUint256]
-                        });
-                        return;
-                    }
-                }
+                const needsApproval = !isNative && underlyingAddress && approvalTarget && (currentAllowance || BigInt(0)) < amountBig;
 
-                // --- DEPOSIT ---
                 if (isVenus) {
                     if (isNative && vTokenAddress) {
+                        // Venus Native Mint (BNB)
                         writeContract({ address: vTokenAddress, abi: VBNB_ABI, functionName: 'mint', value: amountBig });
-                    } else if (vTokenAddress) {
-                        writeContract({ address: vTokenAddress, abi: VTOKEN_ABI, functionName: 'mint', args: [amountBig] });
+                    } else if (!isNative && vTokenAddress) {
+                        // Venus ERC20 Mint
+                        if (needsApproval) {
+                            setStep('approving');
+                            writeContract({ address: underlyingAddress, abi: ERC20_ABI, functionName: 'approve', args: [approvalTarget!, maxUint256] });
+                        } else {
+                            writeContract({ address: vTokenAddress, abi: VTOKEN_ABI, functionName: 'mint', args: [amountBig] });
+                        }
                     }
-                } else if (isKinza && address) {
-                    const assetAddr = isNative ? '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}` : underlyingAddress!;
-                    writeContract({
-                        address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'supply',
-                        args: [assetAddr, amountBig, address, 0]
-                    });
-                } else if (isRadiant && address) {
-                    const assetAddr = isNative ? '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}` : underlyingAddress!;
-                    writeContract({
-                        address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'deposit',
-                        args: [assetAddr, amountBig, address, 0]
-                    });
+                } else if (isKinza || isRadiant) {
+                    const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
+
+                    if (isNative) {
+                        // Kinza/Radiant Native Deposit (BNB) via Gateway
+                        const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
+                        if (gatewayAddress) {
+                            writeContract({
+                                address: gatewayAddress,
+                                abi: WETH_GATEWAY_ABI,
+                                functionName: 'depositETH',
+                                args: [poolAddress, address, 0],
+                                value: amountBig
+                            });
+                        }
+                    } else {
+                        // Kinza/Radiant ERC20 Supply
+                        if (needsApproval) {
+                            setStep('approving');
+                            writeContract({ address: underlyingAddress, abi: ERC20_ABI, functionName: 'approve', args: [approvalTarget!, amountBig] });
+                        } else {
+                            if (isKinza) {
+                                writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'supply', args: [underlyingAddress!, amountBig, address, 0] });
+                            } else {
+                                writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'deposit', args: [underlyingAddress!, amountBig, address, 0] });
+                            }
+                        }
+                    }
                 }
-            } else {
+            } else { // activeTab === 'withdraw'
                 // --- WITHDRAW ---
                 if (isVenus) {
                     if (vTokenAddress) {
+                        // Check collateral impact...
+                        const collateralInfo = collateral as any; // Cast to avoid type error if needed, or use specific type
+                        if (collateralInfo?.isCollateral && maxWithdrawable && parseFloat(amount) > maxWithdrawable) {
+                            toast({
+                                title: "Cannot Withdraw",
+                                description: "This withdrawal would put your account underwater. Repay some debt first.",
+                                variant: "destructive"
+                            });
+                            setStep('idle');
+                            return;
+                        }
+
                         if (isNative) {
                             writeContract({ address: vTokenAddress, abi: VBNB_ABI, functionName: 'redeemUnderlying', args: [amountBig] });
                         } else {
                             writeContract({ address: vTokenAddress, abi: VTOKEN_ABI, functionName: 'redeemUnderlying', args: [amountBig] });
                         }
                     }
-                } else if (isKinza && address) {
-                    const assetAddr = isNative ? '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}` : underlyingAddress!;
-                    writeContract({
-                        address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'withdraw',
-                        args: [assetAddr, amountBig, address]
-                    });
-                } else if (isRadiant && address) {
-                    const assetAddr = isNative ? '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}` : underlyingAddress!;
-                    writeContract({
-                        address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'withdraw',
-                        args: [assetAddr, amountBig, address]
-                    });
+                } else if (isKinza || isRadiant) {
+                    const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
+
+                    if (isNative) {
+                        // Native Withdraw via Gateway
+                        const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
+                        if (gatewayAddress) {
+                            writeContract({
+                                address: gatewayAddress,
+                                abi: WETH_GATEWAY_ABI,
+                                functionName: 'withdrawETH',
+                                args: [poolAddress, amountBig, address]
+                            });
+                        }
+                    } else {
+                        // ERC20 Withdraw
+                        if (isKinza) {
+                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress, amountBig, address] });
+                        } else {
+                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress, amountBig, address] });
+                        }
+                    }
                 }
             }
         } catch (e) {
             console.error(e);
         }
-    }, [amount, activeTab, isConnected, isNative, isVenus, isKinza, isRadiant, address, vTokenAddress, underlyingAddress, approvalTarget, currentAllowance, decimals]);
+    }, [amount, activeTab, isConnected, isNative, isVenus, isKinza, isRadiant, address, vTokenAddress, underlyingAddress, approvalTarget, currentAllowance, decimals, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant]);
 
     // =========================================================================
     //                           MAX / HALF
     // =========================================================================
-    const isWithdrawBlocked = activeTab === 'withdraw' && isVenus && collateral.isCollateral && collateral.borrowBalance > 0;
+    // =========================================================================
+    //                           MAX / HALF
+    // =========================================================================
+    const isWithdrawBlocked = activeTab === 'withdraw' && isVenus && (collateral as any)?.isCollateral && (collateral as any)?.borrowBalance > 0;
     const maxWithdrawable = isVenus && collateral.isCollateral ? collateral.maxWithdrawable : depositedAmount;
 
     const setHalf = () => {

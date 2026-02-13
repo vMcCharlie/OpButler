@@ -12,6 +12,7 @@ import {
     VENUS_VTOKENS, VTOKEN_ABI, VBNB_ABI, ERC20_ABI,
     KINZA_POOL, KINZA_POOL_ABI,
     RADIANT_LENDING_POOL, RADIANT_POOL_ABI,
+    WETH_GATEWAY_ABI, KINZA_GATEWAY, RADIANT_GATEWAY,
     getUnderlyingAddress, getApprovalTarget,
 } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
@@ -145,22 +146,34 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                     } else {
                         writeContract({ address: vTokenAddress, abi: VTOKEN_ABI, functionName: 'borrow', args: [amountBig] });
                     }
-                } else if (isKinza && address) {
-                    const assetAddr = isNative ? wbnbAddress : underlyingAddress!;
-                    writeContract({
-                        address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'borrow',
-                        args: [assetAddr, amountBig, BigInt(2), 0, address]
-                    });
-                } else if (isRadiant && address) {
-                    const assetAddr = isNative ? wbnbAddress : underlyingAddress!;
-                    writeContract({
-                        address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'borrow',
-                        args: [assetAddr, amountBig, BigInt(2), 0, address]
-                    });
+                } else if (isKinza || isRadiant) {
+                    const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
+
+                    if (isNative) {
+                        // Native Borrow via Gateway
+                        const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
+                        if (gatewayAddress) {
+                            writeContract({
+                                address: gatewayAddress,
+                                abi: WETH_GATEWAY_ABI,
+                                functionName: 'borrowETH',
+                                args: [poolAddress, amountBig, BigInt(2), 0]
+                            });
+                        }
+                    } else {
+                        // ERC20 Borrow
+                        const abi = isKinza ? KINZA_POOL_ABI : RADIANT_POOL_ABI;
+                        if (isKinza) {
+                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'borrow', args: [underlyingAddress, amountBig, BigInt(2), 0, address] });
+                        } else {
+                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'borrow', args: [underlyingAddress, amountBig, BigInt(2), 0, address] });
+                        }
+                    }
                 }
             } else {
                 // --- REPAY ---
                 // Check approval first (ERC20 only)
+                // Note: repayETH is payable, so no approval needed for the repayer (user).
                 if (!isNative && underlyingAddress && approvalTarget) {
                     const allowance = currentAllowance || BigInt(0);
                     if (allowance < amountBig) {
@@ -181,18 +194,30 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                     } else {
                         writeContract({ address: vTokenAddress, abi: VTOKEN_ABI, functionName: 'repayBorrow', args: [amountBig] });
                     }
-                } else if (isKinza && address) {
-                    const assetAddr = isNative ? wbnbAddress : underlyingAddress!;
-                    writeContract({
-                        address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'repay',
-                        args: [assetAddr, amountBig, BigInt(2), address]
-                    });
-                } else if (isRadiant && address) {
-                    const assetAddr = isNative ? wbnbAddress : underlyingAddress!;
-                    writeContract({
-                        address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'repay',
-                        args: [assetAddr, amountBig, BigInt(2), address]
-                    });
+                } else if (isKinza || isRadiant) {
+                    const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
+
+                    if (isNative) {
+                        // Native Repay via Gateway
+                        const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
+                        if (gatewayAddress) {
+                            writeContract({
+                                address: gatewayAddress,
+                                abi: WETH_GATEWAY_ABI,
+                                functionName: 'repayETH',
+                                args: [poolAddress, amountBig, BigInt(2), address],
+                                value: amountBig
+                            });
+                        }
+                    } else {
+                        // ERC20 Repay
+                        const assetAddr = underlyingAddress!;
+                        if (isKinza) {
+                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'repay', args: [assetAddr, amountBig, BigInt(2), address] });
+                        } else {
+                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'repay', args: [assetAddr, amountBig, BigInt(2), address] });
+                        }
+                    }
                 }
             }
         } catch (e) {

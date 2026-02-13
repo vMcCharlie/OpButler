@@ -179,5 +179,19 @@ export const RADIANT_POOL_ABI = parseAbi([
     'function repay(address asset, uint256 amount, uint256 rateMode, address onBehalfOf) returns (uint256)',
 ]);
 
+// WETH Gateway ABI (for native BNB deposits/withdrawals on Kinza/Radiant)
+export const WETH_GATEWAY_ABI = parseAbi([
+    'function depositETH(address lendingPool, address onBehalfOf, uint16 referralCode) payable',
+    'function withdrawETH(address lendingPool, uint256 amount, address to)',
+    'function borrowETH(address lendingPool, uint256 amount, uint256 interestRateMode, uint16 referralCode)',
+    'function repayETH(address lendingPool, uint256 amount, uint256 rateMode, address onBehalfOf) payable',
+]);
+
+// Kinza WrappedTokenGatewayV3 (BSC)
+export const KINZA_GATEWAY = '0x8241cb5b0c83971E9d5FBF2efA10ecEfd9c8EA82' as `0x${string}`;
+
+// Radiant WETHGateway (BSC)
+export const RADIANT_GATEWAY = '0xD0FC69Dc0e720d5be669E53b7B5015F6FC258Ac9' as `0x${string}`;
+
 // Legacy generic alias
 export const LENDING_POOL_ABI = KINZA_POOL_ABI;
