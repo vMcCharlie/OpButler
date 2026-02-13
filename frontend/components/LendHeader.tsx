@@ -2,9 +2,11 @@
 
 import { useMemo, useEffect, useRef } from 'react';
 import { useYields } from "@/hooks/useYields";
+import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 import { motion, useMotionValue, useInView, animate } from 'framer-motion';
-import { cn } from '@/lib/utils'; // Assuming cn exists, else remove
-import Image from 'next/image'; // If we want to add an icon or logo similar to the Jupiter reference
+import { cn, formatMoney } from '@/lib/utils';
+import Image from 'next/image';
+import { Wallet, ShieldCheck, Zap } from 'lucide-react';
 
 function Counter({ value, prefix = '', suffix = '' }: { value: number, prefix?: string, suffix?: string }) {
     const ref = useRef<HTMLSpanElement>(null);
@@ -46,6 +48,12 @@ function Counter({ value, prefix = '', suffix = '' }: { value: number, prefix?: 
 
 export function LendHeader() {
     const { data: yields } = useYields();
+    const { totalBorrowPowerUSD, totalDebtUSD, venus, kinza, radiant, isLoading } = useAggregatedHealth();
+
+    // The user wants a 5% safety margin: Max Safe = Power * 0.95
+    const maxSafeBorrowPower = totalBorrowPowerUSD * 0.95;
+    const utilization = maxSafeBorrowPower > 0 ? (totalDebtUSD / maxSafeBorrowPower) * 100 : 0;
+    const isUtilizationHigh = utilization > 80;
 
     const metrics = useMemo(() => {
         if (!yields) return { totalSupply: 0, totalAvailable: 0, totalBorrowed: 0 };
@@ -126,6 +134,54 @@ export function LendHeader() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Utilization Bar */}
+                    {!isLoading && totalBorrowPowerUSD > 0 && (
+                        <div className="w-full max-w-2xl mt-8 px-4">
+                            <div className="flex justify-between items-end mb-2">
+                                <div className="flex flex-col items-start text-xs font-bold uppercase tracking-wider">
+                                    <span className="text-muted-foreground mb-1">Total Borrow Power</span>
+                                    <span className="text-white text-lg">
+                                        {formatMoney(maxSafeBorrowPower)}
+                                        <span className="text-[10px] text-muted-foreground ml-1">(Safe Max)</span>
+                                    </span>
+                                </div>
+                                <div className="flex flex-col items-end text-xs font-bold uppercase tracking-wider">
+                                    <span className="text-muted-foreground mb-1">Utilization</span>
+                                    <span className={cn("text-lg", isUtilizationHigh ? "text-red-400" : "text-[#CEFF00]")}>
+                                        {utilization.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 p-[1px]">
+                                <motion.div
+                                    className={cn(
+                                        "h-full rounded-full bg-gradient-to-r",
+                                        isUtilizationHigh ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400"
+                                    )}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(utilization, 100)}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                />
+                            </div>
+
+                            <div className="flex justify-between mt-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground gap-4">
+                                <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#F0B90B]" />
+                                    <span>Venus: {formatMoney(venus.borrowPowerUSD * 0.95)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
+                                    <span>Kinza: {formatMoney(kinza.borrowPowerUSD * 0.95)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#A855F7]" />
+                                    <span>Radiant: {formatMoney(radiant.borrowPowerUSD * 0.95)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

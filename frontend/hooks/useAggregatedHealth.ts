@@ -12,10 +12,14 @@ const RADIANT_POOL = getAddress('0xccf31d54c3a94f67b8ceff8dd771de5846da032c'); /
 const VENUS_COMPTROLLER_ABI = parseAbi([
     'function getAccountLiquidity(address account) view returns (uint256, uint256, uint256)',
     'function getAllMarkets() view returns (address[])',
+    'function getAssetsIn(address account) view returns (address[])',
+    'function markets(address vToken) view returns (bool, uint256, bool)',
 ]);
 
 const VTOKEN_ABI = parseAbi([
     'function borrowBalanceStored(address account) view returns (uint256)',
+    'function balanceOf(address owner) view returns (uint256)',
+    'function exchangeRateStored() view returns (uint256)',
     'function symbol() view returns (string)',
 ]);
 
@@ -28,6 +32,8 @@ export interface ProtocolHealth {
     isHealthy: boolean;       // HF > 1.2
     status: 'safe' | 'warning' | 'danger' | 'inactive';
     hasPositions: boolean;
+    borrowPowerUSD: number;
+    debtUSD: number;
 }
 
 export function useAggregatedHealth(targetAddress?: string) {
@@ -64,9 +70,18 @@ export function useAggregatedHealth(targetAddress?: string) {
                 functionName: 'getUserAccountData',
                 args: address ? [address as `0x${string}`] : undefined,
             },
+            {
+                address: VENUS_COMPTROLLER,
+                abi: VENUS_COMPTROLLER_ABI,
+                functionName: 'getAssetsIn',
+                args: address ? [address as `0x${string}`] : undefined,
+            },
             ...(address && venusMarkets ? (venusMarkets as string[]).flatMap(m => [
                 { address: m as `0x${string}`, abi: VTOKEN_ABI, functionName: 'borrowBalanceStored', args: [address] },
-                { address: m as `0x${string}`, abi: VTOKEN_ABI, functionName: 'symbol' }
+                { address: m as `0x${string}`, abi: VTOKEN_ABI, functionName: 'balanceOf', args: [address] },
+                { address: m as `0x${string}`, abi: VTOKEN_ABI, functionName: 'exchangeRateStored' },
+                { address: m as `0x${string}`, abi: VTOKEN_ABI, functionName: 'symbol' },
+                { address: VENUS_COMPTROLLER, abi: VENUS_COMPTROLLER_ABI, functionName: 'markets', args: [m as `0x${string}`] }
             ]) : [])
         ] as any[],
         query: {
@@ -83,10 +98,13 @@ export function useAggregatedHealth(targetAddress?: string) {
             kinza: defaultHealth,
             radiant: defaultHealth,
             overallScore: 10,
+            totalBorrowPowerUSD: 0,
+            totalDebtUSD: 0,
             isLoading: true
         };
 
-        const [venusLiqRes, kinzaRes, radiantRes, ...venusDebtData] = data;
+        const [venusLiqRes, kinzaRes, radiantRes, assetsInRes, ...markerData] = data;
+        const enteredMarkets = assetsInRes.status === 'success' ? (assetsInRes.result as string[]).map(m => m.toLowerCase()) : [];
 
         // --- Venus ---
         let venus: ProtocolHealth = { ...defaultHealth };
@@ -95,21 +113,41 @@ export function useAggregatedHealth(targetAddress?: string) {
             const liq = parseFloat(formatUnits(liquidity, 18));
             const sf = parseFloat(formatUnits(shortfall, 18));
 
-            // Calculate Total Debt for Venus HF
+            // Calculate Total Debt and Borrow Power for Venus
             let totalBorrowUSD = 0;
+            let totalBorrowPowerUSD = 0;
             if (venusMarkets) {
                 for (let i = 0; i < (venusMarkets as string[]).length; i++) {
-                    const borRes = venusDebtData[i * 2];
-                    const symRes = venusDebtData[i * 2 + 1];
+                    const mAddr = (venusMarkets as string[])[i].toLowerCase();
+                    const baseIdx = i * 5;
+                    const borRes = markerData[baseIdx];
+                    const balRes = markerData[baseIdx + 1];
+                    const exRes = markerData[baseIdx + 2];
+                    const symRes = markerData[baseIdx + 3];
+                    const mktRes = markerData[baseIdx + 4];
+
                     if (borRes?.status === 'success' && symRes?.status === 'success') {
                         const borrowBal = borRes.result as bigint;
                         const vSymbol = symRes.result as string;
+                        let symbol = vSymbol.startsWith('v') ? vSymbol.slice(1) : vSymbol;
+                        if (symbol === 'BTC') symbol = 'BTCB';
+                        if (symbol === 'WBNB') symbol = 'BNB';
+                        const price = prices.getPrice(symbol);
+
                         if (borrowBal > 0) {
-                            let symbol = vSymbol.startsWith('v') ? vSymbol.slice(1) : vSymbol;
-                            if (symbol === 'BTC') symbol = 'BTCB';
-                            if (symbol === 'WBNB') symbol = 'BNB';
-                            const price = prices.getPrice(symbol);
                             totalBorrowUSD += parseFloat(formatUnits(borrowBal, 18)) * price;
+                        }
+
+                        // Calculate Borrow Power
+                        if (enteredMarkets.includes(mAddr) && balRes?.status === 'success' && exRes?.status === 'success' && mktRes?.status === 'success') {
+                            const vBal = balRes.result as bigint;
+                            const exRate = exRes.result as bigint;
+                            const mktInfo = mktRes.result as [boolean, bigint, boolean];
+                            const ltv = parseFloat(formatUnits(mktInfo[1], 18));
+
+                            const supplyUnderlying = (vBal * exRate) / BigInt(1e18);
+                            const supplyUSD = parseFloat(formatUnits(supplyUnderlying, 18)) * price;
+                            totalBorrowPowerUSD += supplyUSD * ltv;
                         }
                     }
                 }
@@ -135,7 +173,9 @@ export function useAggregatedHealth(targetAddress?: string) {
                     healthFactor: hf,
                     isHealthy: sf === 0 && hf > 1.2,
                     status: sf > 0 ? 'danger' : (hf < 1.3 ? 'warning' : 'safe'),
-                    hasPositions
+                    hasPositions,
+                    borrowPowerUSD: totalBorrowPowerUSD,
+                    debtUSD: totalBorrowUSD
                 };
             }
         }
@@ -154,7 +194,9 @@ export function useAggregatedHealth(targetAddress?: string) {
                     healthFactor: hfRaw,
                     isHealthy: hfRaw > 1.2,
                     status: hfRaw > 1.5 ? 'safe' : (hfRaw > 1.0 ? 'warning' : 'danger'),
-                    hasPositions
+                    hasPositions,
+                    borrowPowerUSD: Number(result[0]) / 1e8 * (Number(result[4]) / 10000),
+                    debtUSD: totalDebt
                 };
             }
         }
@@ -173,7 +215,9 @@ export function useAggregatedHealth(targetAddress?: string) {
                     healthFactor: hfRaw,
                     isHealthy: hfRaw > 1.2,
                     status: hfRaw > 1.5 ? 'safe' : (hfRaw > 1.0 ? 'warning' : 'danger'),
-                    hasPositions
+                    hasPositions,
+                    borrowPowerUSD: Number(result[0]) / 1e8 * (Number(result[4]) / 10000),
+                    debtUSD: Number(result[1]) / 1e8
                 };
             }
         }
@@ -187,11 +231,17 @@ export function useAggregatedHealth(targetAddress?: string) {
             overallScore = Math.round(overallScore * 10) / 10;
         }
 
+        // Total Aggrs
+        const totalBorrowPowerUSD = (venus.borrowPowerUSD || 0) + (kinza.borrowPowerUSD || 0) + (radiant.borrowPowerUSD || 0);
+        const totalDebtUSD = (venus.debtUSD || 0) + (kinza.debtUSD || 0) + (radiant.debtUSD || 0);
+
         return {
             venus,
             kinza,
             radiant,
             overallScore,
+            totalBorrowPowerUSD,
+            totalDebtUSD,
             isLoading: false,
             refetch
         };

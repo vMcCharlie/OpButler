@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { Loader2, Check, ArrowUpDown, AlertTriangle } from "lucide-react";
+import { Loader2, Check, ArrowUpDown, AlertTriangle, ShieldAlert, ArrowRight, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useBalance } from "wagmi";
 import { parseUnits, formatUnits, maxUint256 } from "viem";
@@ -16,11 +16,12 @@ import {
     getUnderlyingAddress, getApprovalTarget,
 } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { formatMoney, formatSmallNumber, getTokenDecimals, toPlainString } from "@/lib/utils";
+import { formatMoney, formatSmallNumber, getTokenDecimals, toPlainString, cn } from "@/lib/utils";
 import { useTokenPrices } from "@/hooks/useTokenPrices";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
+import { useToast } from "@/components/ui/use-toast";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 
 interface BorrowModalProps {
@@ -59,6 +60,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     // Prices
     const { data: prices } = useTokenPrices();
     const tokenPrice = prices ? prices.getPrice(pool.symbol) : 0;
+    const price = tokenPrice; // Alias for clarity
 
     // Portfolio data for borrowed amount
     const { positions: venusPositions = [], refetch: refetchVenus } = useVenusPortfolio();
@@ -113,7 +115,36 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
     });
 
     // Aggregated health for dashboard/portfolio sync
-    const { refetch: refetchHealth } = useAggregatedHealth();
+    const { venus, kinza, radiant, totalBorrowPowerUSD, totalDebtUSD, isLoading: isHealthLoading, refetch: refetchHealth } = useAggregatedHealth();
+
+    const activeHealth = isVenus ? venus : isKinza ? kinza : radiant;
+    const protocolDebt = activeHealth.debtUSD;
+    const protocolPower = activeHealth.borrowPowerUSD;
+
+    // Predicted Health Factor
+    const amountUSD = (parseFloat(amount) || 0) * price;
+    const currentHF = activeHealth.healthFactor || 10;
+
+    const newHF = useMemo(() => {
+        if (!amountUSD || amountUSD <= 0) return currentHF;
+
+        let newDebt = protocolDebt;
+        if (activeTab === 'borrow') {
+            newDebt += amountUSD;
+        } else {
+            newDebt = Math.max(0, protocolDebt - amountUSD);
+        }
+
+        if (newDebt <= 0) return 10; // Capped as safe
+        return protocolPower / newDebt;
+    }, [activeTab, protocolDebt, protocolPower, amountUSD, currentHF]);
+
+    const isRisky = newHF < 1.1;
+    const isWarning = newHF < 1.5;
+
+    // Safety Max (95% of protocol capacity)
+    const safeMaxUSD = (protocolPower * 0.95) - protocolDebt;
+    const safeMaxAmount = Math.max(0, safeMaxUSD / price);
 
     // Transaction hooks
     const { writeContract, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract();
@@ -138,7 +169,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
         } else if (isConfirming || isPending) {
             if (step !== 'approving') setStep("mining");
         }
-    }, [isConfirmed, isConfirming, isPending]);
+    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant, refetchNative, refetchToken, refetchHealth]);
 
     const handleAction = useCallback(() => {
         if (!isConnected) { openConnectModal?.(); return; }
@@ -147,7 +178,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
         if (amountNum <= 0) return;
 
         const amountBig = parseUnits(amount, decimals);
-        const wbnbAddress = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}`;
+        // const wbnbAddress = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}`; // Not used
 
         try {
             if (activeTab === 'borrow') {
@@ -174,7 +205,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                         }
                     } else {
                         // ERC20 Borrow
-                        const abi = isKinza ? KINZA_POOL_ABI : RADIANT_POOL_ABI;
+                        // const abi = isKinza ? KINZA_POOL_ABI : RADIANT_POOL_ABI; // Not used directly here
                         if (isKinza) {
                             writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'borrow', args: [underlyingAddress!, amountBig, BigInt(2), 0, address!] });
                         } else {
@@ -235,7 +266,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
         } catch (e) {
             console.error(e);
         }
-    }, [amount, activeTab, isConnected, isNative, isVenus, isKinza, isRadiant, address, vTokenAddress, underlyingAddress, approvalTarget, currentAllowance, decimals]);
+    }, [amount, activeTab, isConnected, isNative, isVenus, isKinza, isRadiant, address, vTokenAddress, underlyingAddress, approvalTarget, currentAllowance, decimals, writeContract, openConnectModal]);
 
     // MAX / HALF
     const repayMax = Math.min(walletBalance, borrowedAmount);
@@ -336,6 +367,16 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                                         <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setMax}>MAX</button>
                                     </div>
                                 )}
+                                {activeTab === 'borrow' && (
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => setAmount(toPlainString(safeMaxAmount))}
+                                            className="text-[10px] text-[#CEFF00] font-bold border border-[#CEFF00]/30 px-2 py-0.5 rounded hover:bg-[#CEFF00]/10"
+                                        >
+                                            SAFE MAX
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -358,14 +399,54 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                         )}
                     </div>
 
-                    <div className="flex items-start gap-2 mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                        <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                        <div className="text-xs text-yellow-200">
-                            {activeTab === 'borrow'
-                                ? 'Ensure you manage your health factor. If it drops below 1.0, you may be liquidated.'
-                                : 'Repaying reduces your debt and improves your health factor.'}
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 space-y-3 mb-4">
+                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                            <span>Transaction Impact</span>
+                        </div>
+
+                        <div className="flex justify-between items-center w-full">
+                            <span className="text-xs text-muted-foreground font-medium">Health Factor</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-white/40">{(currentHF > 5 ? 5.0 : currentHF).toFixed(2)}</span>
+                                <ArrowRight className="w-3 h-3 text-muted-foreground/30" />
+                                <span className={cn(
+                                    "text-sm font-bold",
+                                    newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]"
+                                )}>
+                                    {newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {(amountUSD > 0) && (
+                            <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                <motion.div
+                                    className={cn(
+                                        "h-full bg-gradient-to-r",
+                                        newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400"
+                                    )}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }}
+                                    transition={{ duration: 0.5 }}
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex justify-between w-full text-xs items-center pt-1 border-t border-white/5">
+                            <span className="text-muted-foreground">Borrow APY</span>
+                            <span className="text-red-400 font-mono font-bold">-{borrowApy.toFixed(2)}%</span>
                         </div>
                     </div>
+
+                    {isRisky && amountUSD > 0 && (
+                        <div className="flex items-start gap-2 mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                            <ShieldAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                            <div className="text-[11px] text-red-200">
+                                This borrow amount will put your position at high risk of liquidation.
+                                Consider a smaller amount or more collateral.
+                            </div>
+                        </div>
+                    )}
 
                     {/* Action Button */}
                     <Button

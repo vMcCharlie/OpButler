@@ -110,6 +110,7 @@ export function useKinzaPortfolio() {
                 );
                 const supplyAPY = assetConfig ? assetConfig.apy : 0;
                 const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
+                const ltv = assetConfig ? assetConfig.ltv : 0;
 
                 positions.push({
                     symbol,
@@ -119,7 +120,8 @@ export function useKinzaPortfolio() {
                     borrowUSD,
                     price,
                     apy: supplyAPY,
-                    borrowApy: borrowAPY
+                    borrowApy: borrowAPY,
+                    ltv
                 });
             }
         }

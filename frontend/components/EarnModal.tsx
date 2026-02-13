@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { Loader2, Check, ArrowUpDown, AlertTriangle, Shield, ExternalLink } from "lucide-react";
+import { Loader2, Check, ArrowUpDown, AlertTriangle, Shield, ExternalLink, ArrowRight, ShieldAlert } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts, useBalance } from "wagmi";
@@ -17,7 +17,7 @@ import {
     getUnderlyingAddress, getApprovalTarget,
 } from "@/lib/pool-config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { formatMoney, formatSmallNumber, getTokenDecimals, toPlainString } from "@/lib/utils";
+import { formatMoney, formatSmallNumber, getTokenDecimals, toPlainString, cn } from "@/lib/utils";
 import { useTokenPrices } from "@/hooks/useTokenPrices";
 import { useVenusCollateral } from "@/hooks/useVenusCollateral";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
@@ -32,6 +32,7 @@ interface EarnModalProps {
         tvlUsd: number;
         userDeposited?: number;
         userDepositedUSD?: number;
+        ltv?: number;
     };
 }
 
@@ -69,7 +70,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
     // =========================================================================
     //                       WALLET BALANCE
     // =========================================================================
-    const { data: nativeBalance, refetch: refetchNative } = useBalance({
+    const { data: balanceData, refetch: refetchBalance } = useBalance({
         address,
         query: { enabled: !!address && isNative }
     });
@@ -83,8 +84,8 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
     });
 
     let walletBalance = 0;
-    if (isNative && nativeBalance) {
-        walletBalance = parseFloat(nativeBalance.formatted);
+    if (isNative && balanceData) {
+        walletBalance = parseFloat(balanceData.formatted);
     } else if (tokenBalanceRaw) {
         walletBalance = parseFloat(formatUnits(tokenBalanceRaw, decimals));
     }
@@ -144,9 +145,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         if (venusData[0].status === 'success' && venusData[1].status === 'success') {
             const vBal = venusData[0].result as bigint;
             const exchangeRate = venusData[1].result as bigint;
-            // Venus exchange rate has 18 + underlyingDecimals - 8 precision
-            // For 18 decimal tokens: exchangeRate is scaled by 1e28
-            // underlying = vToken * exchangeRate / 1e18
             const rawUnderlying = (vBal * exchangeRate) / BigInt(1e18);
             depositedAmount = parseFloat(formatUnits(rawUnderlying, decimals));
         }
@@ -158,11 +156,48 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         depositedAmount = parseFloat(formatUnits(radiantATokenBalance, decimals));
     }
 
-    // Use passed-in value if our query returned 0 but parent had data
     if (depositedAmount === 0 && pool.userDeposited && pool.userDeposited > 0) {
         depositedAmount = pool.userDeposited;
     }
     depositedAmountUSD = depositedAmount * tokenPrice;
+
+    // =========================================================================
+    //                       HEALTH & SAFETY
+    // =========================================================================
+    const { venus, kinza, radiant, isLoading: isHealthLoading, refetch: refetchHealth } = useAggregatedHealth();
+    const activeHealth = isVenus ? venus : isKinza ? kinza : radiant;
+
+    const protocolDebt = activeHealth.debtUSD;
+    const protocolPowerUSD = activeHealth.borrowPowerUSD;
+    const assetLTV = pool.ltv || 0.7;
+
+    const safeWithdrawPower = Math.max(0, protocolPowerUSD - (protocolDebt / 0.95));
+    const safeMaxWithdrawAmount = assetLTV > 0 ? safeWithdrawPower / (assetLTV * tokenPrice) : depositedAmount;
+    const maxSafe = Math.min(depositedAmount, safeMaxWithdrawAmount);
+
+    const withdrawAmount = parseFloat(amount) || 0;
+    const withdrawUSD = withdrawAmount * tokenPrice;
+
+    const newHF = useMemo(() => {
+        if (!withdrawUSD && !amount) return activeHealth.healthFactor || 10;
+
+        const changeUSD = (parseFloat(amount) || 0) * tokenPrice;
+        if (changeUSD <= 0) return activeHealth.healthFactor || 10;
+
+        let newPower = protocolPowerUSD;
+        let newDebt = protocolDebt;
+
+        if (activeTab === 'deposit') {
+            newPower += changeUSD * assetLTV;
+        } else {
+            newPower = Math.max(0, protocolPowerUSD - (changeUSD * assetLTV));
+        }
+
+        if (newDebt <= 0) return 10;
+        return newPower / newDebt;
+    }, [activeTab, protocolPowerUSD, protocolDebt, amount, assetLTV, activeHealth.healthFactor, tokenPrice]);
+
+    const isRisky = newHF < 1.1;
 
     // =========================================================================
     //                      ALLOWANCE CHECK (for ERC20 approval)
@@ -175,32 +210,27 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         query: { enabled: !!address && !isNative && !!underlyingAddress && !!approvalTarget && activeTab === 'deposit' }
     });
 
-    // Aggregated health for dashboard/portfolio sync
-    const { refetch: refetchHealth } = useAggregatedHealth();
-
     // =========================================================================
     //                        TX STATE MACHINE
     // =========================================================================
     useEffect(() => {
         if (isConfirmed) {
             if (step === 'approving') {
-                // Approval succeeded — now do the actual deposit
                 setStep('idle');
                 refetchAllowance();
             } else {
                 setStep("success");
-                // Refresh all relevant state
                 refetchVenus?.();
                 refetchKinza?.();
                 refetchRadiant?.();
-                refetchNative?.();
+                refetchBalance?.();
                 refetchToken?.();
                 refetchHealth?.();
             }
         } else if (isConfirming || isPending) {
             if (step !== 'approving') setStep("mining");
         }
-    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant]);
+    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant, refetchBalance, refetchToken, refetchHealth]);
 
     // =========================================================================
     //                      DEPOSIT / WITHDRAW HANDLERS
@@ -215,15 +245,12 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
 
         try {
             if (activeTab === 'deposit') {
-                // --- Check approval first (ERC20 only) ---
                 const needsApproval = !isNative && underlyingAddress && approvalTarget && (currentAllowance || BigInt(0)) < amountBig;
 
                 if (isVenus) {
                     if (isNative && vTokenAddress) {
-                        // Venus Native Mint (BNB)
                         writeContract({ address: vTokenAddress, abi: VBNB_ABI, functionName: 'mint', value: amountBig });
                     } else if (!isNative && vTokenAddress) {
-                        // Venus ERC20 Mint
                         if (needsApproval) {
                             setStep('approving');
                             writeContract({ address: underlyingAddress, abi: ERC20_ABI, functionName: 'approve', args: [approvalTarget!, maxUint256] });
@@ -233,9 +260,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                     }
                 } else if (isKinza || isRadiant) {
                     const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
-
                     if (isNative) {
-                        // Kinza/Radiant Native Deposit (BNB) via Gateway
                         const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
                         if (gatewayAddress) {
                             writeContract({
@@ -247,7 +272,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                             });
                         }
                     } else {
-                        // Kinza/Radiant ERC20 Supply
                         if (needsApproval) {
                             setStep('approving');
                             writeContract({ address: underlyingAddress, abi: ERC20_ABI, functionName: 'approve', args: [approvalTarget!, amountBig] });
@@ -260,13 +284,10 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         }
                     }
                 }
-            } else { // activeTab === 'withdraw'
-                // --- WITHDRAW ---
+            } else {
                 if (isVenus) {
                     if (vTokenAddress) {
-                        // Check collateral impact...
-                        const collateralInfo = collateral as any; // Cast to avoid type error if needed, or use specific type
-                        if (collateralInfo?.isCollateral && maxWithdrawable && parseFloat(amount) > maxWithdrawable) {
+                        if (collateral?.isCollateral && parseFloat(amount) > (collateral.maxWithdrawable || 0)) {
                             toast({
                                 title: "Cannot Withdraw",
                                 description: "This withdrawal would put your account underwater. Repay some debt first.",
@@ -275,7 +296,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                             setStep('idle');
                             return;
                         }
-
                         if (isNative) {
                             writeContract({ address: vTokenAddress, abi: VBNB_ABI, functionName: 'redeemUnderlying', args: [amountBig] });
                         } else {
@@ -284,9 +304,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                     }
                 } else if (isKinza || isRadiant) {
                     const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
-
                     if (isNative) {
-                        // Native Withdraw via Gateway
                         const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
                         if (gatewayAddress) {
                             writeContract({
@@ -297,7 +315,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                             });
                         }
                     } else {
-                        // ERC20 Withdraw
                         if (isKinza) {
                             writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress!, amountBig, address!] });
                         } else {
@@ -309,19 +326,16 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
         } catch (e) {
             console.error(e);
         }
-    }, [amount, activeTab, isConnected, isNative, isVenus, isKinza, isRadiant, address, vTokenAddress, underlyingAddress, approvalTarget, currentAllowance, decimals, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant]);
+    }, [amount, activeTab, isConnected, isNative, isVenus, isKinza, isRadiant, address, vTokenAddress, underlyingAddress, approvalTarget, currentAllowance, decimals, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant, toast, collateral]);
 
     // =========================================================================
     //                           MAX / HALF
     // =========================================================================
-    // =========================================================================
-    //                           MAX / HALF
-    // =========================================================================
-    const isWithdrawBlocked = activeTab === 'withdraw' && isVenus && (collateral as any)?.isCollateral && (collateral as any)?.borrowBalance > 0;
-    const maxWithdrawable = isVenus && collateral.isCollateral ? collateral.maxWithdrawable : depositedAmount;
+    const isWithdrawBlocked = activeTab === 'withdraw' && isVenus && collateral.isCollateral && collateral.borrowBalance > 0 && collateral.maxWithdrawable === 0;
+    const maxWithdrawableAvailable = isVenus && collateral.isCollateral ? collateral.maxWithdrawable : depositedAmount;
 
     const setHalf = () => {
-        const base = activeTab === 'deposit' ? walletBalance : maxWithdrawable;
+        const base = activeTab === 'deposit' ? walletBalance : maxWithdrawableAvailable;
         setAmount(toPlainString(base / 2));
     };
     const setMax = () => {
@@ -329,22 +343,17 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
             const max = isNative && walletBalance > 0.01 ? walletBalance - 0.01 : walletBalance;
             setAmount(toPlainString(max));
         } else {
-            setAmount(toPlainString(maxWithdrawable));
+            setAmount(toPlainString(maxWithdrawableAvailable));
         }
     };
 
     const amountNum = parseFloat(amount || '0');
     const isButtonDisabled = !amount || amountNum <= 0 || step === 'mining' || step === 'approving' || step === 'success' || isWithdrawBlocked;
-
     const protocolDisplay = isVenus ? 'Venus' : isKinza ? 'Kinza' : isRadiant ? 'Radiant' : pool.project;
 
-    // =========================================================================
-    //                              UI
-    // =========================================================================
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-[420px] bg-[#09090b] border-white/10 text-white p-0 gap-0 overflow-hidden rounded-3xl">
-                {/* Header */}
                 <div className="p-6 pb-4">
                     <div className="flex items-center gap-3">
                         <AssetIcon symbol={pool.symbol} className="w-10 h-10" />
@@ -359,7 +368,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                     </div>
                 </div>
 
-                {/* Stats */}
                 <div className="px-6 mb-6">
                     <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 space-y-3">
                         <div className="grid grid-cols-2 gap-4">
@@ -384,20 +392,12 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                         )}
                                     </>
                                 )}
-                                {!isVenus && (
-                                    <>
-                                        <div className="text-[10px] uppercase text-muted-foreground font-bold mb-1">Protocol</div>
-                                        <div className="text-sm text-muted-foreground">{protocolDisplay}</div>
-                                    </>
-                                )}
                             </div>
                         </div>
-
                         <div className="h-[1px] bg-white/5" />
-
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">APY <ArrowUpDown className="w-3 h-3" /></span>
+                                <span className="text-xs text-muted-foreground">APY</span>
                                 <span className="text-emerald-400 font-bold font-mono text-sm bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
                                     {pool.apy.toFixed(2)}%
                                 </span>
@@ -410,26 +410,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                     </div>
                 </div>
 
-                {/* Debt warning (Venus collateral) */}
-                {activeTab === 'withdraw' && isWithdrawBlocked && (
-                    <div className="px-6 mb-4">
-                        <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                            <div>
-                                <div className="text-sm font-bold text-red-400 mb-1">Active Debt Prevents Withdrawal</div>
-                                <div className="text-xs text-red-300/80 mb-2">
-                                    This collateral backs a debt of {formatSmallNumber(collateral.borrowBalance)} ({formatMoney(collateral.borrowBalanceUSD)}).
-                                    Repay your debt first.
-                                </div>
-                                <a href="/lend/borrow" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold hover:bg-blue-500/30 transition-colors">
-                                    <ExternalLink className="w-3.5 h-3.5" />Go to Repay Debt
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Tabs */}
                 <div className="px-6 mb-4">
                     <div className="bg-[#121216] rounded-xl p-1 flex relative">
                         <motion.div
@@ -443,7 +423,6 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                     </div>
                 </div>
 
-                {/* Input */}
                 <div className="px-6 pb-6">
                     <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 mb-4">
                         <div className="flex justify-between text-xs text-muted-foreground mb-3 uppercase font-bold tracking-wider">
@@ -451,8 +430,16 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                             <div className="flex gap-2">
                                 <span>
                                     {activeTab === 'deposit' ? 'Wallet' : 'Available'}:{' '}
-                                    {formatSmallNumber(activeTab === 'deposit' ? walletBalance : maxWithdrawable)} {pool.symbol}
+                                    {formatSmallNumber(activeTab === 'deposit' ? walletBalance : maxWithdrawableAvailable)} {pool.symbol}
                                 </span>
+                                {activeTab === 'withdraw' && (
+                                    <button
+                                        onClick={() => setAmount(toPlainString(maxSafe))}
+                                        className="text-[10px] text-[#CEFF00] font-bold border border-[#CEFF00]/30 px-2 py-0.5 rounded hover:bg-[#CEFF00]/10"
+                                    >
+                                        SAFE MAX
+                                    </button>
+                                )}
                                 <div className="flex gap-1">
                                     <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setHalf}>HALF</button>
                                     <button className="text-[10px] bg-white/10 hover:bg-white/20 px-1.5 rounded transition-colors" onClick={setMax}>MAX</button>
@@ -468,27 +455,80 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                 type="number" placeholder="0.00"
                                 className="bg-transparent text-right text-2xl font-mono font-bold w-full outline-none placeholder:text-muted-foreground/30 text-white"
                                 value={amount} onChange={(e) => setAmount(e.target.value)}
-                                disabled={isWithdrawBlocked}
                             />
                         </div>
                         <div className="text-right text-xs text-muted-foreground mt-2">
                             ≈ {formatMoney(amountNum * tokenPrice)}
                         </div>
-
-                        {/* Write error display */}
-                        {writeError && step === 'idle' && (
-                            <div className="text-xs text-red-400 mt-2 flex items-center gap-1">
-                                <AlertTriangle className="w-3 h-3" />
-                                {writeError.message.slice(0, 100)}
-                            </div>
-                        )}
                     </div>
 
-                    {/* Action Button */}
+                    <div className="bg-[#121216] border border-white/5 rounded-2xl p-4 space-y-3 mb-4">
+                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                            <span>{activeTab === 'deposit' ? 'Asset Quality & Impact' : 'Transaction Impact'}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center w-full">
+                            <span className="text-xs text-muted-foreground font-medium">
+                                {activeTab === 'deposit' ? 'Collateral Buffer' : 'Health Factor'}
+                            </span>
+                            {activeTab === 'deposit' ? (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-[#CEFF00]">{((pool.ltv || 0) * 100).toFixed(0)}% LTV</span>
+                                    {(parseFloat(amount) || 0) > 0 && (
+                                        <>
+                                            <ArrowRight className="w-3 h-3 text-muted-foreground/30" />
+                                            <span className="text-xs font-bold text-white/60">HF: {newHF > 5 ? '> 5.0' : newHF.toFixed(2)}</span>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-white/40">{(activeHealth.healthFactor || 10) > 5 ? '5.0' : activeHealth.healthFactor.toFixed(2)}</span>
+                                    <ArrowRight className="w-3 h-3 text-muted-foreground/30" />
+                                    <span className={cn(
+                                        "text-sm font-bold",
+                                        newHF < 1.1 ? "text-red-400" : newHF < 1.5 ? "text-amber-400" : "text-[#CEFF00]"
+                                    )}>
+                                        {newHF > 5 ? '> 5.0' : (newHF || 0).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {((activeTab === 'withdraw' && withdrawUSD > 0) || (activeTab === 'deposit' && (parseFloat(amount) || 0) > 0)) && (
+                            <div className="relative h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                <motion.div
+                                    className={cn(
+                                        "h-full bg-gradient-to-r",
+                                        activeTab === 'deposit' ? "from-emerald-600 to-[#CEFF00]" : (newHF < 1.1 ? "from-red-500 to-orange-500" : "from-[#CEFF00] to-emerald-400")
+                                    )}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: activeTab === 'deposit' ? '100%' : `${Math.min(100, (1 / (newHF || 1)) * 100)}%` }}
+                                    transition={{ duration: 0.5 }}
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex justify-between w-full text-xs items-center pt-1 border-t border-white/5">
+                            <span className="text-muted-foreground">Earning APY</span>
+                            <span className="text-emerald-400 font-mono font-bold">{pool.apy.toFixed(2)}%</span>
+                        </div>
+                    </div>
+
+                    {isRisky && activeTab === 'withdraw' && (
+                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex gap-3 items-start mb-4">
+                            <ShieldAlert className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-[11px] text-red-200">
+                                Warning: This withdrawal will put your account at risk of liquidation.
+                                Repay some debt or leave more collateral to stay safe.
+                            </p>
+                        </div>
+                    )}
+
                     <Button
                         onClick={handleAction}
                         disabled={isButtonDisabled}
-                        className={`w-full h-14 text-lg font-bold rounded-xl relative overflow-hidden transition-all ${step === 'success' ? 'bg-emerald-500 hover:bg-emerald-500' :
+                        className={`w-full h-14 text-lg font-bold rounded-xl transition-all ${step === 'success' ? 'bg-emerald-500 hover:bg-emerald-500' :
                             activeTab === 'deposit' ? 'bg-[#CEFF00] hover:bg-[#b5e000] text-black' :
                                 'bg-white hover:bg-gray-200 text-black'
                             }`}
@@ -496,7 +536,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                         <AnimatePresence mode="wait">
                             {step === 'idle' && (
                                 <motion.span key="idle" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                                    {!isConnected ? 'Connect to Deposit' : isWithdrawBlocked ? '🔒 Repay Debt First' : activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}
+                                    {!isConnected ? 'Connect Wallet' : activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}
                                 </motion.span>
                             )}
                             {step === 'approving' && (

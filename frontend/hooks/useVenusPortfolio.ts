@@ -177,6 +177,7 @@ export function useVenusPortfolio() {
 
                 const supplyAPY = assetConfig ? assetConfig.apy : 0;
                 const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
+                const ltv = assetConfig ? assetConfig.ltv : 0;
 
                 const isCollateral = enteredMarkets.some(m => m.toLowerCase() === markets[i].toLowerCase());
 
@@ -190,7 +191,8 @@ export function useVenusPortfolio() {
                     borrowUSD,
                     price,
                     apy: supplyAPY,
-                    borrowApy: borrowAPY
+                    borrowApy: borrowAPY,
+                    ltv
                 });
             }
         }
