@@ -164,9 +164,9 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                         // ERC20 Borrow
                         const abi = isKinza ? KINZA_POOL_ABI : RADIANT_POOL_ABI;
                         if (isKinza) {
-                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'borrow', args: [underlyingAddress, amountBig, BigInt(2), 0, address] });
+                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'borrow', args: [underlyingAddress!, amountBig, BigInt(2), 0, address!] });
                         } else {
-                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'borrow', args: [underlyingAddress, amountBig, BigInt(2), 0, address] });
+                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'borrow', args: [underlyingAddress!, amountBig, BigInt(2), 0, address!] });
                         }
                     }
                 }
@@ -205,7 +205,7 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                                 address: gatewayAddress,
                                 abi: WETH_GATEWAY_ABI,
                                 functionName: 'repayETH',
-                                args: [poolAddress, amountBig, BigInt(2), address],
+                                args: [poolAddress, amountBig, BigInt(2), address!],
                                 value: amountBig
                             });
                         }
@@ -213,9 +213,9 @@ export function BorrowModal({ isOpen, onClose, pool }: BorrowModalProps) {
                         // ERC20 Repay
                         const assetAddr = underlyingAddress!;
                         if (isKinza) {
-                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'repay', args: [assetAddr, amountBig, BigInt(2), address] });
+                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'repay', args: [assetAddr, amountBig, BigInt(2), address!] });
                         } else {
-                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'repay', args: [assetAddr, amountBig, BigInt(2), address] });
+                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'repay', args: [assetAddr, amountBig, BigInt(2), address!] });
                         }
                     }
                 }

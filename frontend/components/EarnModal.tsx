@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Loader2, Check, ArrowUpDown, AlertTriangle, Shield, ExternalLink } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts, useBalance } from "wagmi";
 import { parseUnits, formatUnits, maxUint256 } from "viem";
@@ -234,7 +234,7 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                 address: gatewayAddress,
                                 abi: WETH_GATEWAY_ABI,
                                 functionName: 'depositETH',
-                                args: [poolAddress, address, 0],
+                                args: [poolAddress, address!, 0],
                                 value: amountBig
                             });
                         }
@@ -245,9 +245,9 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                             writeContract({ address: underlyingAddress, abi: ERC20_ABI, functionName: 'approve', args: [approvalTarget!, amountBig] });
                         } else {
                             if (isKinza) {
-                                writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'supply', args: [underlyingAddress!, amountBig, address, 0] });
+                                writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'supply', args: [underlyingAddress!, amountBig, address!, 0] });
                             } else {
-                                writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'deposit', args: [underlyingAddress!, amountBig, address, 0] });
+                                writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'deposit', args: [underlyingAddress!, amountBig, address!, 0] });
                             }
                         }
                     }
@@ -285,15 +285,15 @@ export function EarnModal({ isOpen, onClose, pool }: EarnModalProps) {
                                 address: gatewayAddress,
                                 abi: WETH_GATEWAY_ABI,
                                 functionName: 'withdrawETH',
-                                args: [poolAddress, amountBig, address]
+                                args: [poolAddress, amountBig, address!]
                             });
                         }
                     } else {
                         // ERC20 Withdraw
                         if (isKinza) {
-                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress, amountBig, address] });
+                            writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress!, amountBig, address!] });
                         } else {
-                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress, amountBig, address] });
+                            writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress!, amountBig, address!] });
                         }
                     }
                 }
