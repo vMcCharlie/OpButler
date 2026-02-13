@@ -190,68 +190,100 @@ export function Portfolio() {
             return <div className="p-4 text-center text-muted-foreground text-xs">No active positions found.</div>;
         }
         return (
-            <div className="bg-muted/30 p-4 rounded-b-lg border-t border-border animate-in slide-in-from-top-2">
+            <div className="bg-muted/30 p-2 md:p-4 rounded-b-lg border-t border-border animate-in slide-in-from-top-2">
                 <table className="w-full text-xs">
                     <thead>
                         <tr className="text-muted-foreground uppercase tracking-wider text-[10px] text-left">
                             <th className="pb-2 pl-2">Asset</th>
                             <th className="pb-2 text-right">APY</th>
-                            <th className="pb-2 text-center">Supplied</th>
-                            {protocolId === 'venus' && <th className="pb-2 text-center px-4">Collateral</th>}
-                            <th className="pb-2 text-right">Borrowed</th>
-                            <th className="pb-2 text-right">Value (USD)</th>
+                            {/* Position Column: Merged on mobile, separate on desktop */}
+                            <th className="pb-2 text-center md:hidden">Position</th>
+                            <th className="pb-2 text-center hidden md:table-cell">Supplied</th>
+                            {protocolId === 'venus' && <th className="pb-2 text-center px-1 md:px-4">Col. <span className="hidden md:inline">lateral</span></th>}
+                            <th className="pb-2 text-right hidden md:table-cell">Borrowed</th>
+                            <th className="pb-2 text-right hidden md:table-cell">Value (USD)</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {positions.map((pos, idx) => (
-                            <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                <td className="py-2 pl-2 font-bold flex items-center gap-2">
-                                    <AssetIcon symbol={pos.symbol} size={20} />
-                                    {pos.symbol}
-                                </td>
-                                <td className="py-2 text-right font-mono leading-tight">
-                                    {pos.apy > 0 && (
-                                        <div className="text-emerald-400">+{pos.apy.toFixed(2)}%</div>
-                                    )}
-                                    {pos.borrowApy > 0 && (
-                                        <div className="text-red-400">-{pos.borrowApy.toFixed(2)}%</div>
-                                    )}
-                                    {!(pos.apy > 0) && !(pos.borrowApy > 0) && (
-                                        <span className="text-muted-foreground/30">—</span>
-                                    )}
-                                </td>
-                                <td className="py-2 text-center">
-                                    <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
-                                    {pos.supplyUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>}
-                                </td>
-                                {protocolId === 'venus' && (
-                                    <td className="py-2 text-center px-4">
-                                        <div className="flex justify-center items-center">
-                                            {pos.supply > 0 ? (
-                                                togglingAssets[pos.vTokenAddress] ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                                ) : (
-                                                    <Switch
-                                                        checked={pos.isCollateral}
-                                                        onCheckedChange={() => handleCollateralToggle(pos.vTokenAddress, pos.symbol, pos.isCollateral)}
-                                                        disabled={togglingAssets[pos.vTokenAddress]}
-                                                    />
-                                                )
-                                            ) : (
-                                                <span className="text-muted-foreground/30 text-[10px]">—</span>
-                                            )}
+                        {positions.map((pos, idx) => {
+                            const netUSD = pos.supplyUSD - pos.borrowUSD;
+                            return (
+                                <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                    <td className="py-2 pl-2 font-bold">
+                                        <div className="flex items-center gap-2">
+                                            <AssetIcon symbol={pos.symbol} size={20} />
+                                            {pos.symbol}
+                                        </div>
+                                        {/* Mobile-only Net Value */}
+                                        <div className="md:hidden text-[10px] font-mono text-muted-foreground mt-0.5">
+                                            ${netUSD.toFixed(2)}
                                         </div>
                                     </td>
-                                )}
-                                <td className="py-2 text-right">
-                                    <div className="text-red-400">{pos.borrow > 0 ? pos.borrow.toFixed(4) : '-'}</div>
-                                    {pos.borrowUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>}
-                                </td>
-                                <td className="py-2 text-right font-mono text-muted-foreground">
-                                    ${(pos.supplyUSD - pos.borrowUSD).toFixed(2)}
-                                </td>
-                            </tr>
-                        ))}
+                                    <td className="py-2 text-right font-mono leading-tight">
+                                        {pos.apy > 0 && (
+                                            <div className="text-emerald-400">+{pos.apy.toFixed(2)}%</div>
+                                        )}
+                                        {pos.borrowApy > 0 && (
+                                            <div className="text-red-400">-{pos.borrowApy.toFixed(2)}%</div>
+                                        )}
+                                        {!(pos.apy > 0) && !(pos.borrowApy > 0) && (
+                                            <span className="text-muted-foreground/30">—</span>
+                                        )}
+                                    </td>
+
+                                    {/* Mobile/Stacked Position View */}
+                                    <td className="py-2 text-center md:hidden">
+                                        {pos.supply > 0 && (
+                                            <div className="mb-1">
+                                                <div className="text-emerald-500 font-medium">{pos.supply.toFixed(4)}</div>
+                                                <div className="text-[9px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>
+                                            </div>
+                                        )}
+                                        {pos.borrow > 0 && (
+                                            <div>
+                                                <div className="text-red-400 font-medium">{pos.borrow.toFixed(4)}</div>
+                                                <div className="text-[9px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>
+                                            </div>
+                                        )}
+                                        {pos.supply === 0 && pos.borrow === 0 && (
+                                            <span className="text-muted-foreground/30">—</span>
+                                        )}
+                                    </td>
+
+                                    {/* Desktop Separate Columns */}
+                                    <td className="py-2 text-center hidden md:table-cell">
+                                        <div className="text-emerald-500">{pos.supply > 0 ? pos.supply.toFixed(4) : '-'}</div>
+                                        {pos.supplyUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.supplyUSD.toFixed(2)}</div>}
+                                    </td>
+                                    {protocolId === 'venus' && (
+                                        <td className="py-2 text-center px-1 md:px-4">
+                                            <div className="flex justify-center items-center">
+                                                {pos.supply > 0 ? (
+                                                    togglingAssets[pos.vTokenAddress] ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                                    ) : (
+                                                        <Switch
+                                                            checked={pos.isCollateral}
+                                                            onCheckedChange={() => handleCollateralToggle(pos.vTokenAddress, pos.symbol, pos.isCollateral)}
+                                                            disabled={togglingAssets[pos.vTokenAddress]}
+                                                        />
+                                                    )
+                                                ) : (
+                                                    <span className="text-muted-foreground/30 text-[10px]">—</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
+                                    <td className="py-2 text-right hidden md:table-cell">
+                                        <div className="text-red-400">{pos.borrow > 0 ? pos.borrow.toFixed(4) : '-'}</div>
+                                        {pos.borrowUSD > 0 && <div className="text-[10px] text-muted-foreground">${pos.borrowUSD.toFixed(2)}</div>}
+                                    </td>
+                                    <td className="py-2 text-right font-mono text-muted-foreground hidden md:table-cell">
+                                        ${netUSD.toFixed(2)}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
