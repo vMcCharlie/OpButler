@@ -21,9 +21,9 @@ export function Navbar() {
 
     return (
         <nav className="fixed top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl shadow-lg shadow-black/5">
-            <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-8 md:px-16">
-                <Link href="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
-                    <div className="relative h-10 w-10 md:h-11 md:w-11">
+            <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-16">
+                <Link href="/" className="flex items-center gap-2 md:gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                    <div className="relative h-6 w-6 md:h-8 md:w-8">
                         <Image
                             src="/OpButler.png"
                             alt="OpButler Logo"
@@ -31,7 +31,7 @@ export function Navbar() {
                             className="object-contain"
                         />
                     </div>
-                    <span className="font-outfit font-bold text-xl md:text-2xl tracking-wide text-foreground drop-shadow-md">OpButler</span>
+                    <span className="font-outfit font-bold text-lg md:text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400 drop-shadow-sm">OpButler</span>
                 </Link>
 
                 {/* Desktop Navigation */}
