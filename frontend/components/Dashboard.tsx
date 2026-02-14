@@ -175,10 +175,7 @@ export function Dashboard() {
 
             {/* Main Content Area: Markets Only */}
             <Card className="col-span-full border-none shadow-none bg-transparent">
-                <div className="space-y-4">
-                    <h2 className="text-xl font-bold tracking-tight">Market Opportunities</h2>
-                    <Markets />
-                </div>
+                <Markets />
             </Card>
         </div>
     )

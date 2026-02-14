@@ -87,21 +87,21 @@ export function Markets() {
 
     return (
         <Card className="col-span-full border border-border bg-card">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <CardTitle>Market Opportunities</CardTitle>
-                    <CardDescription>Real-time lending & borrowing rates across BSC ecosystem.</CardDescription>
+                    <CardTitle className="text-xl md:text-2xl font-bold">Market Opportunities</CardTitle>
+                    <CardDescription className="text-sm md:text-base mt-1">Real-time lending & borrowing rates across BSC ecosystem.</CardDescription>
                 </div>
-                <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
+                <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-xl w-full md:w-auto">
                     <button
                         onClick={() => setSortBy('tvl')}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${sortBy === 'tvl' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+                        className={`flex-1 md:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${sortBy === 'tvl' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         Highest TVL
                     </button>
                     <button
                         onClick={() => setSortBy('apy')}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${sortBy === 'apy' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
+                        className={`flex-1 md:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${sortBy === 'apy' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         Highest APY
                     </button>
@@ -158,8 +158,8 @@ export function Markets() {
                                     return (
                                         <div className="flex flex-col items-center relative">
                                             {showBest && (
-                                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-500/20 text-yellow-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 whitespace-nowrap shadow-[0_0_10px_rgba(234,179,8,0.3)] animate-pulse">
-                                                    🏆 Best
+                                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap shadow-[0_0_10px_rgba(234,179,8,0.3)]">
+                                                    BEST
                                                 </div>
                                             )}
                                             <span className={`font-bold font-mono text-xs ${showBest ? 'text-yellow-400 scale-110 transition-transform' : 'text-emerald-400'}`}>
