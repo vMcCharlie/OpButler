@@ -34,12 +34,39 @@ export function Dashboard() {
     const isLoading = healthData.isLoading;
 
     // 3. Fetch Portfolio Data
-    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow } = useVenusPortfolio();
-    const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow } = useKinzaPortfolio();
-    const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow } = useRadiantPortfolio();
+    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, positions: venusPositions } = useVenusPortfolio();
+    const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow, positions: kinzaPositions } = useKinzaPortfolio();
+    const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow, positions: radiantPositions } = useRadiantPortfolio();
+
+    // Helper to calculate Net APY
+    const calculateNetAPY = (positions: any[], netWorth: number) => {
+        if (netWorth <= 0) return 0;
+        let totalAnnualIncome = 0;
+        let totalAnnualCost = 0;
+
+        positions.forEach(pos => {
+            if (pos.supplyUSD > 0) {
+                totalAnnualIncome += pos.supplyUSD * (pos.apy / 100);
+            }
+            if (pos.borrowUSD > 0) {
+                totalAnnualCost += pos.borrowUSD * (pos.borrowApy / 100);
+            }
+        });
+
+        const netAnnual = totalAnnualIncome - totalAnnualCost;
+        return (netAnnual / netWorth) * 100;
+    };
+
     const totalSupplied = venusSupply + kinzaSupply + radiantSupply;
     const totalBorrowed = venusBorrow + kinzaBorrow + radiantBorrow;
     const totalNetWorth = totalSupplied - totalBorrowed;
+
+    // Calculate APYs
+    const allPositions = [...(venusPositions || []), ...(kinzaPositions || []), ...(radiantPositions || [])];
+    const globalNetAPY = calculateNetAPY(allPositions, totalNetWorth);
+    const venusNetAPY = calculateNetAPY(venusPositions || [], venusSupply - venusBorrow);
+    const kinzaNetAPY = calculateNetAPY(kinzaPositions || [], kinzaSupply - kinzaBorrow);
+    const radiantNetAPY = calculateNetAPY(radiantPositions || [], radiantSupply - radiantBorrow);
 
     return (
         <div className="container pt-0 md:pt-8 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
@@ -74,6 +101,11 @@ export function Dashboard() {
                             <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Global Stats</span>
+                                {!isLoading && totalNetWorth > 0 && (
+                                    <span className="ml-auto text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                        {globalNetAPY.toFixed(2)}% APY
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -171,9 +203,9 @@ export function Dashboard() {
             {/* Protocol Health Matrix */}
             <div className="grid gap-4 md:grid-cols-3">
                 {[
-                    { name: 'Venus Protocol', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: healthData.venus },
-                    { name: 'Kinza Finance', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza },
-                    { name: 'Radiant V2', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant },
+                    { name: 'Venus Protocol', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: healthData.venus, apy: venusNetAPY },
+                    { name: 'Kinza Finance', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza, apy: kinzaNetAPY },
+                    { name: 'Radiant V2', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant, apy: radiantNetAPY },
                 ].map((proto) => (
                     <Card key={proto.name} className="bg-card/50 border-input">
                         <CardHeader className="pb-2">
@@ -201,6 +233,14 @@ export function Dashboard() {
                                     {proto.health.hasPositions ? `${proto.health.healthFactor.toFixed(2)}` : 'N/A'}
                                 </span>
                             </div>
+                            {proto.supply > 0 && (
+                                <div className="pt-2 flex justify-between items-center border-t border-border mt-2">
+                                    <span className="text-xs font-bold uppercase text-muted-foreground">Net APY</span>
+                                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                        {proto.apy.toFixed(2)}%
+                                    </span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 ))}

@@ -107,6 +107,31 @@ export function Portfolio() {
     const totalDebt = venusBorrow + kinzaBorrow + radiantBorrow;
     const totalNetWorth = totalSupplied - totalDebt;
 
+    // Helper to calculate Net APY
+    const calculateNetAPY = (positions: any[], netWorth: number) => {
+        if (netWorth <= 0) return 0;
+        let totalAnnualIncome = 0;
+        let totalAnnualCost = 0;
+
+        positions.forEach(pos => {
+            if (pos.supplyUSD > 0) {
+                totalAnnualIncome += pos.supplyUSD * (pos.apy / 100);
+            }
+            if (pos.borrowUSD > 0) {
+                totalAnnualCost += pos.borrowUSD * (pos.borrowApy / 100);
+            }
+        });
+
+        const netAnnual = totalAnnualIncome - totalAnnualCost;
+        return (netAnnual / netWorth) * 100;
+    };
+
+    const allPositions = [...(venusPositions || []), ...(kinzaPositions || []), ...(radiantPositions || [])];
+    const globalNetAPY = calculateNetAPY(allPositions, totalNetWorth);
+    const venusNetAPY = calculateNetAPY(venusPositions || [], venusSupply - venusBorrow);
+    const kinzaNetAPY = calculateNetAPY(kinzaPositions || [], kinzaSupply - kinzaBorrow);
+    const radiantNetAPY = calculateNetAPY(radiantPositions || [], radiantSupply - radiantBorrow);
+
     // Allocation data with extra info for tooltip
     const allocationData = [
         { name: 'Venus', value: venusSupply, supply: venusSupply, borrow: venusBorrow, color: '#F0B90B', percent: 0 },
@@ -344,9 +369,9 @@ export function Portfolio() {
     };
 
     const protocols = [
-        { id: 'venus', name: 'Venus', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: venusHealth, positions: venusPositions, utilization: venusHealth.borrowPowerUSD > 0 ? (venusHealth.debtUSD / venusHealth.borrowPowerUSD) * 100 : 0 },
-        { id: 'kinza', name: 'Kinza', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: kinzaHealth, positions: kinzaPositions, utilization: kinzaHealth.borrowPowerUSD > 0 ? (kinzaHealth.debtUSD / kinzaHealth.borrowPowerUSD) * 100 : 0 },
-        { id: 'radiant', name: 'Radiant', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: radiantHealth, positions: radiantPositions, utilization: radiantHealth.borrowPowerUSD > 0 ? (radiantHealth.debtUSD / radiantHealth.borrowPowerUSD) * 100 : 0 },
+        { id: 'venus', name: 'Venus', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: venusHealth, positions: venusPositions, utilization: venusHealth.borrowPowerUSD > 0 ? (venusHealth.debtUSD / venusHealth.borrowPowerUSD) * 100 : 0, apy: venusNetAPY },
+        { id: 'kinza', name: 'Kinza', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: kinzaHealth, positions: kinzaPositions, utilization: kinzaHealth.borrowPowerUSD > 0 ? (kinzaHealth.debtUSD / kinzaHealth.borrowPowerUSD) * 100 : 0, apy: kinzaNetAPY },
+        { id: 'radiant', name: 'Radiant', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: radiantHealth, positions: radiantPositions, utilization: radiantHealth.borrowPowerUSD > 0 ? (radiantHealth.debtUSD / radiantHealth.borrowPowerUSD) * 100 : 0, apy: radiantNetAPY },
     ];
 
     return (
@@ -380,11 +405,16 @@ export function Portfolio() {
                         </div>
                         <div>
                             <div className="text-2xl md:text-5xl font-bold text-white leading-none tracking-tight mb-2 md:mb-3">
-                                ${healthData.isLoading ? '...' : (totalNetWorth || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${(totalNetWorth || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mt-1">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Across Venus, Kinza, Radiant</span>
+                                {!healthData.isLoading && totalNetWorth > 0 && (
+                                    <span className="ml-auto text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                        {globalNetAPY.toFixed(2)}% APY
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -549,6 +579,7 @@ export function Portfolio() {
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest">Protocol</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Liquidity / Collateral</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Debt</th>
+                                        <th className="p-4 font-black uppercase text-[10px] tracking-widest text-right">Net APY</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Utilization</th>
                                         <th className="p-4 font-black uppercase text-[10px] tracking-widest text-center">Health</th>
                                     </tr>
@@ -577,6 +608,7 @@ export function Portfolio() {
                                                 </td>
                                                 <td className="p-4 text-right font-mono">${proto.supply.toFixed(2)}</td>
                                                 <td className="p-4 text-right font-mono text-red-400">${proto.borrow.toFixed(2)}</td>
+                                                <td className="p-4 text-right font-mono text-emerald-400 font-bold">{proto.apy.toFixed(2)}%</td>
                                                 <td className="p-4 min-w-[140px]">
                                                     <div className="flex flex-col gap-1.5 px-2">
                                                         <div className="flex justify-between items-center text-[10px] font-mono">
@@ -606,7 +638,7 @@ export function Portfolio() {
                                             </tr>
                                             {expandedProtocol === proto.id && (
                                                 <tr>
-                                                    <td colSpan={5} className="p-0 border-b-2 border-primary/20 bg-primary/[0.01]">
+                                                    <td colSpan={6} className="p-0 border-b-2 border-primary/20 bg-primary/[0.01]">
                                                         {renderPositionsTable(proto.positions, proto.id)}
                                                     </td>
                                                 </tr>
@@ -635,8 +667,18 @@ export function Portfolio() {
                                                     <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
                                                 </div>
                                                 <div>
-                                                    <div className="font-black text-lg tracking-tight leading-none mb-1">{proto.name}</div>
-                                                    <div className="text-[10px] text-muted-foreground uppercase font-black tracking-widest leading-none">Net Worth: <span className="text-white">${(proto.supply - proto.borrow).toFixed(2)}</span></div>
+                                                    <div className="font-black text-lg tracking-tight leading-none mb-1.5">{proto.name}</div>
+                                                    <div className="flex items-center gap-3 text-[10px] uppercase font-black tracking-widest leading-none">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-muted-foreground/50 text-[8px]">Net Worth</span>
+                                                            <span className="text-white text-xs">${(proto.supply - proto.borrow).toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="w-px h-6 bg-white/10" />
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-emerald-500/50 text-[8px]">Net APY</span>
+                                                            <span className="text-emerald-400 text-xs">{proto.apy.toFixed(2)}%</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
