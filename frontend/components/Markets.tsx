@@ -198,12 +198,12 @@ export function Markets() {
                                         </td>
                                         <td className="p-4 align-middle text-right border-l border-border">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Link href={`/market/${asset.symbol}?tab=lend`}>
+                                                <Link href={`/lend/earn?pool=${asset.symbol}`}>
                                                     <Button size="sm" className="h-8 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all text-xs font-bold">
                                                         Deposit
                                                     </Button>
                                                 </Link>
-                                                <Link href={`/market/${asset.symbol}?tab=borrow`}>
+                                                <Link href={`/lend/borrow?pool=${asset.symbol}`}>
                                                     <Button size="sm" className="h-8 bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white hover:border-destructive transition-all text-xs font-bold">
                                                         Borrow
                                                     </Button>
@@ -260,12 +260,12 @@ export function Markets() {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3">
-                                        <Link href={`/market/${asset.symbol}?tab=lend`} className="w-full">
+                                        <Link href={`/lend/earn?pool=${asset.symbol}`} className="w-full">
                                             <Button size="sm" className="w-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white font-bold">
                                                 Deposit
                                             </Button>
                                         </Link>
-                                        <Link href={`/market/${asset.symbol}?tab=borrow`} className="w-full">
+                                        <Link href={`/lend/borrow?pool=${asset.symbol}`} className="w-full">
                                             <Button size="sm" className="w-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white font-bold">
                                                 Borrow
                                             </Button>
