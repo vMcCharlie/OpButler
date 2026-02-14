@@ -53,7 +53,9 @@ export function Dashboard() {
         <div className="container pt-0 md:pt-8 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Dashboard</h1>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 font-outfit bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400">
+                        Dashboard
+                    </h1>
                     <div className="text-sm text-muted-foreground">
                         {address ? 'Welcome back, Strategist.' : 'Connect your wallet to view your personalized yields.'}
                     </div>

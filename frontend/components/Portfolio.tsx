@@ -362,7 +362,9 @@ export function Portfolio() {
         <div className="container pt-0 md:pt-8 pb-24 space-y-8 max-w-screen-2xl mx-auto px-0 md:px-16">
             <div className="flex items-center justify-between px-4 md:px-0">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">My Portfolio</h1>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 font-outfit bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400">
+                        My Portfolio
+                    </h1>
                     <div className="text-sm text-muted-foreground">Detailed breakdown of your DeFi positions across BNB Chain.</div>
                 </div>
                 {walletAddress && (
