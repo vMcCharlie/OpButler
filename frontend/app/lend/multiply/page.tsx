@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense } from 'react';
-import { StrategyBuilder } from "@/components/StrategyBuilder";
 import { TopLoops } from "@/components/TopLoops";
 import { Loader2 } from 'lucide-react';
 
@@ -13,10 +12,6 @@ function MultiplyContent() {
                 <TopLoops compact={true} maxItems={6} showFilters={true} />
             </div>
 
-            {/* Strategy Builder */}
-            <div className="max-w-3xl mx-auto">
-                <StrategyBuilder />
-            </div>
         </div>
     );
 }
