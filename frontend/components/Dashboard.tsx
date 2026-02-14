@@ -9,7 +9,7 @@ import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
-import { TrendingUp, AlertTriangle, Heart } from "lucide-react";
+import { TrendingUp, AlertTriangle, Heart, Plus } from "lucide-react";
 
 const chartData = [
     { name: 'Mon', value: 1000 },
@@ -63,76 +63,115 @@ export function Dashboard() {
             {/* Top Stats: Aggregated Financials */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
                 {/* Total Net Worth */}
-                <Card className="border-l-4 border-l-primary/80 bg-gradient-to-br from-primary/5 via-card to-card">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Net Worth</CardTitle>
-                        <div className="p-2 bg-primary/10 rounded-full">
-                            <span className="text-primary font-bold">$</span>
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#0A0A0B] border border-white/10 p-5 md:p-8 transition-all hover:bg-white/[0.04] shadow-2xl">
+                    <div className="flex flex-col h-full justify-between">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 mb-5 md:mb-8">
+                            <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                                <span className="text-lg md:text-xl font-black text-emerald-500">$</span>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-muted-foreground/40 leading-none">Net Worth</span>
+                            </div>
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-white bg-clip-text text-transparent">
-                            ${isLoading ? '...' : totalNetWorth.toFixed(2)}
+                        <div>
+                            <div className="text-2xl md:text-5xl font-bold text-white leading-none tracking-tight mb-2 md:mb-3">
+                                ${isLoading ? '...' : totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Global Stats</span>
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Across Venus, Kinza, Radiant
-                        </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
                 {/* Total Supply */}
-                <Card className="border-l-4 border-l-emerald-500/80">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Supplied</CardTitle>
-                        <div className="p-2 bg-emerald-500/10 rounded-full">
-                            <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#0A0A0B] border border-white/10 p-5 md:p-8 transition-all hover:bg-white/[0.04] shadow-2xl">
+                    <div className="flex flex-col h-full justify-between">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 mb-5 md:mb-8">
+                            <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-emerald-400/10 flex items-center justify-center border border-emerald-400/20 shrink-0">
+                                <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-muted-foreground/40 leading-none">Supplied</span>
+                            </div>
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl md:text-3xl font-bold text-emerald-500">
-                            ${isLoading ? '...' : totalSupplied.toFixed(2)}
+                        <div>
+                            <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3">
+                                ${isLoading ? '...' : totalSupplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Active</span>
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Collateral & Liquidity
-                        </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
                 {/* Total Debt */}
-                <Card className="border-l-4 border-l-red-500/80">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Borrowed</CardTitle>
-                        <div className="p-2 bg-red-500/10 rounded-full">
-                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#0A0A0B] border border-white/10 p-5 md:p-8 transition-all hover:bg-white/[0.04] shadow-2xl">
+                    <div className="flex flex-col h-full justify-between">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 mb-5 md:mb-8">
+                            <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
+                                <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-muted-foreground/40 leading-none">Borrowed</span>
+                            </div>
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl md:text-3xl font-bold text-red-500">
-                            ${isLoading ? '...' : totalBorrowed.toFixed(2)}
+                        <div>
+                            <div className="text-2xl md:text-5xl font-bold text-red-500 leading-none tracking-tight mb-2 md:mb-3">
+                                ${isLoading ? '...' : totalBorrowed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Liability</span>
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Global Borrowed Amount
-                        </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
-                {/* Aggregated Health Status */}
-                <Card className="border-l-4 border-l-blue-500/80">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Health Score</CardTitle>
-                        <div className="p-2 bg-blue-500/10 rounded-full">
-                            <Heart className="w-4 h-4 text-blue-500" />
+                {/* Health Score */}
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#0A0A0B] border border-white/10 p-5 md:p-8 transition-all hover:bg-white/[0.02] shadow-2xl">
+                    <div className="absolute top-0 right-0 p-2 md:p-4 opacity-5 group-hover:opacity-100 transition-opacity">
+                        <div className="w-5 h-5 md:w-8 md:h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/5">
+                            <Plus className="w-3 h-3 md:w-4 md:h-4 text-white" />
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className={`text-2xl md:text-3xl font-bold ${healthData.overallScore >= 7 ? 'text-emerald-400' : healthData.overallScore >= 4 ? 'text-amber-400' : 'text-red-400'}`}>
-                            {isLoading ? '...' : `${healthData.overallScore.toFixed(1)}/10`}
+                    </div>
+                    <div className="flex flex-col h-full justify-between">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 mb-5 md:mb-8">
+                            <div className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center border shrink-0 ${healthData.overallScore >= 7 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+                                healthData.overallScore >= 4 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                                    'bg-red-500/10 border-red-500/20 text-red-500'
+                                }`}>
+                                <Heart className="w-4 h-4 md:w-5 md:h-5" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-muted-foreground/40 leading-none">Health</span>
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Overall Account Health
-                        </p>
-                    </CardContent>
-                </Card>
+                        <div>
+                            <div className={`text-2xl md:text-5xl font-bold leading-none tracking-tight mb-4 ${healthData.overallScore >= 7 ? 'text-emerald-400' :
+                                healthData.overallScore >= 4 ? 'text-amber-400' :
+                                    'text-red-400'
+                                }`}>
+                                {isLoading ? '...' : `${healthData.overallScore.toFixed(2)}/10`}
+                            </div>
+                            <div className="space-y-2">
+                                <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-1000 ${healthData.overallScore >= 7 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+                                            healthData.overallScore >= 4 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
+                                                'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                                            }`}
+                                        style={{ width: `${healthData.overallScore * 10}%` }}
+                                    />
+                                </div>
+                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest block leading-none">Risk Status</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Protocol Health Matrix */}
