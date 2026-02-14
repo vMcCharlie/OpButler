@@ -191,12 +191,26 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
 
     const isRisky = newHF < 1.1;
 
+    // ALLOWANCE LOGIC
+    // For deposits: Check underlying -> approvalTarget
+    // For native withdrawals (Kinza/Radiant): Check aToken -> Gateway
+    const isNativeWithdraw = activeTab === 'withdraw' && isNative && (isKinza || isRadiant);
+    const kBNB = '0xf5e0ADda6Fb191A332A787DEeDFD2cFFC72Dba0c' as `0x${string}`; // Kinza aToken for BNB
+    const rBNB = '0x40351090037b9c4f6555071e9B24A82B068F2c05' as `0x${string}`; // Radiant aToken for BNB
+
+    const allowanceAddress = isNativeWithdraw
+        ? (isKinza ? kBNB : rBNB)
+        : underlyingAddress;
+    const allowanceSpender = isNativeWithdraw
+        ? (isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY)
+        : approvalTarget;
+
     const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
-        address: underlyingAddress,
+        address: allowanceAddress,
         abi: ERC20_ABI,
         functionName: 'allowance',
-        args: address && approvalTarget ? [address, approvalTarget] : undefined,
-        query: { enabled: !!address && !isNative && !!underlyingAddress && !!approvalTarget && activeTab === 'deposit' }
+        args: address && allowanceSpender ? [address, allowanceSpender] : undefined,
+        query: { enabled: !!address && !!allowanceAddress && !!allowanceSpender }
     });
 
     useEffect(() => {
@@ -204,15 +218,19 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
             if (step === 'approving') {
                 setStep('idle');
                 refetchAllowance();
+                toast({
+                    title: "Asset Approved",
+                    description: `You can now proceed to ${activeTab}.`,
+                });
             } else {
                 setStep("success");
                 refetchVenus?.(); refetchKinza?.(); refetchRadiant?.();
                 refetchBalance?.(); refetchToken?.(); refetchHealth?.();
             }
         } else if (isConfirming || isPending) {
-            if (step !== 'approving') setStep("mining");
+            if (step !== 'approving' && step !== 'success') setStep("mining");
         }
-    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant, refetchBalance, refetchToken, refetchHealth]);
+    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant, refetchBalance, refetchToken, refetchHealth, activeTab, toast]);
 
     const handleAction = useCallback(() => {
         if (!isConnected) { openConnectModal?.(); return; }
@@ -263,9 +281,15 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
                     }
                 } else if (isKinza || isRadiant) {
                     const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
+                    const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
                     if (isNative) {
-                        const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
-                        if (gatewayAddress) writeContract({ address: gatewayAddress, abi: WETH_GATEWAY_ABI, functionName: 'withdrawETH', args: [poolAddress, amountBig, address!] });
+                        const needsWithdrawApproval = (currentAllowance || BigInt(0)) < amountBig;
+                        if (needsWithdrawApproval) {
+                            setStep('approving');
+                            writeContract({ address: allowanceAddress!, abi: ERC20_ABI, functionName: 'approve', args: [allowanceSpender!, maxUint256] });
+                        } else {
+                            if (gatewayAddress) writeContract({ address: gatewayAddress, abi: WETH_GATEWAY_ABI, functionName: 'withdrawETH', args: [poolAddress, amountBig, address!] });
+                        }
                     } else {
                         if (isKinza) writeContract({ address: KINZA_POOL, abi: KINZA_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress!, amountBig, address!] });
                         else writeContract({ address: RADIANT_LENDING_POOL, abi: RADIANT_POOL_ABI, functionName: 'withdraw', args: [underlyingAddress!, amountBig, address!] });

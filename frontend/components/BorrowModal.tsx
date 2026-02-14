@@ -46,6 +46,7 @@ interface BorrowModalContentProps {
 }
 
 export function BorrowModalContent({ onClose, pool, isEmbedded = false }: BorrowModalContentProps) {
+    const { toast } = useToast();
     const { isConnected, address } = useAccount();
     const { openConnectModal } = useConnectModal();
     const [amount, setAmount] = useState("");
@@ -129,14 +130,23 @@ export function BorrowModalContent({ onClose, pool, isEmbedded = false }: Borrow
 
     useEffect(() => {
         if (isConfirmed) {
-            if (step === 'approving') { setStep('idle'); refetchAllowance(); }
+            if (step === 'approving') {
+                setStep('idle');
+                refetchAllowance();
+                toast({
+                    title: "Asset Approved",
+                    description: `You can now proceed to ${activeTab}.`,
+                });
+            }
             else {
                 setStep("success");
                 refetchVenus?.(); refetchKinza?.(); refetchRadiant?.();
                 refetchNative?.(); refetchToken?.(); refetchAllowance?.(); refetchHealth?.();
             }
-        } else if (isConfirming || isPending) { if (step !== 'approving') setStep("mining"); }
-    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant, refetchNative, refetchToken, refetchHealth]);
+        } else if (isConfirming || isPending) {
+            if (step !== 'approving' && step !== 'success') setStep("mining");
+        }
+    }, [isConfirmed, isConfirming, isPending, step, refetchAllowance, refetchVenus, refetchKinza, refetchRadiant, refetchNative, refetchToken, refetchHealth, activeTab, toast]);
 
     const handleAction = useCallback(() => {
         if (!isConnected) { openConnectModal?.(); return; }
