@@ -55,24 +55,6 @@
       ]
     },
     {
-      "symbol": "U",
-      "originalSymbol": "U",
-      "poolId": "d8e9bb79-79d3-4897-8a4f-8d489040097d",
-      "project": "venus-core-pool",
-      "tvlUsd": 88782034,
-      "apy": 0.52731,
-      "apyBase": 0.52731,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.7909649999999999,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 88782034,
-      "totalBorrowUsd": 35512813.6,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0xcE24439F2D9C6a2289F741120FE202248B666666"
-      ]
-    },
-    {
       "symbol": "BNB",
       "originalSymbol": "WBNB",
       "poolId": "25e50b68-1e0c-47c6-9088-44749ce971b2",
@@ -145,42 +127,6 @@
       ]
     },
     {
-      "symbol": "XRP",
-      "originalSymbol": "XRP",
-      "poolId": "0204c8ff-0805-4515-a27e-742d23a15719",
-      "project": "venus-core-pool",
-      "tvlUsd": 7694945,
-      "apy": 0.49491,
-      "apyBase": 0.49491,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.742365,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 7694945,
-      "totalBorrowUsd": 3077978,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE"
-      ]
-    },
-    {
-      "symbol": "SOL",
-      "originalSymbol": "SOL",
-      "poolId": "13168bce-80ed-4c20-bb4b-550218dd067b",
-      "project": "venus-core-pool",
-      "tvlUsd": 5392307,
-      "apy": 0.02885,
-      "apyBase": 0.02885,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.043275,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 5392307,
-      "totalBorrowUsd": 2156922.8000000003,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF"
-      ]
-    },
-    {
       "symbol": "FDUSD",
       "originalSymbol": "FDUSD",
       "poolId": "6679b470-7a53-4b96-88c8-262ea927b4b5",
@@ -196,96 +142,6 @@
       "ltv": 0.8,
       "underlyingTokens": [
         "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409"
-      ]
-    },
-    {
-      "symbol": "ADA",
-      "originalSymbol": "ADA",
-      "poolId": "3cbdf078-5b0a-4483-8308-46e2f5f60c83",
-      "project": "venus-core-pool",
-      "tvlUsd": 3456353,
-      "apy": 0.03686,
-      "apyBase": 0.03686,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.05528999999999999,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 3456353,
-      "totalBorrowUsd": 1382541.2000000002,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47"
-      ]
-    },
-    {
-      "symbol": "LTC",
-      "originalSymbol": "LTC",
-      "poolId": "15cbd370-c6dd-4258-89a4-4623e17c2865",
-      "project": "venus-core-pool",
-      "tvlUsd": 3020792,
-      "apy": 0.05346,
-      "apyBase": 0.05346,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.08019,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 3020792,
-      "totalBorrowUsd": 1208316.8,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x4338665CBB7B2485A8855A139b75D5e34AB0DB94"
-      ]
-    },
-    {
-      "symbol": "THE",
-      "originalSymbol": "THE",
-      "poolId": "0542ee4a-e968-4ade-b023-a90e4dc10edd",
-      "project": "venus-core-pool",
-      "tvlUsd": 2975533,
-      "apy": 0.23113,
-      "apyBase": 0.23113,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.346695,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 2975533,
-      "totalBorrowUsd": 1190213.2,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0xF4C8E32EaDEC4BFe97E0F595AdD0f4450a863a11"
-      ]
-    },
-    {
-      "symbol": "XVS",
-      "originalSymbol": "XVS",
-      "poolId": "bd3e33f0-fa0f-4c4c-97d7-90f267808355",
-      "project": "venus-core-pool",
-      "tvlUsd": 2007055,
-      "apy": 0.68074,
-      "apyBase": 0,
-      "apyReward": 0.68074,
-      "apyBaseBorrow": 0,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 2007055,
-      "totalBorrowUsd": 802822,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63"
-      ]
-    },
-    {
-      "symbol": "LINK",
-      "originalSymbol": "LINK",
-      "poolId": "6ef41a41-9394-4782-bf53-7648f50a4a93",
-      "project": "venus-core-pool",
-      "tvlUsd": 1634946,
-      "apy": 0.05211,
-      "apyBase": 0.05211,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.078165,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 1634946,
-      "totalBorrowUsd": 653978.4,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD"
       ]
     },
     {
@@ -343,42 +199,6 @@
       ]
     },
     {
-      "symbol": "LISUSD",
-      "originalSymbol": "LISUSD",
-      "poolId": "9f44dab4-eaba-4f79-b86d-648e010edf0c",
-      "project": "venus-core-pool",
-      "tvlUsd": 762204,
-      "apy": 0.33884,
-      "apyBase": 0.33884,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.5082599999999999,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 762204,
-      "totalBorrowUsd": 304881.60000000003,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x0782b6d8c4551B9760e74c0545a9bCD90bdc41E5"
-      ]
-    },
-    {
-      "symbol": "AAVE",
-      "originalSymbol": "AAVE",
-      "poolId": "2e3895f1-c990-4eb9-82ac-f5b16c236279",
-      "project": "venus-core-pool",
-      "tvlUsd": 675376,
-      "apy": 0.02166,
-      "apyBase": 0.02166,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.03249,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 675376,
-      "totalBorrowUsd": 270150.4,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0xfb6115445Bff7b52FeB98650C87f44907E58f802"
-      ]
-    },
-    {
       "symbol": "DOT",
       "originalSymbol": "DOT",
       "poolId": "422f1356-9e9c-471a-9641-135742da9891",
@@ -394,78 +214,6 @@
       "ltv": 0.6,
       "underlyingTokens": [
         "0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402"
-      ]
-    },
-    {
-      "symbol": "USD1",
-      "originalSymbol": "USD1",
-      "poolId": "406b11b4-c4f9-4253-bfd3-388c208a4ecd",
-      "project": "venus-core-pool",
-      "tvlUsd": 412529,
-      "apy": 2.48363,
-      "apyBase": 2.48363,
-      "apyReward": 0,
-      "apyBaseBorrow": 3.7254449999999997,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 412529,
-      "totalBorrowUsd": 165011.6,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d"
-      ]
-    },
-    {
-      "symbol": "MATIC",
-      "originalSymbol": "MATIC",
-      "poolId": "1403642f-2083-4173-bfb9-979a44a75ec4",
-      "project": "venus-core-pool",
-      "tvlUsd": 80876,
-      "apy": 0.13275,
-      "apyBase": 0.13275,
-      "apyReward": 0,
-      "apyBaseBorrow": 0.199125,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 80876,
-      "totalBorrowUsd": 32350.4,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0xCC42724C6683B7E57334c4E856f4c9965ED682bD"
-      ]
-    },
-    {
-      "symbol": "TUSD",
-      "originalSymbol": "TUSD",
-      "poolId": "f02223ca-a69e-47df-8795-6657a8f829ee",
-      "project": "venus-core-pool",
-      "tvlUsd": 14528,
-      "apy": 0.95686,
-      "apyBase": 0.95686,
-      "apyReward": 0,
-      "apyBaseBorrow": 1.4352900000000002,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 14528,
-      "totalBorrowUsd": 5811.200000000001,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9"
-      ]
-    },
-    {
-      "symbol": "USDE",
-      "originalSymbol": "USDE",
-      "poolId": "03994c01-b395-48cd-a54b-afc8f6533705",
-      "project": "venus-core-pool",
-      "tvlUsd": 13473,
-      "apy": 1.00796,
-      "apyBase": 1.00796,
-      "apyReward": 0,
-      "apyBaseBorrow": 1.51194,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 13473,
-      "totalBorrowUsd": 5389.200000000001,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34"
       ]
     }
   ],
@@ -597,24 +345,6 @@
       ]
     },
     {
-      "symbol": "SLISBNB",
-      "originalSymbol": "SLISBNB",
-      "poolId": "c23d810f-f220-44d0-bda2-69f936a2b397",
-      "project": "kinza-finance",
-      "tvlUsd": 28943,
-      "apy": 0.99942,
-      "apyBase": 0.99942,
-      "apyReward": null,
-      "apyBaseBorrow": 1.49913,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 28943,
-      "totalBorrowUsd": 11577.2,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0xB0b84D294e0C75A6abe60171b70edEb2EFd14A1B"
-      ]
-    },
-    {
       "symbol": "USD1",
       "originalSymbol": "USD1",
       "poolId": "a4b20396-ad44-44cf-8de5-a4fa00d55c36",
@@ -740,24 +470,6 @@
       "ltv": 0.6,
       "underlyingTokens": [
         "0xa2E3356610840701BDf5611a53974510Ae27E2e1"
-      ]
-    },
-    {
-      "symbol": "CAKE",
-      "originalSymbol": "CAKE",
-      "poolId": "1eadee35-7158-4b46-9e6e-12930d03cf43",
-      "project": "radiant-v2",
-      "tvlUsd": 16529,
-      "apy": 1.48539,
-      "apyBase": 1.48539,
-      "apyReward": null,
-      "apyBaseBorrow": 2.228085,
-      "apyRewardBorrow": 0,
-      "totalSupplyUsd": 16529,
-      "totalBorrowUsd": 6611.6,
-      "ltv": 0.6,
-      "underlyingTokens": [
-        "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82"
       ]
     }
   ]
