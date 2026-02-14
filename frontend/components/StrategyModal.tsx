@@ -33,7 +33,7 @@ import {
 import { RiskMonitor } from './RiskMonitor';
 import { formatUnits } from 'viem';
 import { toPlainString, formatSmallNumber } from "@/lib/utils";
-import { StrategyInfoModal } from './StrategyInfoModal';
+
 
 // --- Types & Helper Components ---
 
@@ -110,7 +110,6 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
     const [amount, setAmount] = useState('1000');
 
     const [leverage, setLeverage] = useState(1.5);
-    const [isInfoOpen, setIsInfoOpen] = useState(false);
 
     // Initialize from props
     useEffect(() => {
@@ -192,13 +191,6 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                             </DialogDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setIsInfoOpen(true)}
-                                className="p-2 rounded-full hover:bg-white/10 transition-colors text-muted-foreground hover:text-white"
-                                title="How it works"
-                            >
-                                <Info size={20} />
-                            </button>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-full hover:bg-red-500/10 transition-colors text-muted-foreground hover:text-red-500"
@@ -325,10 +317,7 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                 </DialogContent>
             </Dialog>
 
-            <StrategyInfoModal
-                isOpen={isInfoOpen}
-                onClose={() => setIsInfoOpen(false)}
-            />
+
         </>
     );
 }
