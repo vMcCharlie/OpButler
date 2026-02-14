@@ -179,6 +179,14 @@ export const RADIANT_POOL_ABI = parseAbi([
     'function repay(address asset, uint256 amount, uint256 rateMode, address onBehalfOf) returns (uint256)',
 ]);
 
+// PancakeSwap V2 Router ABI
+export const PANCAKE_ROUTER_ABI = parseAbi([
+    'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) returns (uint[] memory amounts)',
+    'function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)',
+    'function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) returns (uint[] memory amounts)',
+    'function getAmountsOut(uint amountIn, address[] calldata path) view returns (uint[] memory amounts)'
+]);
+
 // WETH Gateway ABI (for native BNB deposits/withdrawals on Kinza/Radiant)
 export const WETH_GATEWAY_ABI = parseAbi([
     'function depositETH(address lendingPool, address onBehalfOf, uint16 referralCode) payable',

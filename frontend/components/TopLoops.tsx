@@ -47,8 +47,8 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
     const displayLoops = filteredLoops.slice(0, maxItems);
 
     const handleMultiply = (loop: SmartLoop) => {
-        // Navigate with params and hash for auto-scroll
-        router.push(`/strategy?supply=${loop.supplyAsset}&borrow=${loop.borrowAsset}&protocol=${loop.protocol}#strategy-builder`);
+        // Navigate to Multiply page with params to preset the looper
+        router.push(`/lend/multiply?protocol=${loop.protocol}&supply=${loop.supplyAsset}&borrow=${loop.borrowAsset}#looper-section`);
     };
 
     if (isLoading) {

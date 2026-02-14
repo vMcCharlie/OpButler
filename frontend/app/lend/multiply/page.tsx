@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { TopLoops } from "@/components/TopLoops";
+import { MultiStepLoop } from "@/components/MultiStepLoop";
 import { Loader2 } from 'lucide-react';
 
 function MultiplyContent() {
@@ -12,6 +13,10 @@ function MultiplyContent() {
                 <TopLoops compact={true} maxItems={6} showFilters={true} />
             </div>
 
+            {/* Multi-Step Loop Feature */}
+            <div className="max-w-4xl mx-auto">
+                <MultiStepLoop />
+            </div>
         </div>
     );
 }
