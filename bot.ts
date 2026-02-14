@@ -482,95 +482,9 @@ function generateSuggestions(proto: ProtocolData, targetHF: number = 1.5): strin
 // Message Builders
 // ============================================================
 
-function buildPositionsMessage(protocols: ProtocolData[]): string {
-    const activeProtocols = protocols.filter(p => p.status !== "inactive");
-    const totalCollateral = protocols.reduce((s, p) => s + p.totalCollateralUSD, 0);
-    const totalDebt = protocols.reduce((s, p) => s + p.totalDebtUSD, 0);
-    const netWorth = totalCollateral - totalDebt;
 
-    let msg = `📊 *Your DeFi Positions*\n\n`;
-    msg += `💰 Net Worth: *$${fmt$(netWorth)}*\n`;
-    msg += `📈 Total Supplied: $${fmt$(totalCollateral)}\n`;
-    msg += `📉 Total Borrowed: $${fmt$(totalDebt)}\n\n`;
 
-    if (activeProtocols.length === 0) {
-        msg += `_No active positions found across Venus, Kinza, or Radiant._\n`;
-        return msg;
-    }
 
-    msg += `━━━━━━━━━━━━━━━━━━\n`;
-
-    for (const proto of protocols) {
-        const emoji = statusEmoji(proto.status);
-        const label = statusLabel(proto.status);
-
-        msg += `\n${emoji} *${proto.protocol}*  ─  HF: *${fmtHF(proto.healthFactor)}*  (${label})\n`;
-
-        if (proto.status === "inactive") {
-            msg += `   _No active positions_\n`;
-            continue;
-        }
-
-        msg += `   Supply: $${fmt$(proto.totalCollateralUSD)}  │  Debt: $${fmt$(proto.totalDebtUSD)}\n`;
-
-        if (proto.positions.length > 0) {
-            for (const pos of proto.positions) {
-                let line = `   • ${pos.symbol}: `;
-                const parts: string[] = [];
-                if (pos.supply > 0) parts.push(`supply ${pos.supply.toFixed(4)}`);
-                if (pos.supplyUSD > 0.01) parts.push(`($${fmt$(pos.supplyUSD)})`);
-                if (pos.borrow > 0) parts.push(`borrow ${pos.borrow.toFixed(4)}`);
-                if (pos.borrowUSD > 0.01) parts.push(`($${fmt$(pos.borrowUSD)})`);
-                line += parts.join(" / ");
-                msg += line + "\n";
-            }
-        }
-    }
-
-    return msg;
-}
-
-function buildRiskMessage(protocols: ProtocolData[]): string {
-    const activeProtocols = protocols.filter(p => p.status !== "inactive");
-
-    if (activeProtocols.length === 0) {
-        return "✅ *Risk Analysis*\n\n_No active positions found. Nothing to analyze._\n";
-    }
-
-    const dangerProtocols = activeProtocols.filter(p => p.status === "danger");
-    const warningProtocols = activeProtocols.filter(p => p.status === "warning");
-    const safeProtocols = activeProtocols.filter(p => p.status === "safe");
-
-    let msg = `🛡️ *Risk Analysis*\n\n`;
-
-    // Overall assessment
-    if (dangerProtocols.length > 0) {
-        msg += `🚨 *CRITICAL* — ${dangerProtocols.length} protocol(s) at liquidation risk!\n\n`;
-    } else if (warningProtocols.length > 0) {
-        msg += `⚠️ *CAUTION* — ${warningProtocols.length} protocol(s) need attention.\n\n`;
-    } else {
-        msg += `✅ *ALL SAFE* — Your positions are healthy.\n\n`;
-    }
-
-    // Per-protocol breakdown
-    for (const proto of activeProtocols) {
-        const emoji = statusEmoji(proto.status);
-        msg += `${emoji} *${proto.protocol}* — HF: *${fmtHF(proto.healthFactor)}*\n`;
-        msg += `   Supply: $${fmt$(proto.totalCollateralUSD)}  │  Debt: $${fmt$(proto.totalDebtUSD)}\n`;
-
-        if (proto.totalDebtUSD > 0.01) {
-            const util = (proto.totalDebtUSD / proto.totalCollateralUSD * 100).toFixed(1);
-            msg += `   Utilization: ${util}%\n`;
-        }
-
-        const suggestions = generateSuggestions(proto);
-        if (suggestions) msg += suggestions;
-
-        msg += `\n`;
-    }
-
-    return msg;
-}
 
 function buildAlertMessage(proto: ProtocolData, threshold: number): string {
     let msg = `🚨 *LIQUIDATION ALERT* 🚨\n\n`;
@@ -604,8 +518,6 @@ bot.command("start", async (ctx) => {
         `🤖 *Welcome to OpButler!*\n\n` +
         `I provide *24/7 monitoring* for your DeFi positions on Venus, Kinza, and Radiant (BSC).\n\n` +
         `*Commands:*\n` +
-        `• /positions — View all your DeFi positions\n` +
-        `• /risk — Detailed risk analysis with suggestions\n` +
         `• /settings — View/update alert settings\n` +
         `• /setinterval — Change polling frequency\n` +
         `• /setalert <value> — Set HF alert threshold\n` +
@@ -675,73 +587,7 @@ bot.command("verify", async (ctx) => {
     }
 });
 
-// /positions — View all positions with concurrency guard
-bot.command("positions", async (ctx) => {
-    const chatId = ctx.from?.id;
-    if (!chatId) return;
 
-    if (!acquireLock(chatId)) {
-        return ctx.reply("⏳ Already fetching your positions. Please wait...");
-    }
-
-    try {
-        const { data: user } = await supabase
-            .from("users").select("*").eq("chat_id", chatId).single();
-
-        if (!user) {
-            return ctx.reply("❌ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
-        }
-
-        await ctx.reply("🔄 Fetching positions across Venus, Kinza, and Radiant...");
-
-        const protocols = await fetchAllProtocols(user.wallet_address as Address);
-        const message = buildPositionsMessage(protocols);
-
-        const keyboard = new InlineKeyboard()
-            .url("Open Dashboard", `${DASHBOARD_URL}/portfolio`);
-
-        await ctx.reply(message, { parse_mode: "Markdown", reply_markup: keyboard });
-    } catch (error) {
-        console.error(`/positions error for ${chatId}:`, error);
-        await ctx.reply("❌ Failed to fetch positions. Please try again in a moment.");
-    } finally {
-        releaseLock(chatId);
-    }
-});
-
-// /risk — Risk analysis with suggestions
-bot.command("risk", async (ctx) => {
-    const chatId = ctx.from?.id;
-    if (!chatId) return;
-
-    if (!acquireLock(chatId)) {
-        return ctx.reply("⏳ Already analyzing your positions. Please wait...");
-    }
-
-    try {
-        const { data: user } = await supabase
-            .from("users").select("*").eq("chat_id", chatId).single();
-
-        if (!user) {
-            return ctx.reply("❌ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
-        }
-
-        await ctx.reply("🔄 Analyzing risk across all protocols...");
-
-        const protocols = await fetchAllProtocols(user.wallet_address as Address);
-        const message = buildRiskMessage(protocols);
-
-        const keyboard = new InlineKeyboard()
-            .url("Manage Positions", `${DASHBOARD_URL}/portfolio`);
-
-        await ctx.reply(message, { parse_mode: "Markdown", reply_markup: keyboard });
-    } catch (error) {
-        console.error(`/risk error for ${chatId}:`, error);
-        await ctx.reply("❌ Failed to analyze risk. Please try again in a moment.");
-    } finally {
-        releaseLock(chatId);
-    }
-});
 
 // /settings — View current settings
 bot.command("settings", async (ctx) => {
@@ -762,8 +608,7 @@ bot.command("settings", async (ctx) => {
         `⚠️ Alert Threshold: HF < *${user.alert_threshold}*\n` +
         `🔔 Alerts: ${user.alerts_enabled ? "✅ Enabled" : "❌ Disabled"}\n\n` +
         `*Commands:*\n` +
-        `• /positions — View DeFi positions\n` +
-        `• /risk — Risk analysis\n` +
+        `• /settings — View alert settings\n` +
         `• /setinterval — Change polling frequency\n` +
         `• /setalert <value> — Change HF threshold\n` +
         `• /togglealerts — Enable/disable alerts`,
@@ -806,12 +651,22 @@ bot.callbackQuery(/^interval_(\d+)$/, async (ctx) => {
 
 // /setalert — Set alert threshold  
 bot.command("setalert", async (ctx) => {
-    const value = parseFloat(ctx.match);
-    if (isNaN(value) || value < 1.0 || value > 2.0) {
+    const valStr = ctx.match;
+    if (!valStr) {
+        const keyboard = new InlineKeyboard()
+            .text("1.1", "alert_1.1").text("1.2", "alert_1.2").text("1.3", "alert_1.3").row()
+            .text("1.4", "alert_1.4").text("1.5", "alert_1.5").text("1.8", "alert_1.8");
+
         return ctx.reply(
-            "⚠️ Please provide a valid threshold between 1.0 and 2.0.\n\nExample: `/setalert 1.2`",
-            { parse_mode: "Markdown" }
+            "⚠️ *Select Health Factor Alert Threshold*\n\n" +
+            "I will alert you if your HF drops below this value. Recommended: *1.1* or *1.2*.",
+            { parse_mode: "Markdown", reply_markup: keyboard }
         );
+    }
+
+    const value = parseFloat(valStr);
+    if (isNaN(value) || value < 1.0 || value > 2.0) {
+        return ctx.reply("⚠️ Threshold must be between 1.0 and 2.0. Example: `/setalert 1.2`", { parse_mode: "Markdown" });
     }
 
     const { error } = await supabase
@@ -821,6 +676,22 @@ bot.command("setalert", async (ctx) => {
 
     if (error) return ctx.reply("❌ Failed to update threshold.");
     await ctx.reply(`✅ Alert threshold set to HF < *${value}*`, { parse_mode: "Markdown" });
+});
+
+bot.callbackQuery(/^alert_(\d+(\.\d+)?)$/, async (ctx) => {
+    const value = parseFloat(ctx.match![1]);
+    const { error } = await supabase
+        .from("users")
+        .update({ alert_threshold: value, updated_at: new Date().toISOString() })
+        .eq("chat_id", ctx.from.id);
+
+    if (error) return ctx.answerCallbackQuery({ text: "Failed to update", show_alert: true });
+
+    await ctx.answerCallbackQuery({ text: `Updated to ${value}` });
+    await ctx.editMessageText(
+        `✅ *Alert Threshold Updated*\n\nYou will now be alerted if your Health Factor drops below *${value}*.`,
+        { parse_mode: "Markdown" }
+    );
 });
 
 // /togglealerts — Enable/disable alerts
@@ -845,14 +716,13 @@ bot.command("togglealerts", async (ctx) => {
     );
 });
 
-// /status alias
-bot.command("status", (ctx) => ctx.reply("Use /settings to view your account status and alert configuration."));
+
 
 // Catch-all
 bot.on("message", async (ctx) => {
     await ctx.reply(
         "🤔 *I don't recognize that command.*\n\n" +
-        "Commands: /positions, /risk, /settings, /start\n" +
+        "Commands: /settings, /start, /setalert, /togglealerts\n" +
         "Type /start to see all available commands.",
         { parse_mode: "Markdown" }
     );

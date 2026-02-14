@@ -121,6 +121,19 @@ export default function Settings() {
         });
     };
 
+    // Helper to mask sensitive Telegram data
+    const maskUserId = (id: string | number) => {
+        const s = String(id);
+        if (s.length <= 4) return s;
+        return `${s.slice(0, 2)}**${s.slice(-2)}`;
+    };
+
+    const maskUsername = (name: string) => {
+        if (!name) return 'User';
+        if (name.length <= 4) return name;
+        return `${name.slice(0, 2)}***${name.slice(-2)}`;
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {!isConnected && (
@@ -164,7 +177,7 @@ export default function Settings() {
                                     </div>
                                     {isLinked === true && (
                                         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                                            Linked to @{linkedUser?.username || 'User'}
+                                            Linked to @{maskUsername(linkedUser?.username)}
                                         </Badge>
                                     )}
                                     {isLinked === false && (
@@ -189,7 +202,7 @@ export default function Settings() {
                                     <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-muted-foreground">Connected User ID</span>
-                                            <span className="font-mono text-foreground font-bold">{linkedUser?.chat_id}</span>
+                                            <span className="font-mono text-foreground font-bold">{maskUserId(linkedUser?.chat_id)}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-muted-foreground">Alerts Status</span>
