@@ -174,6 +174,7 @@ export function BorrowModalContent({ onClose, pool, isEmbedded = false }: Borrow
                     const poolAddress = isKinza ? KINZA_POOL : RADIANT_LENDING_POOL;
                     if (isNative) {
                         const gatewayAddress = isKinza ? KINZA_GATEWAY : RADIANT_GATEWAY;
+                        // For repaying native asset, we must send value and call repayETH
                         if (gatewayAddress) writeContract({ address: gatewayAddress, abi: WETH_GATEWAY_ABI, functionName: 'repayETH', args: [poolAddress, amountBig, BigInt(2), address!], value: amountBig });
                     } else {
                         const assetAddr = underlyingAddress!;

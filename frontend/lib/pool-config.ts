@@ -188,7 +188,7 @@ export const WETH_GATEWAY_ABI = parseAbi([
 ]);
 
 // Kinza WrappedTokenGatewayV3 (BSC)
-export const KINZA_GATEWAY = '0x8241cb5b0c83971E9d5FBF2efA10ecEfd9c8EA82' as `0x${string}`;
+export const KINZA_GATEWAY = '0xCC650b486f723C924370656b509a82bD69526739' as `0x${string}`;
 
 // Radiant WETHGateway (BSC)
 export const RADIANT_GATEWAY = '0xD0FC69Dc0e720d5be669E53b7B5015F6FC258Ac9' as `0x${string}`;
