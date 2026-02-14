@@ -150,36 +150,36 @@ export function EarnTable() {
         <div className="space-y-4">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                    <button className="px-4 py-1.5 rounded-full bg-[#1A1A1E] text-white text-sm font-medium border border-emerald-500/20 text-emerald-400">
-                        Earn
-                    </button>
-                    <div className="flex items-center gap-1.5 ml-2">
+                <button className="px-4 py-1.5 rounded-full bg-[#1A1A1E] text-white text-sm font-medium border border-emerald-500/20 text-emerald-400">
+                    Earn
+                </button>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         {PROTOCOLS.map(proto => (
                             <button
                                 key={proto.id}
                                 onClick={() => setSelectedProtocol(selectedProtocol === proto.id ? null : proto.id)}
-                                className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center overflow-hidden ${selectedProtocol === proto.id ? 'border-emerald-500 scale-110 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-white/5 opacity-50 hover:opacity-100 hover:border-white/20'}`}
+                                className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center overflow-hidden bg-black/40 ${selectedProtocol === proto.id ? 'border-emerald-500 scale-110 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'border-white/5 opacity-50 hover:opacity-100 hover:border-white/20'}`}
                                 title={proto.name}
                             >
-                                <img src={proto.img} className="w-5 h-5 object-contain" alt={proto.name} />
+                                <img src={proto.img} className="w-full h-full object-cover rounded-full" alt={proto.name} />
                             </button>
                         ))}
                     </div>
-                </div>
-                <div className="hidden md:flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
-                    <button
-                        onClick={() => setViewMode('card')}
-                        className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
-                    >
-                        <LayoutGrid className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => setViewMode('list')}
-                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
-                    >
-                        <List className="w-4 h-4" />
-                    </button>
+                    <div className="hidden md:flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
+                        <button
+                            onClick={() => setViewMode('card')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
+                        >
+                            <List className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
