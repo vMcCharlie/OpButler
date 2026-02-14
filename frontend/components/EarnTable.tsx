@@ -122,7 +122,7 @@ export function EarnTable() {
                         Earn
                     </button>
                 </div>
-                <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
+                <div className="hidden md:flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
                     <button
                         onClick={() => setViewMode('card')}
                         className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
@@ -219,7 +219,9 @@ export function EarnTable() {
                                         <div className="col-span-4 md:col-span-2 flex items-center justify-end pl-0 md:pl-4 gap-1">
                                             <div className="flex flex-col items-end flex-1 min-w-0">
                                                 <span className="font-bold text-white text-[10px] md:text-sm max-w-full truncate">{formatMoney(pool.tvlUsd)}</span>
-                                                <span className="text-[9px] md:text-xs text-muted-foreground">{formatMoney(pool.tvlUsd)}</span>
+                                                <span className="text-[9px] md:text-xs text-muted-foreground">
+                                                    {depositedUSD > 0 ? `Your: ${formatMoney(depositedUSD)}` : formatMoney(pool.tvlUsd)}
+                                                </span>
                                             </div>
 
                                             <div

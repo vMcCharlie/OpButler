@@ -130,7 +130,7 @@ export function BorrowTable() {
                         Borrow
                     </button>
                 </div>
-                <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
+                <div className="hidden md:flex items-center gap-2 bg-muted/20 p-1 rounded-lg">
                     <button
                         onClick={() => setViewMode('card')}
                         className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-muted text-white shadow-sm' : 'text-muted-foreground hover:text-white'}`}
@@ -150,12 +150,12 @@ export function BorrowTable() {
             {viewMode === 'list' && (
                 <>
                     {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-4 px-3 md:px-6 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        <div className="col-span-6 md:col-span-4">Asset</div>
+                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-2 md:px-6 py-2 text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="col-span-5 md:col-span-4">Asset</div>
                         <div className="col-span-3 md:col-span-2 text-right">Borrow APY</div>
                         <div className="hidden md:block col-span-2 text-right">Max LTV</div>
                         <div className="hidden md:block col-span-2 text-right">Liquidity</div>
-                        <div className="col-span-3 md:col-span-2 text-right">Your Debt</div>
+                        <div className="col-span-4 md:col-span-2 text-right pr-2 md:pr-0">Liquidity</div>
                     </div>
 
                     {/* Table Body */}
@@ -189,9 +189,9 @@ export function BorrowTable() {
                                     onClick={() => setSelectedPool(pool)}
                                     className="group relative bg-[#0f0f12] hover:bg-[#16161a] border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300 cursor-pointer"
                                 >
-                                    <div className="grid grid-cols-12 gap-4 px-3 md:px-6 py-4 md:py-5 items-center">
+                                    <div className="grid grid-cols-12 gap-2 md:gap-4 px-2 md:px-6 py-3 md:py-5 items-center">
                                         {/* Asset */}
-                                        <div className="col-span-6 md:col-span-4 flex items-center gap-4">
+                                        <div className="col-span-5 md:col-span-4 flex items-center gap-4">
                                             <div className="relative flex-shrink-0">
                                                 <AssetIcon symbol={pool.symbol} className="w-8 h-8 md:w-10 md:h-10" />
                                                 {protocolImg && (
@@ -201,8 +201,8 @@ export function BorrowTable() {
                                                 )}
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="font-bold text-white text-sm md:text-base truncate">{pool.symbol}</span>
-                                                <span className="text-[10px] md:text-xs text-muted-foreground truncate">{protocolDisplay}</span>
+                                                <span className="font-bold text-white text-xs md:text-base truncate leading-tight">{pool.symbol}</span>
+                                                <span className="text-[9px] md:text-xs text-muted-foreground truncate leading-tight">{protocolDisplay}</span>
                                             </div>
                                         </div>
 
@@ -224,18 +224,16 @@ export function BorrowTable() {
                                         </div>
 
                                         {/* Your Debt */}
-                                        <div className="col-span-3 md:col-span-2 flex items-center justify-between pl-0 md:pl-4">
+                                        <div className="col-span-4 md:col-span-2 flex items-center justify-end pl-0 md:pl-4 gap-1">
                                             <div className="flex flex-col items-end flex-1 min-w-0">
-                                                <span className="font-bold text-white text-xs md:text-sm max-w-full truncate">
-                                                    {borrowedAmount > 0
-                                                        ? `${formatTokenAmount(borrowedAmount)} ${pool.symbol}`
-                                                        : '-'}
+                                                <span className="font-bold text-white text-[10px] md:text-sm max-w-full truncate">
+                                                    {formatMoney(availableLiquidity)}
                                                 </span>
-                                                <span className="text-[10px] md:text-xs text-muted-foreground">
-                                                    {borrowedUSD > 0 ? formatMoney(borrowedUSD) : '$0.00'}
+                                                <span className="text-[9px] md:text-xs text-muted-foreground">
+                                                    {borrowedUSD > 0 ? `Debt: ${formatMoney(borrowedUSD)}` : formatMoney(availableLiquidity)}
                                                 </span>
                                             </div>
-                                            <div className="ml-2 md:ml-4 flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-colors group-hover:border-blue-500/50 group-hover:text-blue-500">
+                                            <div className="ml-1 md:ml-4 flex-shrink-0 w-5 h-5 md:w-8 md:h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors group-hover:border-blue-500/50 group-hover:text-blue-500">
                                                 <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
                                             </div>
                                         </div>
