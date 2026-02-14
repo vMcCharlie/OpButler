@@ -182,8 +182,15 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                 <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[1000px] h-auto max-h-[85vh] sm:h-auto overflow-y-auto bg-[#0f0f12] border-white/10 text-white p-0 gap-0 rounded-2xl sm:rounded-3xl">
                     <div className="sticky top-0 z-20 flex items-center justify-between p-4 md:p-6 border-b border-white/10 bg-[#0f0f12]/80 backdrop-blur-md">
                         <div>
-                            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                                <Layers className="text-[#CEFF00] w-5 h-5" />
+                            <DialogTitle className="flex items-center gap-3 text-xl font-bold">
+                                <div className="flex items-center">
+                                    <div className="relative z-10">
+                                        <AssetIcon symbol={tokenA} size={28} className="border-2 border-[#0f0f12] rounded-full bg-[#0f0f12]" />
+                                    </div>
+                                    <div className="relative -ml-3 z-0">
+                                        <AssetIcon symbol={tokenB} size={28} className="border-2 border-[#0f0f12] rounded-full bg-[#0f0f12] opacity-80" />
+                                    </div>
+                                </div>
                                 {tokenA} / {tokenB} Strategy
                             </DialogTitle>
                             <DialogDescription className="text-xs text-muted-foreground mt-1">
