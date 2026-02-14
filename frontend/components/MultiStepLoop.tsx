@@ -121,7 +121,7 @@ export function MultiStepLoop() {
     const [isExecuting, setIsExecuting] = useState(false);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [isApproving, setIsApproving] = useState(false);
-    const lastProcessedHash = useRef<string | undefined>();
+    const lastProcessedHash = useRef<string | undefined>(undefined);
 
     // -- Wallet Balance Hooks --
     const { data: nativeBalance } = useBalance({

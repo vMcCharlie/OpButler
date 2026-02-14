@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS, OpButlerWalletABI } from "@/contracts";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { useYields } from "@/hooks/useYields";
 import { useTokenPrices } from "@/hooks/useTokenPrices";

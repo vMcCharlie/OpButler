@@ -12,7 +12,6 @@ import { useAggregatedHealth, ProtocolHealth } from "@/hooks/useAggregatedHealth
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
-import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
 import { TrendingUp, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp, Heart, Activity, Loader2 } from "lucide-react";
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { VENUS_COMPTROLLER, COMPTROLLER_ABI } from '@/lib/pool-config';
@@ -91,16 +90,8 @@ export function Portfolio() {
     const router = useRouter();
     const [expandedProtocol, setExpandedProtocol] = useState<string | null>(null);
 
-    // Smart Wallet
-    const { data: walletAddressRaw } = useReadContract({
-        address: OPBUTLER_FACTORY_ADDRESS as `0x${string}`,
-        abi: OpButlerFactoryABI,
-        functionName: 'getWallet',
-        args: address ? [address] : undefined,
-        query: { enabled: !!address }
-    });
-    const walletAddress = (walletAddressRaw && walletAddressRaw !== '0x0000000000000000000000000000000000000000')
-        ? walletAddressRaw : undefined;
+    // Smart Wallet (Using EOA for now as Contracts are removed)
+    const walletAddress = address;
 
     // Portfolio Data
     const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, positions: venusPositions } = useVenusPortfolio();

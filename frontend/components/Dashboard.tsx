@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Markets } from "@/components/Markets"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAccount, useReadContract } from 'wagmi';
-import { OpButlerFactoryABI, OPBUTLER_FACTORY_ADDRESS } from "@/contracts";
 import { useAggregatedHealth } from "@/hooks/useAggregatedHealth";
 import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
@@ -24,21 +23,14 @@ const chartData = [
 export function Dashboard() {
     const { address } = useAccount();
 
-    // 1. Get User's Smart Wallet Address
-    const { data: walletAddressRaw } = useReadContract({
-        address: OPBUTLER_FACTORY_ADDRESS as `0x${string}`,
-        abi: OpButlerFactoryABI,
-        functionName: 'getWallet',
-        args: address ? [address] : undefined,
-        query: { enabled: !!address }
-    });
-
-    const walletAddress = (walletAddressRaw && walletAddressRaw !== '0x0000000000000000000000000000000000000000')
-        ? walletAddressRaw
-        : undefined;
-
     // 2. Fetch Aggregated Health Data
-    const healthData = useAggregatedHealth(walletAddress as `0x${string}` | undefined);
+    // We use the connected address directly as the "wallet" for now, or adapt as needed.
+    // If the hook expects a specific smart wallet address, and we removed the factory fetch,
+    // we should clarify if we just pass `address` or if we need another way.
+    // Assuming for now `address` (EOA) or `undefined` is acceptable or that
+    // the previous logic was specifically for a smart wallet factory that is now deprecated.
+    // If the user says "we don't need contracts", we likely rely on EOA or a different mechanism.
+    const healthData = useAggregatedHealth(address);
     const isLoading = healthData.isLoading;
 
     // 3. Fetch Portfolio Data
