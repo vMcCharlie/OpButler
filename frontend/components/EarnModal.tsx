@@ -109,8 +109,8 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
         address: KINZA_DATA_PROVIDER,
         abi: [{ name: 'getUserReserveData', type: 'function', stateMutability: 'view', inputs: [{ name: 'asset', type: 'address' }, { name: 'user', type: 'address' }], outputs: [{ name: 'currentATokenBalance', type: 'uint256' }, { name: 'currentStableDebtBalance', type: 'uint256' }, { name: 'currentVariableDebtBalance', type: 'uint256' }, { name: 'principalStableDebt', type: 'uint256' }, { name: 'scaledVariableDebt', type: 'uint256' }, { name: 'stableBorrowRate', type: 'uint256' }, { name: 'liquidityRate', type: 'uint256' }, { name: 'stableRateLastUpdated', type: 'uint40' }, { name: 'usedAsCollateralEnabled', type: 'bool' }] }] as const,
         functionName: 'getUserReserveData',
-        args: underlyingAddress && address ? [
-            isNative ? '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}` : underlyingAddress,
+        args: (underlyingAddress || isNative) && address ? [
+            isNative ? '0xCC650b486f723C924370656b509a82bD69526739' as `0x${string}` : underlyingAddress!,
             address
         ] : undefined,
         query: { enabled: !!address && isKinza && (!!underlyingAddress || isNative), refetchInterval: 10000 }
@@ -121,7 +121,7 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
         abi: [{ name: 'getReserveData', type: 'function', stateMutability: 'view', inputs: [{ name: 'asset', type: 'address' }], outputs: [{ name: 'configuration', type: 'uint256' }, { name: 'liquidityIndex', type: 'uint128' }, { name: 'currentLiquidityRate', type: 'uint128' }, { name: 'variableBorrowIndex', type: 'uint128' }, { name: 'currentVariableBorrowRate', type: 'uint128' }, { name: 'currentStableBorrowRate', type: 'uint128' }, { name: 'lastUpdateTimestamp', type: 'uint40' }, { name: 'aTokenAddress', type: 'address' }, { name: 'stableDebtTokenAddress', type: 'address' }, { name: 'variableDebtTokenAddress', type: 'address' }, { name: 'interestRateStrategyAddress', type: 'address' }, { name: 'id', type: 'uint8' }] }] as const,
         functionName: 'getReserveData',
         args: (underlyingAddress || isNative) ? [
-            isNative ? '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}` : underlyingAddress!
+            isNative ? '0xCC650b486f723C924370656b509a82bD69526739' as `0x${string}` : underlyingAddress!
         ] : undefined,
         query: { enabled: !!address && isRadiant && (!!underlyingAddress || isNative), staleTime: 60 * 60 * 1000 }
     });
