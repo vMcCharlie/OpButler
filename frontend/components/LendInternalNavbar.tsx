@@ -9,8 +9,7 @@ import { HandCoins, Wallet, Layers, Repeat } from 'lucide-react';
 const TABS = [
     { id: 'earn', label: 'Earn', href: '/lend/earn', icon: HandCoins },
     { id: 'borrow', label: 'Borrow', href: '/lend/borrow', icon: Wallet },
-    { id: 'multiply', label: 'Multiply', href: '/lend/multiply', icon: Layers },
-    { id: 'payoff', label: 'Pay Off', href: '/lend/payoff', icon: Repeat },
+    { id: 'strategy', label: 'Strategy', href: '/lend/strategy', icon: Layers },
 ];
 
 export function LendInternalNavbar() {
@@ -18,7 +17,7 @@ export function LendInternalNavbar() {
 
     return (
         <div className="flex justify-center items-center w-full h-16 mb-2">
-            <div className="grid grid-cols-4 gap-1 p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative w-full max-w-3xl md:w-auto md:flex md:gap-0">
+            <div className="grid grid-cols-3 gap-1 p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-sm relative w-full max-w-2xl md:w-auto md:flex md:gap-0">
                 {TABS.map((tab) => {
                     const isActive = pathname === tab.href;
                     return (

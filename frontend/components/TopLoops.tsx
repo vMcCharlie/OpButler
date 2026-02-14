@@ -4,11 +4,20 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Flame, Loader2, Shield, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Loader2, Shield, ShieldCheck } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useSmartLoops, SmartLoop } from '@/hooks/useSmartLoops';
 
 type FilterType = 'all' | 'stable' | 'safe' | 'venus' | 'kinza' | 'radiant';
+
+import { StrategyModal } from './StrategyModal';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface TopLoopsProps {
     compact?: boolean;
@@ -20,6 +29,8 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
     const router = useRouter();
     const { loops, isLoading, getTopLoops, getStableLoops, getSafeLoops, getByProtocol } = useSmartLoops();
     const [filter, setFilter] = useState<FilterType>('all');
+    const [selectedLoop, setSelectedLoop] = useState<SmartLoop | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Apply filters
     let filteredLoops: SmartLoop[] = [];
@@ -47,15 +58,15 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
     const displayLoops = filteredLoops.slice(0, maxItems);
 
     const handleMultiply = (loop: SmartLoop) => {
-        // Navigate to Multiply page with params to preset the looper
-        router.push(`/lend/multiply?protocol=${loop.protocol}&supply=${loop.supplyAsset}&borrow=${loop.borrowAsset}#looper-section`);
+        setSelectedLoop(loop);
+        setIsModalOpen(true);
     };
 
     if (isLoading) {
         return (
             <div className="w-full flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Calculating optimal loops...</span>
+                <span className="ml-3 text-muted-foreground">Calculating optimal strategies...</span>
             </div>
         );
     }
@@ -63,37 +74,56 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
     return (
         <div className="w-full">
             {/* Header */}
-            <div className={`flex items-center justify-between ${compact ? 'mb-4' : 'mb-8'}`}>
+            <div className={`flex items-center justify-between ${compact ? 'mb-4' : 'mb-6 md:mb-8'}`}>
                 <div className="flex items-center gap-3">
-                    <h2 className={`font-bold text-white font-outfit ${compact ? 'text-xl' : 'text-3xl'}`}>
-                        {compact ? 'Suggested Loops' : 'Top Loops'}
+                    <h2 className={`font-bold text-white font-outfit ${compact ? 'text-xl' : 'text-2xl md:text-3xl'}`}>
+                        {compact ? 'Suggested Strategies' : 'Top Strategies'}
                     </h2>
-                    <Flame className={`text-orange-500 animate-pulse ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
                 </div>
 
                 {showFilters && (
-                    <div className="flex gap-1 p-1 bg-white/5 rounded-lg border border-white/10 flex-wrap">
-                        {[
-                            { key: 'all', label: 'All', icon: null },
-                            { key: 'stable', label: 'Stable', icon: Shield },
-                            { key: 'safe', label: 'Safe', icon: ShieldCheck },
-                            { key: 'venus', label: 'Venus', icon: null },
-                            { key: 'kinza', label: 'Kinza', icon: null },
-                            { key: 'radiant', label: 'Radiant', icon: null },
-                        ].map(f => (
-                            <button
-                                key={f.key}
-                                onClick={() => setFilter(f.key as FilterType)}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${filter === f.key
-                                    ? 'bg-[#CEFF00] text-black shadow-lg'
-                                    : 'text-muted-foreground hover:text-white'
-                                    }`}
-                            >
-                                {f.icon && <f.icon size={14} className={filter === f.key ? "text-black" : "text-current"} />}
-                                {f.label}
-                            </button>
-                        ))}
-                    </div>
+                    <>
+                        {/* Desktop View */}
+                        <div className="hidden md:flex gap-1 p-1 bg-white/5 rounded-lg border border-white/10 flex-wrap">
+                            {[
+                                { key: 'all', label: 'All', icon: null },
+                                { key: 'stable', label: 'Stable', icon: Shield },
+                                { key: 'safe', label: 'Safe', icon: ShieldCheck },
+                                { key: 'venus', label: 'Venus', icon: null },
+                                { key: 'kinza', label: 'Kinza', icon: null },
+                                { key: 'radiant', label: 'Radiant', icon: null },
+                            ].map(f => (
+                                <button
+                                    key={f.key}
+                                    onClick={() => setFilter(f.key as FilterType)}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${filter === f.key
+                                        ? 'bg-[#CEFF00] text-black shadow-lg'
+                                        : 'text-muted-foreground hover:text-white'
+                                        }`}
+                                >
+                                    {f.icon && <f.icon size={14} className={filter === f.key ? "text-black" : "text-current"} />}
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="md:hidden">
+                            <Select value={filter} onValueChange={(val) => setFilter(val as FilterType)}>
+                                <SelectTrigger className="w-[140px] h-8 rounded-full bg-white/5 border-white/10 text-white text-xs font-bold ring-offset-0 focus:ring-0 px-4">
+                                    <SelectValue placeholder="Filter" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#121216] border-white/10 text-white">
+                                    <SelectItem value="all" className="text-xs font-bold focus:bg-white/10 focus:text-white">All Strategies</SelectItem>
+                                    <SelectItem value="stable" className="text-xs font-bold focus:bg-white/10 focus:text-white">Stable</SelectItem>
+                                    <SelectItem value="safe" className="text-xs font-bold focus:bg-white/10 focus:text-white">Safe</SelectItem>
+                                    <SelectItem value="venus" className="text-xs font-bold focus:bg-white/10 focus:text-white">Venus</SelectItem>
+                                    <SelectItem value="kinza" className="text-xs font-bold focus:bg-white/10 focus:text-white">Kinza</SelectItem>
+                                    <SelectItem value="radiant" className="text-xs font-bold focus:bg-white/10 focus:text-white">Radiant</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -106,7 +136,7 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
                     <div
                         key={loop.id}
                         onClick={() => handleMultiply(loop)}
-                        className={`group relative bg-[#121216] border border-white/10 hover:border-[#CEFF00]/50 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-[#CEFF00]/10 cursor-pointer overflow-hidden ${compact ? 'p-3 hover:bg-[#CEFF00]/5' : 'p-5 hover:-translate-y-1'
+                        className={`group relative bg-[#0f0f12] border border-white/5 hover:border-[#CEFF00]/50 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-[#CEFF00]/10 cursor-pointer overflow-hidden ${compact ? 'p-3 hover:bg-[#CEFF00]/5' : 'p-4 md:p-6 hover:-translate-y-1'
                             }`}
                     >
                         {!compact && (
@@ -184,7 +214,7 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
 
                                 {/* Pair Name */}
                                 <h3 className="font-bold text-white group-hover:text-[#CEFF00] transition-colors text-lg mb-1">
-                                    {loop.pair} Loop
+                                    {loop.pair} Strategy
                                 </h3>
 
                                 {/* Badges */}
@@ -228,7 +258,7 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
                                     }}
                                     className="w-full bg-white/5 hover:bg-[#CEFF00] hover:text-black text-white font-bold border border-white/10 hover:border-[#CEFF00] transition-all mt-4"
                                 >
-                                    Multiply <ArrowRight className="ml-2 w-4 h-4" />
+                                    Learn More <ArrowRight className="ml-2 w-4 h-4" />
                                 </Button>
                             </>
                         )}
@@ -238,8 +268,20 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
 
             {displayLoops.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                    No loops found for this filter. Try a different selection.
+                    No strategies found for this filter. Try a different selection.
                 </div>
+            )}
+
+            {selectedLoop && (
+                <StrategyModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    initialData={{
+                        protocol: selectedLoop.protocol as 'venus' | 'kinza' | 'radiant',
+                        supplyAsset: selectedLoop.supplyAsset,
+                        borrowAsset: selectedLoop.borrowAsset
+                    }}
+                />
             )}
         </div>
     );
