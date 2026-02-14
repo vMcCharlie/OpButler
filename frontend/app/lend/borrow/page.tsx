@@ -11,10 +11,12 @@ export default function BorrowPage() {
             <div className="flex items-center gap-2 mb-6">
                 <h2 className="text-2xl font-bold text-white">Available Markets</h2>
             </div>
-            <p className="text-muted-foreground mb-8 flex items-center gap-2 text-sm">
-                <Info className="w-4 h-4 text-blue-400" />
-                You must deposit collateral in the "Earn" section required by the protocol before you can borrow.
-            </p>
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 mb-8 flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-blue-100/80 text-sm leading-relaxed font-medium">
+                    You must deposit collateral in the <span className="text-blue-400 font-bold">"Earn"</span> section required by the protocol before you can borrow.
+                </p>
+            </div>
 
             {/* Table */}
             <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}>

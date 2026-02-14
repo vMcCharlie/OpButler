@@ -4,10 +4,17 @@ import { Suspense } from 'react';
 import { EarnTable } from "@/components/EarnTable";
 import { LendHeader } from "@/components/LendHeader";
 import { Loader2, HelpCircle } from 'lucide-react';
+import { InfoModal } from "@/components/InfoModal";
+import { useState } from 'react';
 
 export default function EarnPage() {
+    const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Info Modal */}
+            <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
+
             {/* Header / Metrics */}
             <LendHeader />
 
@@ -15,10 +22,13 @@ export default function EarnPage() {
             <div className="flex items-center gap-2 mb-6">
                 <h2 className="text-2xl font-bold text-white">Earn Interest on Your Crypto</h2>
             </div>
-            <p className="text-muted-foreground mb-8 flex items-center gap-2">
+            <p className="text-muted-foreground mb-8 flex items-center flex-wrap gap-2 text-sm">
                 Passively get yield using OpButler Lend.
-                <span className="text-emerald-400 flex items-center gap-1 text-sm font-medium cursor-pointer hover:underline">
-                    How it works <HelpCircle className="w-3 h-3" />
+                <span
+                    onClick={() => setIsInfoModalOpen(true)}
+                    className="text-emerald-400 flex items-center gap-1.5 font-bold cursor-pointer hover:underline transition-all"
+                >
+                    How it works <HelpCircle className="w-4 h-4" />
                 </span>
             </p>
 
