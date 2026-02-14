@@ -469,6 +469,15 @@ export function EarnModalContent({ onClose, pool, isEmbedded = false }: EarnModa
                             <div className="text-muted-foreground/30 font-black italic">≈ {formatMoney(amountNum * tokenPrice)}</div>
                         </div>
                     </div>
+
+                    {activeTab === 'withdraw' && isVenus && collateral.isCollateral && (
+                        <div className="flex items-start gap-2 p-2 md:p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 shadow-lg">
+                            <AlertTriangle className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-500 shrink-0 mt-0.5" />
+                            <div className="text-[10px] md:text-[11px] text-amber-100 font-medium leading-relaxed">
+                                This asset is currently enabled as <span className="font-bold text-amber-400">Collateral</span>. You must turn off its collateral status in the <span className="font-bold text-amber-400">Portfolio</span> before it can be fully withdrawn.
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-[#121216] border border-white/5 rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3 mb-4 mx-4 md:mx-6">
