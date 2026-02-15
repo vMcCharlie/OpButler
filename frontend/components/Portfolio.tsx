@@ -472,43 +472,29 @@ export function Portfolio() {
                     </div>
                 </div>
 
-                {/* Health Score */}
-                <div className="group relative overflow-hidden rounded-[2rem] bg-[#0A0A0B] border border-white/10 p-5 md:p-8 transition-all hover:bg-white/[0.02] shadow-2xl">
+                {/* Projected Earnings */}
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#0A0A0B] border border-white/10 p-5 md:p-8 transition-all hover:bg-white/[0.04] shadow-2xl">
                     <div className="absolute top-0 right-0 p-2 md:p-4 opacity-5 group-hover:opacity-100 transition-opacity">
                         <div className="w-5 h-5 md:w-8 md:h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/5">
-                            <Heart className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                            <TrendingUp className="w-3 h-3 md:w-4 md:h-4 text-white" />
                         </div>
                     </div>
                     <div className="flex flex-col h-full justify-between">
                         <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 mb-5 md:mb-8">
-                            <div className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center border shrink-0 ${overallScore >= 7 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
-                                overallScore >= 4 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
-                                    'bg-red-500/10 border-red-500/20 text-red-500'
-                                }`}>
-                                <Heart className="w-4 h-4 md:w-5 md:h-5" />
+                            <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                                <span className="text-lg md:text-xl font-black text-emerald-500">$</span>
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-muted-foreground/40 leading-none">Health Score</span>
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-muted-foreground/40 leading-none">Est. Earnings</span>
                             </div>
                         </div>
                         <div>
-                            <div className={`text-2xl md:text-5xl font-bold leading-none tracking-tight mb-4 ${overallScore >= 7 ? 'text-emerald-400' :
-                                overallScore >= 4 ? 'text-amber-400' :
-                                    'text-red-400'
-                                }`}>
-                                {healthData.isLoading ? '...' : `${overallScore.toFixed(2)}/10`}
+                            <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3">
+                                ${healthData.isLoading ? '...' : (totalNetWorth * (globalNetAPY / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
-                            <div className="space-y-2">
-                                <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
-                                    <div
-                                        className={`h-full transition-all duration-1000 ${overallScore >= 7 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
-                                            overallScore >= 4 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
-                                                'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
-                                            }`}
-                                        style={{ width: `${overallScore * 10}%` }}
-                                    />
-                                </div>
-                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest block leading-none">Overall Account Health</span>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Projected Annual Yield</span>
                             </div>
                         </div>
                     </div>
