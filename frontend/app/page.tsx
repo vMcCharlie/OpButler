@@ -58,32 +58,8 @@ export default function LandingPage() {
 
             {/* Hero Visual - Simplified to just the abstract "Optimization" card */}
             <div className="relative h-[400px] hidden lg:block perspective-1000">
-              <div className="absolute top-20 right-10 w-[380px] bg-[#1a1b23]/90 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl transform rotate-y-[-10deg] rotate-x-[5deg] hover:rotate-0 transition-transform duration-700">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="h-12 w-12 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 animate-pulse">
-                    <Zap size={24} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-xl">Auto-Loop Active</div>
-                    <div className="text-sm text-muted-foreground">Optimization running...</div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981]"></div>
-                  </div>
-                  <div className="flex justify-between text-sm text-muted-foreground font-mono">
-                    <span>Health Factor</span>
-                    <span className="text-emerald-500 font-bold">1.25 (Safe)</span>
-                  </div>
-                  <div className="p-4 bg-white/5 rounded-lg border border-white/5 mt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-bold">Net APY</span>
-                      <span className="text-emerald-400 font-bold text-lg">+14.2%</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">Base: 3.5% + Boost: 10.7%</div>
-                  </div>
-                </div>
+              <div className="absolute top-10 right-0 w-full max-w-md transform hover:scale-105 transition-transform duration-500">
+                <RiskMonitor />
               </div>
             </div>
           </div>
@@ -96,7 +72,9 @@ export default function LandingPage() {
 
             {/* Top Loops */}
             <div>
-              <TopLoops />
+              <div>
+                <TopLoops maxItems={4} showFilters={false} />
+              </div>
             </div>
 
             {/* Risk Management Center */}
@@ -114,7 +92,7 @@ export default function LandingPage() {
                 <ul className="space-y-4 pt-4">
                   {[
                     'Real-time Health Factor monitoring across chains',
-                    'One-Click "Panic Exit" to stablecoins',
+
                     'Telegram Liquidation Alerts',
                     'Simulation mode to stress-test your strategy'
                   ].map((item, i) => (
@@ -134,8 +112,7 @@ export default function LandingPage() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="md:col-span-2 transform hover:scale-[1.02] transition-transform duration-500">
-                    {/* Placeholder for RiskMonitor - need to import it first */}
-                    <RiskMonitor />
+
                   </div>
                   <div className="md:col-span-2 transform hover:scale-[1.02] transition-transform duration-500 delay-100">
                     {/* Placeholder for LiquidationAlerts - need to import it first */}

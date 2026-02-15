@@ -9,7 +9,7 @@ export function LiquidationAlerts() {
             <div className="flex items-center justify-between mb-2">
                 <h3 className="font-bold text-white flex items-center gap-2">
                     <Bell className="text-[#CEFF00]" size={18} />
-                    Active Alerts
+                    Active Alerts via Telegram
                 </h3>
                 <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">System Online</span>
             </div>
