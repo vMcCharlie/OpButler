@@ -22,7 +22,7 @@ export default function LandingPage() {
         <div className="container max-w-screen-2xl mx-auto px-3 md:px-16">
 
           {/* Hero Section */}
-          <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-16 md:mb-32">
             <div className="space-y-8 animate-fade-in-up">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-[#CEFF00]/10 border border-[#CEFF00]/20 text-[#CEFF00] text-xs md:text-sm font-bold tracking-wide">
                 <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
@@ -56,16 +56,16 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Hero Visual - Simplified to just the abstract "Optimization" card */}
-            <div className="relative h-[400px] hidden lg:block perspective-1000">
-              <div className="absolute top-10 right-0 w-full max-w-md transform hover:scale-105 transition-transform duration-500">
+            {/* Hero Visual */}
+            <div className="relative h-auto lg:h-[400px] perspective-1000 mt-8 lg:mt-0">
+              <div className="relative lg:absolute lg:top-10 lg:right-0 w-full max-w-md mx-auto transform hover:scale-105 transition-transform duration-500">
                 <RiskMonitor />
               </div>
             </div>
           </div>
 
           {/* New Interactive Section (Strategy Builder & Top Loops) */}
-          <div className="space-y-24 mb-32">
+          <div className="space-y-16 md:space-y-24 mb-16 md:mb-32">
 
             {/* Top Loops Section */}
 
@@ -126,7 +126,7 @@ export default function LandingPage() {
 
 
           {/* Features Section */}
-          <div className="py-32 border-t border-white/5">
+          <div className="py-16 md:py-32 border-t border-white/5">
             <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
               <h2 className="text-4xl font-bold font-outfit">Everything you need, nothing you don't.</h2>
               <p className="text-muted-foreground text-lg">
@@ -198,7 +198,7 @@ export default function LandingPage() {
           </div>
 
           {/* CTA */}
-          <div className="py-32 text-center">
+          <div className="py-16 md:py-32 text-center">
             <h2 className="text-5xl font-bold font-outfit mb-8">Ready to Optimize?</h2>
             <Link href="/dashboard">
               <Button className="h-16 px-12 text-xl font-bold bg-[#CEFF00] text-black hover:bg-[#b8e600] rounded-full shadow-[0_0_30px_rgba(206,255,0,0.4)] transition-all hover:scale-105">
