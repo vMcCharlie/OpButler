@@ -50,7 +50,7 @@ export function LiquidationAlerts() {
                     <div>
                         <div className="text-sm font-bold text-blue-400">Safe Position</div>
                         <div className="text-xs text-muted-foreground mt-0.5">
-                            USDT Loop is healthy. Auto-repay active.
+                            USDT Loop is healthy.
                         </div>
                     </div>
                 </div>
@@ -59,6 +59,6 @@ export function LiquidationAlerts() {
             <div className="pt-2 text-center">
                 <button className="text-xs text-muted-foreground hover:text-[#CEFF00] underline decoration-dotted">View All Notifications</button>
             </div>
-        </Card>
+        </Card >
     );
 }
