@@ -6,7 +6,7 @@ import { LoopSelector } from "@/components/LoopSelector";
 import { TopLoops } from "@/components/TopLoops";
 import { RiskMonitor } from "@/components/RiskMonitor";
 import { LiquidationAlerts } from "@/components/LiquidationAlerts";
-import { ArrowRight, BarChart3, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, BarChart3, Bot, ShieldCheck, Zap } from 'lucide-react';
 
 export default function LandingPage() {
   return (
@@ -14,8 +14,12 @@ export default function LandingPage() {
 
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-[#CEFF00]/5 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px]"></div>
+        {/* Top Right - Primary Lime Glow */}
+        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-[#CEFF00]/15 rounded-full blur-[120px]"></div>
+        {/* Bottom Left - Emerald Glow (Safe Theme) */}
+        <div className="absolute bottom-[-20%] left-[-10%] w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[120px]"></div>
+        {/* Center Left - Subtle Lime/Emerald Mix for depth */}
+        <div className="absolute top-[30%] left-[-10%] w-[500px] h-[500px] bg-[#CEFF00]/5 rounded-full blur-[100px]"></div>
       </div>
 
       <div className="relative z-10 pt-24 md:pt-32 pb-20">
@@ -137,9 +141,9 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  title: 'Smart Automation',
-                  desc: 'Set your target leverage and let our smart contracts handle the looping. No more manual folding.',
-                  icon: <Zap className="text-[#CEFF00]" size={32} />,
+                  title: 'AI Agent Monitoring',
+                  desc: 'Our intelligent Telegram bot keeps a 24/7 watch on the blockchain and your portfolio, acting as your personal AI risk manager.',
+                  icon: <Bot className="text-[#CEFF00]" size={32} />,
                   bg: 'bg-[#CEFF00]/5'
                 },
                 {
