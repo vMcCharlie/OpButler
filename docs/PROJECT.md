@@ -10,10 +10,10 @@ DeFi offers high yields, but managing positions across multiple lending protocol
 ## 💡 The Solution
 
 **OpButler** acts as your personal DeFi optimization butler. It aggregates your positions and uses an AI agent to monitor them 24/7.
--   **Unified Dashboard**: One place to view and manage all your BNB Chain lending positions.
--   **Telegram AI Agent**: A bot that sends you instant alerts on health degradation and allows you to query your portfolio status via natural language.
--   **One-Click Strategies**: Pre-packaged, risk-assessed looping strategies to leverage your assets safely.
--   **Risk Monitor**: A dedicated system that visualizes your proximity to liquidation and suggests actions.
+-   [x] **Unified Portfolio Manager**: Supply, borrow, and manage yields across **Venus, Kinza, and Radiant** all in one app. No more tab-switching.
+-   [x] **AI Risk Guard**: A Telegram Agent that monitors your health 24/7. It sends instant **Risk Alerts** and provides **AI-driven suggestions** (e.g., "Repay 5 BNB to avoid liquidation") to keep you safe.
+-   [x] **Strategy Architect**: Build and simulate complex **Smart Loop** strategies. Visualize potential APY and risk scenarios *before* execution.
+-   [x] **Yield Dashboard**: Real-time view of your net worth, net APY, and liquidation proximity.
 
 ## 🌍 Impact
 
@@ -22,14 +22,13 @@ OpButler democratizes advanced DeFi strategies for the average user on BNB Chain
 ## 🗺️ Roadmap
 
 ### Phase 1: Foundation (Current)
--   [x] Dashboard for Venus, Kinza, Radiant.
--   [x] Basic Telegram Bot for alerts and queries.
--   [x] "Smart Loop" strategies execution.
--   [x] Real-time Health Factor monitoring.
+-   [x] **Unified Dashboard**: Manage positions on Venus, Kinza, Radiant.
+-   [x] **AI Risk Agent**: Telegram bot with proactive health alerts and remedial suggestions.
+-   [x] **Strategy Simulator**: "Smart Loop" architecture to design and verify high-yield strategies.
+-   [x] **Real-time Monitoring**: Instant updates on Health Factor and Liquidation risks.
 
 ### Phase 2: Automation
 -   [ ] **Auto-Rebalance**: Smart contracts that automatically repay or deleverage loops when risk thresholds are met.
--   [ ] **AI Insights**: LLM-powered analysis of market trends to suggest the best yield strategies dynamically.
 -   [ ] **One-Click Migration**: Easily move positions between protocols to chase the highest APY.
 
 ### Phase 3: Expansion

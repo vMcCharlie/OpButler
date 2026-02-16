@@ -211,6 +211,13 @@ export function StrategyBuilder() {
             {/* Header / Protocol Selector */}
             <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${mode === 'loop' ? 'from-transparent via-primary to-transparent' : mode === 'refinance' ? 'from-transparent via-blue-500 to-transparent' : 'from-transparent via-red-500 to-transparent'} opacity-50 transition-colors duration-500`}></div>
 
+            {/* Simulation Badge */}
+            <div className="absolute top-2 right-2 z-10">
+                <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <AlertTriangle size={10} /> SIMULATION MODE
+                </div>
+            </div>
+
             <CardHeader className="pb-4">
                 <div className="flex flex-col gap-4">
                     {/* Strategy Mode Toggles */}
@@ -552,7 +559,7 @@ export function StrategyBuilder() {
                         className="w-full h-12 text-lg font-bold"
                         onClick={openConnectModal}
                     >
-                        Connect Wallet to Execute
+                        Connect Wallet to Simulate
                     </Button>
                 ) : (
                     <Button
@@ -568,11 +575,11 @@ export function StrategyBuilder() {
                         {(isWritePending || isConfirming) ? 'Processing on Blockchain...' : (
                             <span className="flex items-center gap-2">
                                 {mode === 'loop' ? (
-                                    <>Boost Yield <TrendingUp size={20} /></>
+                                    <>Simulate Yield Boost <TrendingUp size={20} /></>
                                 ) : mode === 'refinance' ? (
-                                    <>Move Loan <ArrowRight size={20} /></>
+                                    <>Simulate Move <ArrowRight size={20} /></>
                                 ) : (
-                                    <>Confirm Exit <AlertTriangle size={20} /></>
+                                    <>Simulate Exit <AlertTriangle size={20} /></>
                                 )}
                             </span>
                         )}
