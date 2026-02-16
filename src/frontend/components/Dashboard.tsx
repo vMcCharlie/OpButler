@@ -96,11 +96,11 @@ export function Dashboard() {
                         </div>
                         <div>
                             <div className="text-2xl md:text-5xl font-bold text-white leading-none tracking-tight mb-2 md:mb-3">
-                                ${isLoading ? '...' : totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${!address ? '0.00' : isLoading ? '...' : totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                {isLoading ? (
+                                {isLoading && address ? (
                                     <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Loading...</span>
                                 ) : (
                                     <div className="flex items-baseline gap-1.5">
@@ -130,7 +130,7 @@ export function Dashboard() {
                         </div>
                         <div>
                             <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3">
-                                ${isLoading ? '...' : totalSupplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${!address ? '0.00' : isLoading ? '...' : totalSupplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
@@ -153,7 +153,7 @@ export function Dashboard() {
                         </div>
                         <div>
                             <div className="text-2xl md:text-5xl font-bold text-red-500 leading-none tracking-tight mb-2 md:mb-3">
-                                ${isLoading ? '...' : totalBorrowed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${!address ? '0.00' : isLoading ? '...' : totalBorrowed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
@@ -181,7 +181,7 @@ export function Dashboard() {
                         </div>
                         <div>
                             <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3">
-                                ${isLoading ? '...' : (totalNetWorth * (globalNetAPY / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${!address ? '0.00' : isLoading ? '...' : (totalNetWorth * (globalNetAPY / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />

@@ -7,7 +7,7 @@ This guide covers the architecture, setup, and deployment of the OpButler projec
 OpButler consists of two main components:
 
 1.  **Frontend (Next.js)**: A responsive web dashboard for users to connect their wallets, view positions, and execute strategies.
-2.  **Telegram Bot (Node.js/Grammy)**: A backend service that monitors user positions, sends alerts, and handles natural language queries via Telegram.
+2.  **Telegram Bot (Node.js/Grammy)**: A backend service that monitors user positions and sends proactive alerts. It serves as an **AI Risk Guard**, analyzing portfolio health and notifying users of potential risks or opportunities.
 
 ### Tech Stack
 
@@ -82,11 +82,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 1.  **Connect Wallet**: On the frontend, click "Connect Wallet" and link your browser wallet (e.g., MetaMask).
 2.  **View Dashboard**: See your aggregated net worth and positions across Venus, Kinza, and Radiant.
-3.  **Execute Strategy**: Go to "Top Strategies", select a loop (e.g., USDT/BNB), and follow the steps to execute.
+3.  **Simulate Strategy**: Go to "Top Strategies", select a loop (e.g., USDT/BNB), and enter "Simulation Mode" to architect your position.
 4.  **Telegram Alert**:
     -   Start the bot on Telegram.
-    -   Link your wallet address via the `/start` command or by pasting your address.
-    -   Type "Check my health" to get an AI analysis of your portfolio.
+    -   Link your wallet address via the `/start` command.
+    -   Trigger a manual report by typing "Check my health" or wait for proactive alerts.
 
 ## 📦 Deployment
 

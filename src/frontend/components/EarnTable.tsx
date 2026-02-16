@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useAccount } from 'wagmi';
 import { useYields } from "@/hooks/useYields";
 import { useVenusPortfolio } from '@/hooks/useVenusPortfolio';
 import { useKinzaPortfolio } from '@/hooks/useKinzaPortfolio';
@@ -13,6 +14,7 @@ import { MarketModal } from "./MarketModal";
 import { formatMoney, formatTokenAmount } from "@/lib/utils";
 
 export function EarnTable() {
+    const { address } = useAccount();
     const { data: yields, isLoading: isYieldsLoading } = useYields();
     const { positions: venusPositions, isLoading: isVenusLoading } = useVenusPortfolio();
     const { positions: kinzaPositions, isLoading: isKinzaLoading } = useKinzaPortfolio();
@@ -52,7 +54,7 @@ export function EarnTable() {
         }
     };
 
-    const isLoading = isYieldsLoading || isVenusLoading || isKinzaLoading || isRadiantLoading;
+    const isLoading = isYieldsLoading || (!!address && (isVenusLoading || isKinzaLoading || isRadiantLoading));
 
     // Map positions for O(1) lookup: key = `${protocol}-${symbol}`
     const positionMap = useMemo(() => {
