@@ -4,10 +4,10 @@
 
 ## 🚀 Key Features
 
--   **AI Agent Monitoring**: Real-time health checks and risk analysis via a Telegram Bot.
--   **Strategy Architect**: Simulate and build loop strategies for Venus, Kinza, and Radiant protocols.
--   **Automated Safety**: "Never Get Liquidated" loop monitoring and proactive health alerts.
--   **Seamless Interface**: A modern, responsive dashboard to manage your assets and view performance.
+-   **Unified Dashboard**: Manage positions on Venus, Kinza, Radiant.
+-   **AI Risk Agent**: Telegram bot with proactive health alerts and remedial suggestions.
+-   **Strategy Simulator**: "Smart Loop" architecture to design and verify high-yield strategies.
+-   **Real-time Monitoring**: Instant updates on Health Factor and Liquidation risks.
 
 ## 📂 Repository Structure
 
