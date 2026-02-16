@@ -18,7 +18,7 @@ OpButler consists of two main components:
 
 ## 🚀 Setup Guide
 
-### prerequisites
+### Prerequisites
 -   Node.js v18+
 -   NPM or Yarn
 -   A Supabase project (for the Bot)
