@@ -6,11 +6,8 @@
 
 -   **AI Agent Monitoring**: Real-time health checks and risk analysis via a Telegram Bot.
 -   **Strategy Architect**: Simulate and build loop strategies for Venus, Kinza, and Radiant protocols.
-- 3.  **Simulate Strategy**: Go to "Top Strategies", select a loop (e.g., USDT/BNB), and simulate the yield and risk.
-4.  **Telegram Alert**:
-    -   Start the bot on Telegram.
-    -   Link your wallet address via the `/start` command.
-    -   Receive proactive "Health Reports" and risk alerts directly from the AI Risk Guard.
+-   **Automated Safety**: "Never Get Liquidated" loop monitoring and proactive health alerts.
+-   **Seamless Interface**: A modern, responsive dashboard to manage your assets and view performance.
 
 ## 📂 Repository Structure
 
@@ -27,6 +24,16 @@ This repository is organized as follows:
 ## 🛠️ Quick Start
 
 To get started with OpButler, please refer to the [Technical Guide](./docs/TECHNICAL.md) for detailed setup instructions for both the Frontend and the Telegram Bot.
+
+### Demo Instructions
+
+1.  **Connect Wallet**: On the frontend, link your browser wallet (e.g., MetaMask).
+2.  **View Dashboard**: See your aggregated net worth and positions.
+3.  **Simulate Strategy**: Go to "Top Strategies", select a loop, and simulate yield/risk.
+4.  **Telegram Alert**:
+    -   Start the bot.
+    -   Link wallet via `/start`.
+    -   Get proactive "Health Reports" from the AI Risk Guard.
 
 ### Prerequisites
 -   Node.js (v18+)
