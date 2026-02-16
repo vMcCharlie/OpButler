@@ -82,15 +82,15 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
                     <h2 className={`font-bold text-white font-outfit ${compact ? 'text-xl' : 'text-2xl md:text-3xl'}`}>
                         {compact ? 'Suggested Strategies' : 'Top Strategies'}
                     </h2>
-                        {!compact && (
-                            <button
-                                onClick={() => setIsInfoOpen(true)}
-                                className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-muted-foreground hover:text-[#CEFF00]"
-                                title="How strategies work"
-                            >
-                                <Info size={18} />
-                            </button>
-                        )}
+                    {!compact && (
+                        <button
+                            onClick={() => setIsInfoOpen(true)}
+                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-muted-foreground hover:text-[#CEFF00]"
+                            title="How strategies work"
+                        >
+                            <Info size={18} />
+                        </button>
+                    )}
                 </div>
 
                 {showFilters && (
@@ -263,15 +263,7 @@ export function TopLoops({ compact = false, maxItems = 5, showFilters = true }: 
                                 </div>
 
                                 {/* Button */}
-                                <Button
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Prevent card click
-                                        handleMultiply(loop);
-                                    }}
-                                    className="w-full bg-white/5 hover:bg-[#CEFF00] hover:text-black text-white font-bold border border-white/10 hover:border-[#CEFF00] transition-all mt-4"
-                                >
-                                    Learn More <ArrowRight className="ml-2 w-4 h-4" />
-                                </Button>
+
                             </>
                         )}
                     </div>

@@ -12,8 +12,8 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-background text-foreground selection:bg-primary/30 font-sans overflow-x-hidden">
 
-      {/* Background Gradients */}
-      <div className="fixed inset-0 pointer-events-none">
+      {/* Background Gradients (Hidden on Mobile) */}
+      <div className="fixed inset-0 pointer-events-none hidden md:block">
         {/* Top Right - Primary Lime Glow */}
         <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-[#CEFF00]/15 rounded-full blur-[120px]"></div>
         {/* Bottom Left - Emerald Glow (Safe Theme) */}
