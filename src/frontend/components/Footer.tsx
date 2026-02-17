@@ -95,9 +95,12 @@ const Footer = () => {
                         &copy; {currentYear} OpButler. All rights reserved.
                     </p>
                     <div className="flex items-center gap-6 opacity-60 hover:opacity-100 transition-opacity">
-                        {/* Placeholder links for now */}
-                        <span className="text-xs text-muted-foreground cursor-not-allowed hover:text-white transition-colors">Privacy Policy</span>
-                        <span className="text-xs text-muted-foreground cursor-not-allowed hover:text-white transition-colors">Terms of Service</span>
+                        <Link href="/privacy-policy" className="text-xs text-muted-foreground hover:text-white transition-colors">
+                            Privacy Policy
+                        </Link>
+                        <Link href="/terms-of-service" className="text-xs text-muted-foreground hover:text-white transition-colors">
+                            Terms of Service
+                        </Link>
                     </div>
                 </div>
             </div>
