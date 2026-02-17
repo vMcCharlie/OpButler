@@ -866,7 +866,7 @@ async function getAIAnalysis(protocols: ProtocolData[]): Promise<string> {
 
     try {
         const result = await aiClient.models.generateContent({
-            model: "gemini-1.5-flash-001",
+            model: "gemini-3-flash-preview",
             contents: prompt,
         });
         return result.text || "🤖 *AI Agent:* Silence from the ether... try again later.";
