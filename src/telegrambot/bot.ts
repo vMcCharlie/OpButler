@@ -882,14 +882,64 @@ bot.command("analyze", async (ctx) => {
     await ctx.reply(analysis, { parse_mode: "Markdown" });
 });
 
-// Catch-all (must be last)
-bot.on("message", async (ctx) => {
-    await ctx.reply(
-        "🤔 *I don't recognize that command.*\n\n" +
-        "Commands: /settings, /start, /setalert, /togglealerts\n" +
-        "Type /start to see all available commands.",
-        { parse_mode: "Markdown" }
-    );
+// Natural Language Chat Handler
+bot.on("message:text", async (ctx) => {
+    // 1. Send "typing" action clearly
+    await ctx.replyWithChatAction("typing");
+
+    const message = ctx.message.text;
+
+    // 2. Identify User & Context
+    const { data: user } = await supabase
+        .from("users").select("wallet_address")
+        .eq("chat_id", ctx.from?.id).single();
+
+    let portfolioContext = "User has no wallet linked. Ask them to link it via /start.";
+
+    if (user && user.wallet_address) {
+        try {
+            const protocols = await fetchAllProtocols(user.wallet_address as Address);
+            const activeProtocols = protocols.filter(p => p.status !== "inactive");
+            portfolioContext = `User's Linked Wallet: ${user.wallet_address}\nPortfolio:\n${JSON.stringify(activeProtocols, null, 2)}`;
+        } catch (e) {
+            console.error("Error fetching context:", e);
+            portfolioContext = "Error fetching full portfolio. Assume they have assets but data is unavailable.";
+        }
+    }
+
+    // 3. AI Generation
+    if (!aiClient) {
+        return ctx.reply("🤖 *AI Agent sleeping:* API Key missing.");
+    }
+
+    const prompt = `
+    You are OpButler, a helpful, chill, and safety-conscious DeFi assistant on BNB Chain.
+    
+    **User Context:**
+    ${portfolioContext}
+
+    **User Query:**
+    "${message}"
+
+    **Guidelines:**
+    1. Answer the user's question directly.
+    2. Use their portfolio data to give specific advice (e.g., "Your Venus health is low" vs "Watch your health").
+    3. Keep it conversational, short (2-3 sentences), and use emojis.
+    4. "Good Vibes" persona: Professional but relaxed.
+    5. If they ask about commands, remind them: /settings, /analyze, /setalert.
+    `;
+
+    try {
+        const result = await aiClient.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+        });
+        const response = result.text || "🤖 *OpButler:* I'm lost for words... try again.";
+        await ctx.reply(response, { parse_mode: "Markdown" });
+    } catch (err) {
+        console.error("Gemini Chat Error:", err);
+        await ctx.reply("🤖 *OpButler:* My brain is offline. Try /analyze for a specific report.");
+    }
 });
 
 // ============================================================
