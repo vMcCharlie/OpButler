@@ -738,7 +738,8 @@ async function sleep(ms: number): Promise<void> {
 
 async function runPollingCycle(): Promise<void> {
     if (pollingMutex) {
-        console.log("⏭️ Skipping poll — previous cycle still running");
+        // Reduced noise: only log if it's genuinely stuck, or just return silently
+        // console.log("⏭️ Skipping poll — previous cycle still running");
         return;
     }
 
@@ -868,6 +869,66 @@ async function getAIAnalysis(protocols: ProtocolData[]): Promise<string> {
     }
 }
 
+// /help — List all commands
+bot.command("help", async (ctx) => {
+    await ctx.reply(
+        "📚 *OpButler Commands*\n\n" +
+        "/analyze — AI Portfolio Report\n" +
+        "/settings — View your risk settings\n" +
+        "/setalert <value> — Set Health Factor threshold (e.g., 1.5)\n" +
+        "/togglealerts — Turn alerts on/off\n" +
+        "/forcecheck — ⚠️ Run immediate health check\n" +
+        "/start — Link your wallet\n\n" +
+        "💡 *Tip:* You can also just chat with me! Ask \"How is my portfolio?\"",
+        { parse_mode: "Markdown" }
+    );
+});
+
+// /forcecheck — Debugging tool to test alerts immediately
+bot.command("forcecheck", async (ctx) => {
+    const { data: user } = await supabase
+        .from("users").select("*")
+        .eq("chat_id", ctx.from?.id).single();
+
+    if (!user) return ctx.reply("❌ No wallet linked.");
+
+    await ctx.reply("🔄 Running immediate health check...");
+
+    try {
+        const protocols = await fetchAllProtocols(user.wallet_address as Address);
+        let alertTriggered = false;
+
+        for (const proto of protocols) {
+            if (proto.status === "inactive") continue;
+
+            // Check condition
+            const isCritical = proto.healthFactor < user.alert_threshold;
+
+            await ctx.reply(
+                `🔎 *${proto.protocol} Check*\n` +
+                `Health: ${proto.healthFactor.toFixed(2)} / ${user.alert_threshold}\n` +
+                `Result: ${isCritical ? "🚨 CRITICAL" : "✅ SAFE"}`,
+                { parse_mode: "Markdown" }
+            );
+
+            if (isCritical) {
+                alertTriggered = true;
+                // We don't send the official alert here to avoid messing up the cooldown/database state,
+                // but we visually confirm it would trigger.
+            }
+        }
+
+        if (alertTriggered) {
+            await ctx.reply("⚠️ Alerts WOULD trigger based on these values.");
+        } else {
+            await ctx.reply("👍 System checks out. No alerts needed right now.");
+        }
+
+    } catch (err) {
+        await ctx.reply("❌ Error checking protocols: " + err);
+    }
+});
+
 bot.command("analyze", async (ctx) => {
     const { data: user } = await supabase
         .from("users").select("wallet_address")
@@ -954,5 +1015,24 @@ bot.catch((err) => {
 setInterval(runPollingCycle, POLLING_HEARTBEAT_MS);
 
 // Start bot
-bot.start();
-console.log("🤖 OpButler Bot Started — Monitoring Venus, Kinza, Radiant on BSC");
+bot.api.setMyCommands([
+    { command: "analyze", description: "AI Portfolio Report" },
+    { command: "settings", description: "View Alerts & Settings" },
+    { command: "help", description: "List all commands" },
+    { command: "forcecheck", description: "Test Health Alerts" },
+    { command: "start", description: "Restart & Link Wallet" },
+]);
+
+// Handle fatal errors during startup
+bot.start({
+    onStart: (botInfo) => {
+        console.log(`🤖 OpButler Bot Started (@${botInfo.username}) — Monitoring Venus, Kinza, Radiant on BSC`);
+    }
+}).catch((err) => {
+    console.error("❌ BOT STARTUP ERROR:", err);
+    if (err.error_code === 409) {
+        console.error("⚠️ CONFLICT DETECTED: Another instance of this bot is already running!");
+        console.error("👉 Please stop all other running instances of the bot script.");
+    }
+    process.exit(1);
+});
