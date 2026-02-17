@@ -5,6 +5,7 @@ import { recoverMessageAddress } from "viem";
 import { bsc } from "viem/chains";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenAI } from "@google/genai";
+import { createServer } from "http";
 import "dotenv/config";
 
 // ============================================================
@@ -746,6 +747,7 @@ async function runPollingCycle(): Promise<void> {
     pollingMutex = true;
 
     try {
+        console.log(`⏱️ Starting Polling Cycle at ${new Date().toISOString()}`);
         const now = new Date();
 
         const { data: users, error } = await supabase
@@ -1020,8 +1022,22 @@ bot.api.setMyCommands([
     { command: "settings", description: "View Alerts & Settings" },
     { command: "help", description: "List all commands" },
     { command: "forcecheck", description: "Test Health Alerts" },
+    { command: "debug", description: "Diagnostics" },
     { command: "start", description: "Restart & Link Wallet" },
 ]);
+
+bot.command("debug", async (ctx) => {
+    const uptime = process.uptime();
+    const pid = process.pid;
+    await ctx.reply(
+        `🛠 **Bot Diagnostics**\n` +
+        `PID: \`${pid}\`\n` +
+        `Uptime: ${uptime.toFixed(0)}s\n` +
+        `Polling Mutex: ${pollingMutex ? "LOCKED" : "OPEN"}\n` +
+        `Heartbeat: ${POLLING_HEARTBEAT_MS / 1000}s`,
+        { parse_mode: "Markdown" }
+    );
+});
 
 // Handle fatal errors during startup
 bot.start({
@@ -1035,4 +1051,15 @@ bot.start({
         console.error("👉 Please stop all other running instances of the bot script.");
     }
     process.exit(1);
+});
+
+// ============================================================
+// Health Check Server (for Railway/Render/Heroku)
+// ============================================================
+const PORT = process.env.PORT || 3000;
+createServer((req, res) => {
+    res.writeHead(200);
+    res.end("Bot is running");
+}).listen(PORT, () => {
+    console.log(`❤️  Health check server listening on port ${PORT}`);
 });
