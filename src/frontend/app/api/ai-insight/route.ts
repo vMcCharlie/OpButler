@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -16,8 +16,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const ai = new GoogleGenAI({ apiKey });
 
         const prompt = `
       You are an autonomous Risk Agent for a DeFi user on BNB Chain.
@@ -50,9 +49,12 @@ export async function POST(req: Request) {
       Do not include markdown formatting like \`\`\`json. Just the raw JSON array.
     `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const result = await ai.models.generateContent({
+            model: "gemini-1.5-flash-001",
+            contents: prompt,
+        });
+
+        const text = result.text || "[]";
 
         // Clean up potential markdown formatting if the model disregards instructions
         const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();

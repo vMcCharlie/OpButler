@@ -4,6 +4,7 @@ import { createPublicClient, http, Address, formatUnits, formatEther, parseAbi, 
 import { recoverMessageAddress } from "viem";
 import { bsc } from "viem/chains";
 import { createClient } from "@supabase/supabase-js";
+import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
 
 // ============================================================
@@ -13,7 +14,7 @@ import "dotenv/config";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const DASHBOARD_URL = process.env.DASHBOARD_URL || "https://opbutler.vercel.app";
+const DASHBOARD_URL = process.env.DASHBOARD_URL || "https://opbutler.xyz";
 
 if (!BOT_TOKEN) { console.error("❌ TELEGRAM_BOT_TOKEN required"); process.exit(1); }
 if (!SUPABASE_URL || !SUPABASE_KEY) { console.error("❌ SUPABASE_URL and SUPABASE_KEY required"); process.exit(1); }
@@ -831,23 +832,22 @@ async function runPollingCycle(): Promise<void> {
 }
 
 // ============================================================
+// ============================================================
 // AI Agent Logic
 // ============================================================
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-let aiModel: any = null;
+let aiClient: GoogleGenAI | null = null;
 
 if (GEMINI_API_KEY) {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     console.log("✨ Gemini AI Agent initialized");
 } else {
     console.warn("⚠️ GEMINI_API_KEY missing - AI features disabled");
 }
 
 async function getAIAnalysis(protocols: ProtocolData[]): Promise<string> {
-    if (!aiModel) return "🤖 *AI Agent sleeping:* Please configure GEMINI_API_KEY to enable smart insights.";
+    if (!aiClient) return "🤖 *AI Agent sleeping:* Please configure GEMINI_API_KEY to enable smart insights.";
 
     const activeProtocols = protocols.filter(p => p.status !== "inactive");
     if (activeProtocols.length === 0) return "🤖 *AI Agent:* I don't see any active positions to analyze. Deposit some assets to get started!";
@@ -865,8 +865,11 @@ async function getAIAnalysis(protocols: ProtocolData[]): Promise<string> {
     `;
 
     try {
-        const result = await aiModel.generateContent(prompt);
-        return result.response.text();
+        const result = await aiClient.models.generateContent({
+            model: "gemini-1.5-flash-001",
+            contents: prompt,
+        });
+        return result.text || "🤖 *AI Agent:* Silence from the ether... try again later.";
     } catch (err) {
         console.error("Gemini Error:", err);
         return "🤖 *AI Agent:* I'm having trouble connecting to the neural net right now. Please check back later.";
