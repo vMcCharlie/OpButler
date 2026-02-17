@@ -4,7 +4,6 @@ import { createPublicClient, http, Address, formatUnits, formatEther, parseAbi, 
 import { recoverMessageAddress } from "viem";
 import { bsc } from "viem/chains";
 import { createClient } from "@supabase/supabase-js";
-import { GoogleGenAI } from "@google/genai";
 import { createServer } from "http";
 import "dotenv/config";
 
@@ -33,13 +32,6 @@ const INTERVAL_LABELS: Record<number, string> = {
 const publicClient = createPublicClient({ chain: bsc, transport: http() });
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const bot = new Bot(BOT_TOKEN);
-
-// Debug logging for all updates
-bot.use(async (ctx, next) => {
-    console.log(`📩 Custom Log: Update received [ID: ${ctx.update.update_id}] Type: ${Object.keys(ctx.update).filter(k => k !== 'update_id').join(', ')}`);
-    if (ctx.message?.text) console.log(`   Text: "${ctx.message.text}" from ${ctx.from?.username}`);
-    await next();
-});
 
 // ============================================================
 // Contract Addresses & ABIs
@@ -835,47 +827,26 @@ async function runPollingCycle(): Promise<void> {
 
 // ============================================================
 // ============================================================
-// AI Agent Logic
+// ============================================================
+// AI Agent Logic (DISABLED)
 // ============================================================
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-let aiClient: GoogleGenAI | null = null;
+// const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// let aiClient: GoogleGenAI | null = null;
+// ... (Code removed for simplification)
 
-if (GEMINI_API_KEY) {
-    aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    console.log("✨ Gemini AI Agent initialized");
-} else {
-    console.warn("⚠️ GEMINI_API_KEY missing - AI features disabled");
-}
-
-async function getAIAnalysis(protocols: ProtocolData[]): Promise<string> {
-    if (!aiClient) return "🤖 *AI Agent sleeping:* Please configure GEMINI_API_KEY to enable smart insights.";
-
+async function getPortfolioSummary(protocols: ProtocolData[]): Promise<string> {
     const activeProtocols = protocols.filter(p => p.status !== "inactive");
-    if (activeProtocols.length === 0) return "🤖 *AI Agent:* I don't see any active positions to analyze. Deposit some assets to get started!";
+    if (activeProtocols.length === 0) return "🤖 *OpButler:* No active positions found.";
 
-    const prompt = `
-    You are OpButler's AI Risk Agent.
-    User's DeFi Portfolio:
-    ${JSON.stringify(activeProtocols, null, 2)}
-
-    Analyze this portfolio.
-    1. Is it safe? (Health Factor > 1.5 is safe, < 1.1 is critical).
-    2. Give 1 specific "Good Vibes" tip to reduce stress or optimize yield.
-    3. Keep it to 2-3 short sentences. Use emojis.
-    4. Be encouraging but firm on safety.
-    `;
-
-    try {
-        const result = await aiClient.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
-        });
-        return result.text || "🤖 *AI Agent:* Silence from the ether... try again later.";
-    } catch (err) {
-        console.error("Gemini Error:", err);
-        return "🤖 *AI Agent:* I'm having trouble connecting to the neural net right now. Please check back later.";
+    let msg = "📊 *Portfolio Snapshot*\n\n";
+    for (const p of activeProtocols) {
+        msg += `*${p.protocol}*: HF ${p.healthFactor.toFixed(2)}\n`;
+        msg += `Collateral: $${(p.totalCollateralUSD).toFixed(0)}\n`;
+        msg += `Debt: $${(p.totalDebtUSD).toFixed(0)}\n\n`;
     }
+    msg += "To get AI insights, this feature is currently maintenance mode.";
+    return msg;
 }
 
 // /help — List all commands
@@ -945,71 +916,16 @@ bot.command("analyze", async (ctx) => {
 
     if (!user) return ctx.reply("❌ No wallet linked.");
 
-    await ctx.reply("🧠 *AI Agent is thinking...*", { parse_mode: "Markdown" });
+    await ctx.reply("🤖 *OpButler:* analyzing...", { parse_mode: "Markdown" });
     const protocols = await fetchAllProtocols(user.wallet_address as Address);
-    const analysis = await getAIAnalysis(protocols);
+    const summary = await getPortfolioSummary(protocols);
 
-    await ctx.reply(analysis, { parse_mode: "Markdown" });
+    await ctx.reply(summary, { parse_mode: "Markdown" });
 });
 
-// Natural Language Chat Handler
-bot.on("message:text", async (ctx) => {
-    // 1. Send "typing" action clearly
-    await ctx.replyWithChatAction("typing");
-
-    const message = ctx.message.text;
-
-    // 2. Identify User & Context
-    const { data: user } = await supabase
-        .from("users").select("wallet_address")
-        .eq("chat_id", ctx.from?.id).single();
-
-    let portfolioContext = "User has no wallet linked. Ask them to link it via /start.";
-
-    if (user && user.wallet_address) {
-        try {
-            const protocols = await fetchAllProtocols(user.wallet_address as Address);
-            const activeProtocols = protocols.filter(p => p.status !== "inactive");
-            portfolioContext = `User's Linked Wallet: ${user.wallet_address}\nPortfolio:\n${JSON.stringify(activeProtocols, null, 2)}`;
-        } catch (e) {
-            console.error("Error fetching context:", e);
-            portfolioContext = "Error fetching full portfolio. Assume they have assets but data is unavailable.";
-        }
-    }
-
-    // 3. AI Generation
-    if (!aiClient) {
-        return ctx.reply("🤖 *AI Agent sleeping:* API Key missing.");
-    }
-
-    const prompt = `
-    You are OpButler, a helpful, chill, and safety-conscious DeFi assistant on BNB Chain.
-    
-    **User Context:**
-    ${portfolioContext}
-
-    **User Query:**
-    "${message}"
-
-    **Guidelines:**
-    1. Answer the user's question directly.
-    2. Use their portfolio data to give specific advice (e.g., "Your Venus health is low" vs "Watch your health").
-    3. Keep it conversational, short (2-3 sentences), and use emojis.
-    4. "Good Vibes" persona: Professional but relaxed.
-    5. If they ask about commands, remind them: /settings, /analyze, /setalert.
-    `;
-
-    try {
-        const result = await aiClient.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
-        });
-        const response = result.text || "🤖 *OpButler:* I'm lost for words... try again.";
-        await ctx.reply(response, { parse_mode: "Markdown" });
-    } catch (err) {
-        console.error("Gemini Chat Error:", err);
-        await ctx.reply("🤖 *OpButler:* My brain is offline. Try /analyze for a specific report.");
-    }
+// Simple catch-all for unknown commands
+bot.on("message", (ctx) => {
+    ctx.reply("🤖 *OpButler:* I only understand commands right now. Try /help or /settings.");
 });
 
 // ============================================================
