@@ -20,6 +20,8 @@ const chartData = [
     { name: 'Sun', value: 1350 },
 ];
 
+import { AIInsights } from "@/components/AIInsights";
+
 export function Dashboard() {
     const { address } = useAccount();
 
@@ -68,9 +70,20 @@ export function Dashboard() {
     const kinzaNetAPY = calculateNetAPY(kinzaPositions || [], kinzaSupply - kinzaBorrow);
     const radiantNetAPY = calculateNetAPY(radiantPositions || [], radiantSupply - radiantBorrow);
 
+    // Prepare data for AI Agent
+    const portfolioForAI = {
+        totalNetWorth,
+        totalSupplied,
+        totalBorrowed,
+        globalNetAPY,
+        venus: { supply: venusSupply, borrow: venusBorrow, health: healthData.venus.healthFactor },
+        kinza: { supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza.healthFactor },
+        radiant: { supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant.healthFactor }
+    };
+
     return (
         <div className="container pt-0 md:pt-8 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight mb-2 font-outfit bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-400">
                         Dashboard
@@ -79,7 +92,16 @@ export function Dashboard() {
                         {address ? 'Welcome back, Strategist.' : 'Connect your wallet to view your personalized yields.'}
                     </div>
                 </div>
+                {address && (
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#CEFF00]/10 border border-[#CEFF00]/20 text-[#CEFF00] text-xs font-bold uppercase tracking-wider animate-pulse">
+                        <div className="w-2 h-2 rounded-full bg-[#CEFF00]" />
+                        AI Risk Agent Active
+                    </div>
+                )}
             </div>
+
+            {/* AI Insights Section */}
+            {address && <AIInsights portfolioData={portfolioForAI} />}
 
             {/* Top Stats: Aggregated Financials */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">

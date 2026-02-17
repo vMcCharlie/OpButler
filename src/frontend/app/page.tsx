@@ -37,15 +37,15 @@ export default function LandingPage() {
               </div>
 
               <h1 className="text-4xl md:text-7xl font-bold font-outfit leading-[1.1]">
-                Your Partner in <br />
+                Your Personal <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#CEFF00] to-emerald-400">
-                  Smarter DeFi
+                  AI Risk Agent
                 </span>
               </h1>
 
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed">
-                Take control of your crypto with a non-custodial smart wallet.
-                Automate your yields, execute complex loop strategies, and manage risk—all in one secure platform.
+                Stop staring at charts. Let our autonomous AI agent monitor your DeFi health 24/7.
+                Get "Good Vibes Only" with automated risk alerts and stress-free yield optimization.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -90,8 +90,8 @@ export default function LandingPage() {
                 </div>
                 <h2 className="text-4xl font-bold font-outfit">Never Get Liquidated.</h2>
                 <p className="text-muted-foreground text-lg leading-relaxed">
-                  OpButler's "God Mode" dashboard monitors your Health Factor across every protocol in real-time.
-                  Set automated deleveraging triggers to protect your collateral while you sleep.
+                  OpButler's "God Mode" AI Agent monitors your Health Factor across every protocol in real-time.
+                  Sleep soundly knowing an autonomous guardian is watching your positions.
                 </p>
                 <ul className="space-y-4 pt-4">
                   {[
@@ -132,9 +132,9 @@ export default function LandingPage() {
           {/* Features Section */}
           <div className="py-16 md:py-32 border-t border-white/5">
             <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
-              <h2 className="text-4xl font-bold font-outfit">Everything you need, nothing you don't.</h2>
+              <h2 className="text-4xl font-bold font-outfit">Good Vibes Only.</h2>
               <p className="text-muted-foreground text-lg">
-                We stripped away the complexity of DeFi and built a streamlined interface for pure performance.
+                We stripped away the complexity of DeFi and built a stress-free interface powered by AI.
               </p>
             </div>
 

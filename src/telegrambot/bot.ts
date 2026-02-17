@@ -515,19 +515,21 @@ bot.command("start", async (ctx) => {
         .url("Open Dashboard", `${DASHBOARD_URL}/settings`);
 
     await ctx.reply(
-        `🤖 *Welcome to OpButler!*\n\n` +
-        `I provide *24/7 monitoring* for your DeFi positions on Venus, Kinza, and Radiant (BSC).\n\n` +
+        `🤖 *OpButler AI Risk Agent Online*\n\n` +
+        `I am your autonomous guardian for DeFi positions on Venus, Kinza, and Radiant.\n\n` +
+        `*Capabilities:*\n` +
+        `• 🧠 *AI Analysis:* /analyze - Get "Good Vibes" risk advice\n` +
+        `• 🛡️ *24/7 Watch:* I monitor your Health Factor while you sleep\n` +
+        `• 🚨 *Instant Alerts:* I notify you before liquidation happens\n\n` +
         `*Commands:*\n` +
-        `• /settings — View/update alert settings\n` +
-        `• /setinterval — Change polling frequency\n` +
-        `• /setalert <value> — Set HF alert threshold\n` +
-        `• /togglealerts — Enable/disable alerts\n` +
-        `• /id — Get your Telegram User ID\n\n` +
+        `• /analyze — AI Portfolio Audit\n` +
+        `• /settings — View alert config\n` +
+        `• /setinterval — Set check frequency\n` +
+        `• /setalert <value> — Set safety net\n\n` +
         `*Setup:*\n` +
         `1. Open Dashboard > Settings\n` +
-        `2. Enter your Telegram ID: \`${ctx.from?.id}\`\n` +
-        `3. Sign the message & verify with:\n` +
-        `\`/verify <signature>\``,
+        `2. Enter Telegram ID: \`${ctx.from?.id}\`\n` +
+        `3. Sign & Verify`,
         { parse_mode: "Markdown", reply_markup: keyboard }
     );
 });
@@ -798,44 +800,92 @@ async function runPollingCycle(): Promise<void> {
                         .url("Manage Position", `${DASHBOARD_URL}/portfolio`);
 
                     try {
-                        await bot.api.sendMessage(user.chat_id, alertMsg, {
-                            parse_mode: "Markdown",
-                            reply_markup: keyboard
-                        });
+                        await bot.api.sendMessage(user.chat_id, alertMsg, { parse_mode: "Markdown", reply_markup: keyboard });
 
-                        // Update cooldown
+                        // Update last_alert_sent
                         await supabase
                             .from("users")
                             .update({ last_alert_sent: now.toISOString() })
                             .eq("chat_id", user.chat_id);
 
-                        console.log(`🚨 Alert sent to ${user.chat_id} for ${proto.protocol} (HF: ${proto.healthFactor.toFixed(2)})`);
+                        console.log(`🚨 Alert sent to ${user.chat_id}`);
+
                     } catch (sendErr) {
                         console.error(`Failed to send alert to ${user.chat_id}:`, sendErr);
                     }
-
-                    break; // One alert per user per cycle (don't spam)
                 }
 
-                checkedCount++;
-            } catch (userErr) {
-                console.error(`Error checking user ${user.chat_id}:`, userErr);
-                // Continue to next user — don't crash the loop
+            } catch (err) {
+                console.error(`Error processing user ${user.chat_id}:`, err);
             }
 
-            // Stagger between users
-            if (users.length > 1) await sleep(USER_STAGGER_MS);
+            checkedCount++;
+            await sleep(USER_STAGGER_MS);
         }
 
-        if (checkedCount > 0) {
-            console.log(`🔍 Checked ${checkedCount} user(s) at ${now.toLocaleTimeString()}`);
-        }
     } catch (err) {
         console.error("Polling cycle error:", err);
     } finally {
         pollingMutex = false;
     }
 }
+
+// ============================================================
+// AI Agent Logic
+// ============================================================
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+let aiModel: any = null;
+
+if (GEMINI_API_KEY) {
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    console.log("✨ Gemini AI Agent initialized");
+} else {
+    console.warn("⚠️ GEMINI_API_KEY missing - AI features disabled");
+}
+
+async function getAIAnalysis(protocols: ProtocolData[]): Promise<string> {
+    if (!aiModel) return "🤖 *AI Agent sleeping:* Please configure GEMINI_API_KEY to enable smart insights.";
+
+    const activeProtocols = protocols.filter(p => p.status !== "inactive");
+    if (activeProtocols.length === 0) return "🤖 *AI Agent:* I don't see any active positions to analyze. Deposit some assets to get started!";
+
+    const prompt = `
+    You are OpButler's AI Risk Agent.
+    User's DeFi Portfolio:
+    ${JSON.stringify(activeProtocols, null, 2)}
+
+    Analyze this portfolio.
+    1. Is it safe? (Health Factor > 1.5 is safe, < 1.1 is critical).
+    2. Give 1 specific "Good Vibes" tip to reduce stress or optimize yield.
+    3. Keep it to 2-3 short sentences. Use emojis.
+    4. Be encouraging but firm on safety.
+    `;
+
+    try {
+        const result = await aiModel.generateContent(prompt);
+        return result.response.text();
+    } catch (err) {
+        console.error("Gemini Error:", err);
+        return "🤖 *AI Agent:* I'm having trouble connecting to the neural net right now. Please check back later.";
+    }
+}
+
+bot.command("analyze", async (ctx) => {
+    const { data: user } = await supabase
+        .from("users").select("wallet_address")
+        .eq("chat_id", ctx.from?.id).single();
+
+    if (!user) return ctx.reply("❌ No wallet linked.");
+
+    await ctx.reply("🧠 *AI Agent is thinking...*", { parse_mode: "Markdown" });
+    const protocols = await fetchAllProtocols(user.wallet_address as Address);
+    const analysis = await getAIAnalysis(protocols);
+
+    await ctx.reply(analysis, { parse_mode: "Markdown" });
+});
 
 // ============================================================
 // Error Handling & Start

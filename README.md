@@ -1,13 +1,21 @@
-# OpButler - AI-Powered DeFi Portfolio Manager
+# OpButler - AI Risk Agent for DeFi (Good Vibes Only)
 
-**OpButler** is an intelligent AI agent designed to optimize your DeFi portfolio on the BNB Chain. It monitors your positions, automates risk management, and helps you architect complex strategies to maximize your yield while keeping you safe from liquidations.
+**OpButler** is your autonomous **AI Risk Agent** specifically built for the "DeFi" track.
+It monitors your positions on the BNB Chain 24/7, providing "Good Vibes Only" by removing the stress of liquidation.
+
+Powered by **Gemini 1.5 Flash**, our agent analyzes your portfolio in real-time and provides natural language tips to optimize yield while keeping you safe.
+
+## 🏆 Hackathon Track Alignment: DeFi
+- **Practical DeFi Tool**: Unified dashboard for Venus, Kinza, Radiant.
+- **Risk Monitor**: "God Mode" health factor tracking detailed by protocol.
+- **Liquidation Alerts**: Instant Telegram notifications before you get rekt.
 
 ## 🚀 Key Features
 
--   **Unified Dashboard**: Manage positions on Venus, Kinza, Radiant.
--   **AI Risk Agent**: Telegram bot with proactive health alerts and remedial suggestions.
--   **Strategy Simulator**: "Smart Loop" architecture to design and verify high-yield strategies.
--   **Real-time Monitoring**: Instant updates on Health Factor and Liquidation risks.
+-   **🤖 Autonomous AI Agent**: A Telegram bot that watches the chain so you can sleep.
+-   **🧠 Real-Time AI Insights**: Gemine-powered analysis of your portfolio with actionable tips.
+-   **✨ Good Vibes Only**: Stress-free interface with "Panic Exit" buttons and automated health checks.
+-   **🛡️ Unified Risk Dashboard**: One view for all your heavy DeFi positions.
 
 ## 📂 Repository Structure
 
