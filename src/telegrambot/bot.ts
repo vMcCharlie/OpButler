@@ -3,7 +3,6 @@ import { Bot, InlineKeyboard } from "grammy";
 import { createPublicClient, http, Address, formatUnits, formatEther, parseAbi, getAddress } from "viem";
 import { recoverMessageAddress } from "viem";
 import { bsc } from "viem/chains";
-import { createClient } from "@supabase/supabase-js";
 import { createServer } from "http";
 import "dotenv/config";
 
@@ -29,7 +28,10 @@ const INTERVAL_LABELS: Record<number, string> = {
 // Clients
 // ============================================================
 
-const publicClient = createPublicClient({ chain: bsc, transport: http() });
+const publicClient = createPublicClient({
+    chain: bsc,
+    transport: http("https://bsc-dataseed.binance.org/")
+});
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const bot = new Bot(BOT_TOKEN);
 
@@ -872,7 +874,7 @@ bot.command("forcecheck", async (ctx) => {
 
     if (!user) return ctx.reply("❌ No wallet linked.");
 
-    await ctx.reply("🔄 Running immediate health check...");
+    await ctx.reply("🕵️‍♂️ *OpButler Agent:* Scanning blockchain for updated positions...");
 
     try {
         const protocols = await fetchAllProtocols(user.wallet_address as Address);
@@ -925,7 +927,10 @@ bot.command("analyze", async (ctx) => {
 
 // Simple catch-all for unknown commands
 bot.on("message", (ctx) => {
-    ctx.reply("🤖 *OpButler:* I only understand commands right now. Try /help or /settings.");
+    ctx.reply(
+        "🤖 *OpButler Agent:* I am tracking your positions.\n" +
+        "Use /analyze for a status report or /settings to configure alerts."
+    );
 });
 
 // ============================================================
