@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccount } from 'wagmi';
+import { useUserSettings } from '@/hooks/useUserSettings';
 
 interface AIInsightsProps {
     portfolioData: any; // We'll pass the aggregated portfolio data here
@@ -15,13 +16,24 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const { settings, loading: settingsLoading } = useUserSettings();
+
     useEffect(() => {
         async function fetchInsights() {
-            if (!address || !portfolioData) return;
+            if (!address || !portfolioData || settingsLoading) return;
 
             // Only fetch if we have some data to analyze
-            const hasData = portfolioData.totalCollateralUSD > 0 || portfolioData.totalDebtUSD > 0;
-            if (!hasData) return;
+            const hasData = (portfolioData.totalSupplied > 0 || portfolioData.totalBorrowed > 0);
+
+            // If strictly no data, we can stop here (or maybe ask for generic advice? user said "tips on how to save", so maybe generic is better than silence? 
+            // But user also said "fetched and is zero, that can hamper the ai with wrong info". 
+            // So improved check: ensure we are NOT simply loading zeros.
+            // The best proxy for "loaded" is typically if the parent says so, but here we can check if data exists.
+
+            if (!hasData) {
+                setLoading(false);
+                return;
+            };
 
             setLoading(true);
             setError(null);
@@ -30,7 +42,10 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
                 const response = await fetch('/api/ai-insight', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ portfolio: portfolioData }),
+                    body: JSON.stringify({
+                        portfolio: portfolioData,
+                        userSettings: settings // Pass user thresholds
+                    }),
                 });
 
                 if (!response.ok) throw new Error('Failed to fetch insights');
@@ -46,7 +61,7 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
         }
 
         fetchInsights();
-    }, [address, portfolioData]);
+    }, [address, portfolioData, settings, settingsLoading]);
 
     if (!address) return null;
 

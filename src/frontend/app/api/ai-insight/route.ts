@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     try {
-        const { portfolio } = await req.json();
+        const { portfolio, userSettings } = await req.json();
+
+        // Extract user threshold (default 1.1 if missing)
+        const threshold = userSettings?.alert_threshold || 1.1;
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -17,19 +20,34 @@ export async function POST(req: Request) {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
-    You are an AI Risk Agent for a DeFi application called OpButler.
-    Analyze the following user portfolio data:
-    ${JSON.stringify(portfolio, null, 2)}
+      You are an autonomous Risk Agent for a DeFi user on BNB Chain.
+      The user follows a "Good Vibes Only" philosophy: they want low stress, high safety, and optimized yields.
 
-    Your goal is to provide "Good Vibes Only" risk management advice.
-    Provide exactly 3 short, punchy, actionable tips. 
-    Focus on reducing stress and keeping the user safe from liquidation.
-    If the health factor is low (< 1.2), be urgent but supportive.
-    If the health factor is high (> 1.5), be encouraging and suggest optimizing yield.
-    
-    Format the output as a JSON array of strings, e.g.:
-    ["Tip 1", "Tip 2", "Tip 3"]
-    Do not include markdown formatting like \`\`\`json. Just the raw JSON array.
+      **User Context:**
+      - Total Net Worth: $${portfolio.totalNetWorth?.toFixed(2)}
+      - Total Supplied: $${portfolio.totalSupplied?.toFixed(2)}
+      - Total Borrowed: $${portfolio.totalBorrowed?.toFixed(2)}
+      - Global Net APY: ${portfolio.globalNetAPY?.toFixed(2)}%
+      - **User Alert Threshold:** Health Factor < ${threshold}
+      
+      **Protocol Health:**
+      - Venus: HF ${portfolio.venus?.health?.toFixed(2)} (Supply: $${portfolio.venus?.supply?.toFixed(2)})
+      - Kinza: HF ${portfolio.kinza?.health?.toFixed(2)} (Supply: $${portfolio.kinza?.supply?.toFixed(2)})
+      - Radiant: HF ${portfolio.radiant?.health?.toFixed(2)} (Supply: $${portfolio.radiant?.supply?.toFixed(2)})
+
+      **Detailed Positions:**
+      ${JSON.stringify(portfolio.positions, null, 2)}
+
+      **Task:**
+      Analyze this portfolio and generate 3 short, actionable, "Good Vibes" tips.
+      
+      **Guidelines:**
+      1. **Check Thresholds:** If any protocol Health Factor is below ${threshold + 0.1}, PRIORITIZE a warning and specific fix (e.g., "Repay BNB on Venus").
+      2. **Optimize Yield:** If health is safe (>1.5), suggest ways to boost APY (e.g., "Loop USDT on Kinza").
+      3. **Tone:** Professional but relaxed ("Good Vibes"). No doom-mongering unless liquidation is imminent.
+      4. **Specifics:** Mention specific assets and protocols from the positions list.
+      5. **Format:** JSON array of strings only. Example: ["Tip 1", "Tip 2", "Tip 3"].
+      Do not include markdown formatting like \`\`\`json. Just the raw JSON array.
     `;
 
         const result = await model.generateContent(prompt);

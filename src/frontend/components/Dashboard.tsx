@@ -78,7 +78,8 @@ export function Dashboard() {
         globalNetAPY,
         venus: { supply: venusSupply, borrow: venusBorrow, health: healthData.venus.healthFactor },
         kinza: { supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza.healthFactor },
-        radiant: { supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant.healthFactor }
+        radiant: { supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant.healthFactor },
+        positions: allPositions // Detailed breakdown for AI analysis
     };
 
     return (
