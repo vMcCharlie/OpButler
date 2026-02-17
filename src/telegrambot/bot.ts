@@ -721,15 +721,7 @@ bot.command("togglealerts", async (ctx) => {
 
 
 
-// Catch-all
-bot.on("message", async (ctx) => {
-    await ctx.reply(
-        "🤔 *I don't recognize that command.*\n\n" +
-        "Commands: /settings, /start, /setalert, /togglealerts\n" +
-        "Type /start to see all available commands.",
-        { parse_mode: "Markdown" }
-    );
-});
+
 
 // ============================================================
 // Background Health Monitor (Polling Loop)
@@ -888,6 +880,16 @@ bot.command("analyze", async (ctx) => {
     const analysis = await getAIAnalysis(protocols);
 
     await ctx.reply(analysis, { parse_mode: "Markdown" });
+});
+
+// Catch-all (must be last)
+bot.on("message", async (ctx) => {
+    await ctx.reply(
+        "🤔 *I don't recognize that command.*\n\n" +
+        "Commands: /settings, /start, /setalert, /togglealerts\n" +
+        "Type /start to see all available commands.",
+        { parse_mode: "Markdown" }
+    );
 });
 
 // ============================================================
