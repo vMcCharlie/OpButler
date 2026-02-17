@@ -34,6 +34,13 @@ const publicClient = createPublicClient({ chain: bsc, transport: http() });
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const bot = new Bot(BOT_TOKEN);
 
+// Debug logging for all updates
+bot.use(async (ctx, next) => {
+    console.log(`📩 Custom Log: Update received [ID: ${ctx.update.update_id}] Type: ${Object.keys(ctx.update).filter(k => k !== 'update_id').join(', ')}`);
+    if (ctx.message?.text) console.log(`   Text: "${ctx.message.text}" from ${ctx.from?.username}`);
+    await next();
+});
+
 // ============================================================
 // Contract Addresses & ABIs
 // ============================================================
