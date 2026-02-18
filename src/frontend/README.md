@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpButler Frontend
 
-## Getting Started
+This is the Next.js web dashboard for **OpButler**, your Personal DeFi Concierge.
 
-First, run the development server:
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+1.  Navigate to the frontend directory:
+    ```bash
+    cd src/frontend
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
+
+3.  **Environment Setup**:
+    Copy the example environment file:
+    ```bash
+    cp .env.example .env.local
+    ```
+    
+    You need to fill in the following variables in `.env.local`:
+    - `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`: Get a free Project ID from [WalletConnect Cloud](https://cloud.walletconnect.com/).
+    - `NEXT_PUBLIC_BSC_RPC_URL`: (Optional) Custom RPC URL for Binance Smart Chain.
+
+### Running Development Server
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the dashboard.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🏗️ Build for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To create an optimized production build:
 
-## Learn More
+```bash
+npm run build
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🧩 Key Components
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+-   `app/page.tsx`: The main landing page with "Good Vibes" marketing.
+-   `app/dashboard/`: The authenticated user dashboard.
+-   `components/RiskMonitor.tsx`: Displays real-time Health Factor.
+-   `components/TopLoops.tsx`: Interface for "Smart Loop" strategies.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🎨 Styling
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+We use **Tailwind CSS** and **shadcn/ui** for a premium, responsive feel.
+-   Dark Mode by default.
+-   Gradients: `#CEFF00` (Lime) and `Emerald-400`.

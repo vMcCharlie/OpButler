@@ -3,6 +3,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import { createPublicClient, http, Address, formatUnits, formatEther, parseAbi, getAddress } from "viem";
 import { recoverMessageAddress } from "viem";
 import { bsc } from "viem/chains";
+import { createClient } from "@supabase/supabase-js";
 import { createServer } from "http";
 import "dotenv/config";
 

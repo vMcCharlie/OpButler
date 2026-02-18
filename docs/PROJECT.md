@@ -1,30 +1,32 @@
 # Project Overview
 
-## ❓ The Problem
+## ❓ The Problem: DeFi Stress & Complexity
 
-DeFi offers high yields, but managing positions across multiple lending protocols (Venus, Kinza, Radiant) on BNB Chain is complex and risky.
--   **Fragmentation**: Users have to toggle between multiple dApps to monitor their health factors.
--   **Liquidation Risk**: Volatile markets can lead to sudden liquidations if users aren't constantly watching.
--   **Complex Strategies**: Executing "looping" strategies (supply -> borrow -> supply) manually is tedious and error-prone.
+DeFi offers high yields, but managing positions across multiple lending protocols (Venus, Kinza, Radiant) on BNB Chain is exhausting and risky.
+-   **Anxiety-Inducing**: Users constantly check their phones, fearing liquidation volatility.
+-   **Fragmented**: Toggling between multiple dApps to monitor health factors is inefficient.
+-   **Complex**: Executing "looping" strategies manually is prone to human error.
 
-## 💡 The Solution
+## 💡 The Solution: OpButler
 
-**OpButler** acts as your personal DeFi optimization butler. It aggregates your positions and uses an AI agent to monitor them 24/7.
--   [x] **Unified Portfolio Manager**: Supply, borrow, and manage yields across **Venus, Kinza, and Radiant** all in one app. No more tab-switching.
--   [x] **AI Risk Guard**: A Telegram Agent that monitors your health 24/7. It sends instant **Risk Alerts** and provides **AI-driven suggestions** (e.g., "Repay 5 BNB to avoid liquidation") to keep you safe.
--   [x] **Strategy Architect**: Build and simulate complex **Smart Loop** strategies. Visualize potential APY and risk scenarios *before* execution.
--   [x] **Yield Dashboard**: Real-time view of your net worth, net APY, and liquidation proximity.
+**OpButler - Your Personal DeFi Concierge.** 
+We built an intelligent interface that prioritizes **"Good Vibes Only"**. It aggregates your positions and uses a Gemini-powered AI agent to monitor them 24/7.
+
+-   **[x] Unified Portfolio Manager**: Supply, borrow, and manage yields across **Venus, Kinza, and Radiant** in one beautiful, stress-free dashboard.
+-   **[x] AI Risk Agent (Gemini)**: A Telegram Bot that understands your portfolio. It provides **natural language insights** on how to optimize your position and sends proactive **Risk Alerts** before you get rekt.
+-   **[x] Strategy Simulator**: Architect complex "Smart Loop" strategies and visualize risk scenarios *before* you commit funds.
+-   **[x] Visual Health Indicators**: Simple, color-coded status checks (Safe/Warning/Danger) mean you can check your financial health in seconds.
 
 ## 🌍 Impact
 
-OpButler democratizes advanced DeFi strategies for the average user on BNB Chain. By abstracting away the complexity of risk management and strategy execution, it encourages deeper liquidity participation while safeguarding user funds against market volatility.
+OpButler democratizes advanced DeFi strategies for the average user on BNB Chain. By abstracting away the complexity of risk management and using AI to watch the markets, we lower the barrier to entry and safeguard user funds against volatility.
 
 ## 🗺️ Roadmap
 
 ### Phase 1: Foundation (Current)
 -   [x] **Unified Dashboard**: Manage positions on Venus, Kinza, Radiant.
--   [x] **AI Risk Agent**: Telegram bot with proactive health alerts and remedial suggestions.
--   [x] **Strategy Simulator**: "Smart Loop" architecture to design and verify high-yield strategies.
+-   [x] **AI Risk Agent**: Telegram bot with Gemini-powered analysis and alerts.
+-   [x] **Strategy Simulator**: "Smart Loop" architecture to design and verify strategies.
 -   [x] **Real-time Monitoring**: Instant updates on Health Factor and Liquidation risks.
 
 ### Phase 2: Automation
