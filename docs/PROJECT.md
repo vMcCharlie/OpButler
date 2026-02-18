@@ -1,39 +1,47 @@
 # Project Overview
 
-## ❓ The Problem: DeFi Stress & Complexity
+## ❓ The Problem: Fragmented DeFi stress
 
-DeFi offers high yields, but managing positions across multiple lending protocols (Venus, Kinza, Radiant) on BNB Chain is exhausting and risky.
--   **Anxiety-Inducing**: Users constantly check their phones, fearing liquidation volatility.
--   **Fragmented**: Toggling between multiple dApps to monitor health factors is inefficient.
--   **Complex**: Executing "looping" strategies manually is prone to human error.
+Managing high-yield positions on BNB Chain is currently a fragmented, high-stress experience.
+-   **Cognitive Load**: Users must manually monitor diverse metrics (Net APY, HF, LTV) across multiple protocols.
+-   **Liquidation Latency**: Volatile market conditions can result in sudden liquidations before a user can manually react.
+-   **Execution Complexity**: Advanced "Smart Loop" strategies are inaccessible to average users due to the complexity of the supply-borrow-supply cycle.
+
+---
 
 ## 💡 The Solution: OpButler
 
-**OpButler - Your Personal DeFi Concierge.** 
-We built an intelligent interface that prioritizes **"Good Vibes Only"**. It aggregates your positions and uses a Gemini-powered AI agent to monitor them 24/7.
+OpButler acts as an **Agentic Portfolio Concierge**. It synthesizes cross-protocol data into a high-fidelity "God Mode" dashboard and deploys an autonomous watchdog for every user.
 
--   **[x] Unified Portfolio Manager**: Supply, borrow, and manage yields across **Venus, Kinza, and Radiant** in one beautiful, stress-free dashboard.
--   **[x] AI Risk Agent (Gemini)**: A Telegram Bot that understands your portfolio. It provides **natural language insights** on how to optimize your position and sends proactive **Risk Alerts** before you get rekt.
--   **[x] Strategy Simulator**: Architect complex "Smart Loop" strategies and visualize risk scenarios *before* you commit funds.
--   **[x] Visual Health Indicators**: Simple, color-coded status checks (Safe/Warning/Danger) mean you can check your financial health in seconds.
+### Unified Dashboard
+A premium interface that aggregates **Venus, Kinza, and Radiant**.
+![Dashboard Preview](../src/frontend/screenshots/dashboard.png)
 
-## 🌍 Impact
+### AI Risk Guard (Semantic Synthesis)
+Uses **Gemini 1.5 Flash** to provide natural-language risk assessments.
+![AI Analysis](../src/telegrambot/screenshots/analyze.png)
 
-OpButler democratizes advanced DeFi strategies for the average user on BNB Chain. By abstracting away the complexity of risk management and using AI to watch the markets, we lower the barrier to entry and safeguard user funds against volatility.
+### Strategy Simulator (Risk Architecture)
+A sandbox for modeling "Smart Loops" to maximize APY while projecting liquidation thresholds.
+![Simulator](../src/frontend/screenshots/strategy-builder.png)
 
-## 🗺️ Roadmap
+---
 
-### Phase 1: Foundation (Current)
--   [x] **Unified Dashboard**: Manage positions on Venus, Kinza, Radiant.
--   [x] **AI Risk Agent**: Telegram bot with Gemini-powered analysis and alerts.
--   [x] **Strategy Simulator**: "Smart Loop" architecture to design and verify strategies.
--   [x] **Real-time Monitoring**: Instant updates on Health Factor and Liquidation risks.
+## 🌍 Impact: democratizing "Safe" Yield
+OpButler facilitates deeper liquidity on BNB Chain by removing the "Bad Vibes" of manual risk management. We transform DeFi into a set-and-forget experience for the retail user.
 
-### Phase 2: Automation
--   [ ] **Auto-Rebalance**: Smart contracts that automatically repay or deleverage loops when risk thresholds are met.
--   [ ] **One-Click Migration**: Easily move positions between protocols to chase the highest APY.
+---
 
-### Phase 3: Expansion
--   [ ] Support for more BNB Chain protocols (Lista, Thena).
--   [ ] Mobile App integration.
--   [ ] Advanced hedging strategies using options/perps.
+## 🗺️ Roadmap: The Path to Autonomy
+
+### Phase 1: HITL (Human-in-the-Loop) Governance [CURRENT]
+- **Status**: Production-ready.
+- **Mechanism**: AI decision support. The agent monitors the chain and suggests remedial actions. Execution requires user confirmation (HITL) on-chain to ensure governance integrity.
+
+### Phase 2: Autonomous On-chain Decision Synthesis
+- **Goal**: Full Agentic Autonomy.
+- **Mechanism**: Integrating **OpenClaw** for verifiable agent actions. Enabling the agent to execute "Panic Repay" or "Yield Migration" automatically via threshold-triggered smart contracts when risk parameters are breached.
+
+### Phase 3: Cross-Chain Concierge Expansion
+- **Goal**: Multichain Agentic Presence.
+- **Mechanism**: Support for PancakeSwap Lending and Lista DAO, expanding the AI's "Context Window" to the entire BNB Ecosystem.

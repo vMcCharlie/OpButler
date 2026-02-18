@@ -1,65 +1,43 @@
-# OpButler Frontend
+# OpButler Frontend Interface
 
-This is the Next.js web dashboard for **OpButler**, your Personal DeFi Concierge.
+The "Concierge" interface is built for speed, clarity, and "Good Vibes".
 
-## 🚀 Getting Started
+## ✨ Feature Gallery
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
+### 1. Unified Portfolio
+Aggregates your Net Worth and Health Factor across all integrated protocols (Venus, Kinza, Radiant).
+![Portfolio](../screenshots/portfolio.png)
 
-### Installation
+### 2. High-Yield Lending
+Simplified Supply and Borrow interfaces for maximum usability.
+![Lend Earn](../screenshots/lend-earn.png)
+![Lend Borrow](../screenshots/lend-borrow.png)
 
-1.  Navigate to the frontend directory:
-    ```bash
-    cd src/frontend
-    ```
+### 3. Strategy Simulator
+Our "Smart Loop" builder allows users to project APY and simulate risk scenarios.
+![Strategy Builder](../screenshots/strategy-builder.png)
 
-2.  Install dependencies:
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
+---
 
-3.  **Environment Setup**:
-    Copy the example environment file:
-    ```bash
-    cp .env.example .env.local
-    ```
-    
-    You need to fill in the following variables in `.env.local`:
-    - `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`: Get a free Project ID from [WalletConnect Cloud](https://cloud.walletconnect.com/).
-    - `NEXT_PUBLIC_BSC_RPC_URL`: (Optional) Custom RPC URL for Binance Smart Chain.
+## 🛠️ Reproduction Instructions
 
-### Running Development Server
+### 1. Install Dependencies
+```bash
+npm install
+```
 
+### 2. Configure Environment
+Create a `.env.local` based on `.env.example`:
+- `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`: Get from [WalletConnect Cloud](https://cloud.walletconnect.com/).
+- `GEMINI_API_KEY`: Required for frontend AI-insight synthesis.
+
+### 3. Development Server
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the dashboard.
-
-## 🏗️ Build for Production
-
-To create an optimized production build:
-
-```bash
-npm run build
-npm start
-```
-
-## 🧩 Key Components
-
--   `app/page.tsx`: The main landing page with "Good Vibes" marketing.
--   `app/dashboard/`: The authenticated user dashboard.
--   `components/RiskMonitor.tsx`: Displays real-time Health Factor.
--   `components/TopLoops.tsx`: Interface for "Smart Loop" strategies.
-
-## 🎨 Styling
-
-We use **Tailwind CSS** and **shadcn/ui** for a premium, responsive feel.
--   Dark Mode by default.
--   Gradients: `#CEFF00` (Lime) and `Emerald-400`.
+## 🏗️ Tech Stack
+-   **Framework**: Next.js 14
+-   **Styling**: Tailwind CSS & shadcn/ui
+-   **Blockchain**: Wagmi & Viem
+-   **AI**: Google Gemini 1.5 Flash

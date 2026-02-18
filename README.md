@@ -1,70 +1,70 @@
 # OpButler - Your Personal DeFi Concierge
 
-> **OpButler is the easiest way to manage and grow your DeFi money on Binance from one simple dashboard. Our AI watches your back 24/7, keeping you safe from market risks so you can earn more with less stress.**
+> **The easiest way to manage and grow your DeFi positions on BNB Chain from one unified interface. Powered by Gemini, watching your back 24/7.**
 
-![Dashboard Screenshot](./screenshots/dashboard_preview.png)
-*(Place your dashboard screenshot here)*
+[![Live on BSC](https://img.shields.io/badge/Live%20on-BSC-F3BA2F?style=for-the-badge&logo=binance)](https://opbutler.xyz)
+[![AI Agent](https://img.shields.io/badge/AI%20Agent-Watchdog-brightgreen?style=for-the-badge&logo=telegram)](https://t.me/OpButlerBot)
 
-## 🏆 Hackathon Track: DeFi (Good Vibes Only)
-OpButler is built for the **DeFi Track**, focusing on:
-- **Practical Utility**: A unified dashboard for Venus, Kinza, and Radiant.
-- **Risk Monitoring**: An autonomous "AI Risk Agent" that watches your Health Factor so you don't have to.
-- **Liquidation Prevention**: Instant Telegram alerts and "Panic Exit" buttons to save your funds.
+![Hero Preview](./src/frontend/screenshots/homepage.png)
+
+## 🏆 DeFi Track: Practical Utility
+OpButler is a high-yield management concierge built for the **"Good Vibes Only"** hackathon. It addresses the core stressors of DeFi—fragmentation, complexity, and liquidation risk—by providing a unified, agent-monitored dashboard.
+
+### 🤖 Agentic Blockchain 24/7 Watch
+Our core differentiator is the **Autonomous AI Risk Agent**. 
+- **Continuous Monitoring**: Scans user positions across Venus, Kinza, and Radiant every block.
+- **Gemini-Powered Synthesis**: Translates complex on-chain metrics into actionable, natural-language risk assessments.
+- **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*) to prevent liquidation before it happens.
+
+---
 
 ## 🚀 Key Features
 
-### 1. Unified Dashboard
-Manage your entire BNB Chain lending portfolio in one place. No more switching tabs between **Venus, Kinza, and Radiant**. View your aggregated Net Worth, Total APY, and Health Factor at a glance.
+| Yield Dashboard | AI Risk Agent | Strategy Simulator |
+| :---: | :---: | :---: |
+| ![Dashboard](./src/frontend/screenshots/portfolio.png) | ![Telegram Bot](./src/telegrambot/screenshots/analyze.png) | ![Simulator](./src/frontend/screenshots/strategy-builder.png) |
+| **Unified View** <br> Manage Venus, Kinza, and Radiant. | **24/7 Guardian** <br> Real-time status & risk alerts. | **Risk Architect** <br> Model loops before execution. |
 
-### 2. AI Risk Agent (Gemini Powered)
-Powered by **Google Gemini**, our Telegram Bot acts as your personal risk consultant.
-- **24/7 Monitoring**: Watches your Health Factor in the background.
-- **Smart Insights**: Analyzes your positions and gives natural-language advice (e.g., *"Repay 5 BNB on Venus to increase HF to 1.2"*).
-- **Instant Alerts**: Get notified immediately via Telegram if you are at risk of liquidation.
+---
 
-### 3. Stress-Free "Good Vibes"
-We stripped away the complexity.
-- **One-Click Actions**: Easily supply, borrow, or repay.
-- **Visual Health Indicators**: Simple "Safe/Warning/Danger" status for every protocol.
-- **Strategy Simulator**: Test your "Looping" strategies before committing real funds.
+## 📂 Repository Layout
 
-## 📸 Screenshots
+```text
+/README.md             ← Concierge Overview & Quick Start
+/docs/
+  PROJECT.md           ← Problem, Solution, HITL-to-Autonomous Roadmap
+  TECHNICAL.md         ← Architecture, Setup, Verification Guide
+  EXTRAS.md            ← Presentation Slides & Demo Video
+/src/
+  frontend/            ← Next.js Web Dashboard
+  telegrambot/         ← AI Agent Logic & Backend
+  supabase/            ← Consolidated Database Migrations
+```
 
-| Dashboard | Mobile View |
-| :---: | :---: |
-| ![Dashboard](./screenshots/dashboard.png) | ![Mobile](./screenshots/mobile.png) |
+## 🛠️ Reproduction Quick Start
 
-| AI Agent | Strategy Simulator |
-| :---: | :---: |
-| ![Telegram Bot](./screenshots/telegram.png) | ![Strategy](./screenshots/strategy.png) |
+### 1. Database Setup
+See **[Database Setup Guide](./src/supabase/README.md)**. Run the consolidated SQL migrations in your Supabase project.
 
-*(Note: Please upload screenshots to a `screenshots/` folder in this repository)*
+### 2. AI Agent Secret Configuration
+Configure `.env` in `src/telegrambot` (see **[Bot Guide](./src/telegrambot/README.md)**):
+```env
+TELEGRAM_BOT_TOKEN=...
+GEMINI_API_KEY=...
+SUPABASE_URL=...
+```
 
-## 📂 Documentation
+### 3. Frontend Launch
+Configure `.env.local` in `src/frontend` (see **[Frontend Guide](./src/frontend/README.md)**):
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
 
-- **[Project Overview](./docs/PROJECT.md)**: The problem, solution, and roadmap.
-- **[Technical Architecture](./docs/TECHNICAL.md)**: How it works and how to set it up.
-- **[Database Migrations](./src/supabase/README.md)**: Supabase schema and setup instructions.
-- **[Frontend Guide](./src/frontend/README.md)**: Setup instructions for the Next.js App.
-- **[Telegram Bot Guide](./src/telegrambot/README.md)**: Setup instructions for the AI Agent.
+---
 
-## 🛠️ Quick Start
+## 📈 Impact & Vision
+OpButler simplifies the "Bad Vibes" of DeFi (stress and fragmentation) into a "Good Vibes" concierge experience. By leveraging LLM-driven analysis, we provide the safety net required for the next wave of liquidity participants on BNB Chain.
 
-### Prerequisites
-- Node.js (v18+)
-- A generic EVM Wallet (MetaMask, Rabby)
-- Telegram App (for the Agent)
-
-### Installation
-1.  **Clone the repo**:
-    ```bash
-    git clone https://github.com/yourusername/OpButler.git
-    cd OpButler
-    ```
-2.  **Run the Frontend**:
-    See [Frontend README](./src/frontend/README.md).
-3.  **Run the AI Agent**:
-    See [Bot README](./src/telegrambot/README.md).
-
-## 📄 License
 [MIT](./LICENSE)

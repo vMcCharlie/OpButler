@@ -1,64 +1,63 @@
-# Technical Documentation & Setup Guide
+# Technical Architecture & Setup
 
-This guide covers the architecture, setup, and deployment of the **OpButler** project.
+This guide provides the technical foundation for reproducing the **OpButler** environment.
 
-## 🏗️ Architecture
+## 🏗️ Technical Architecture
 
-OpButler consists of two main components working in tandem to provide a "concierge" experience:
+OpButler is built on a distributed agentic stack:
 
-1.  **Frontend (Next.js)**: A responsive web dashboard for users to connect their wallets, view positions, and execute simulated strategies. It communicates with the blockchain via Wagmi/Viem and sends analysis requests to our API.
-2.  **AI Risk Agent (Node.js/Grammy)**: A backend service that monitors user positions on the blockchain 24/7. It uses **Google Gemini** to analyze portfolio health and generates natural language risk reports sent via Telegram and Frontend Dashboard.
+1.  **Frontend (Next.js 14)**: The primary interaction layer. It uses `wagmi` for secure on-chain connectivity and `viem` for blazing-fast state reads.
+2.  **Agent Logic (Node.js)**: The core "Brain". This service polls the BSC RPC, calculates Health Factors across protocols, and passes data to **Gemini API** for risk synthesis.
+3.  **Database (Supabase)**: Stores persistent user preferences and allows for 24/7 alert persistence.
 
-### Tech Stack
+---
 
--   **Frontend**: Next.js 14, React, Tailwind CSS, shadcn/ui, Wagmi/Viem.
--   **AI/Backend**: Node.js, Grammy.js (Telegram), **Google Gemini API** (Analysis), Supabase (User Data).
--   **Blockchain**: BNB Smart Chain (BSC).
--   **Protocols Integrated**: Venus, Kinza, Radiant.
+## 🚀 Setup & Reproduction
 
-## 🚀 Setup Guide
+### 1. Database Initialization
+Deploy the schema in **[src/supabase/migrations.sql](../src/supabase/migrations.sql)**.
+This establishes the foundation for user state and alert thresholds.
 
-To get OpButler running locally, you need to set up both the Frontend and the Telegram Bot.
+### 2. AI Risk Agent Configuration
+Navigate to `src/telegrambot`, install dependencies, and configure your secrets.
+```bash
+cd src/telegrambot
+npm install
+npm run start
+```
+![Bot Start](../src/telegrambot/screenshots/start.png)
 
-### Prerequisites
--   **Node.js** v18+
--   **Supabase Project**: For storing user preferences and chat IDs.
--   **Telegram Bot Token**: Get one from [@BotFather](https://t.me/BotFather).
--   **Google Gemini API Key**: For the AI Agent features.
--   **WalletConnect Project ID**: For the frontend wallet connection.
+### 3. Dashboard Connectivity
+Navigate to `src/frontend`, install dependencies, and start the development server.
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
 
-### Quick Start
+---
 
-We have detailed instructions for each component:
+## 🧪 Verification & Demo Guide
 
-1.  **[Database Setup Guide](../src/supabase/README.md)**  
-    *Run the SQL migrations here first.*
+### Step 1: Link your Wallet
+Go to Settings on the Dashboard and type your Telegram ID.
+![Link Account](../src/frontend/screenshots/telegram-link.png)
 
-2.  **[Frontend Setup Guide](../src/frontend/README.md)**  
-    *Go here to launch the web dashboard.*
+### Step 2: verify on Telegram
+Use the `/verify` command to securely link your wallet to the Agent.
+![Verify Command](../src/telegrambot/screenshots/verify.png)
 
-3.  **[AI Agent Setup Guide](../src/telegrambot/README.md)**  
-    *Go here to launch the Telegram bot.*
+### Step 3: Global Portfolio Synthesis
+Navigate to the Portfolio page to see your aggregated positions and AI-driven insights.
+![Portfolio View](../src/frontend/screenshots/portfolio.png)
 
-## 🧪 Demo Flow
+### Step 4: AI Analysis Command
+Ask the bot for a detailed risk audit.
+![AI Analyze](../src/telegrambot/screenshots/analyze.png)
 
-1.  **Connect Wallet**: On the frontend, link your browser wallet.
-2.  **View Dashboard**: See your aggregated net worth and positions.
-3.  **Simulate Strategy**: Go to "Top Strategies", select a loop, and simulate yield.
-4.  **Telegram Alert**:
-    -   Start the bot.
-    -   Link wallet via `/start`.
-    -   Type `/analyze` to get a Gemini-powered assessment of your portfolio.
+---
 
-## 📦 Deployment
-
-### Frontend
-Deploy easily on **Vercel**:
-1.  Import the `src/frontend` directory.
-2.  Add environment variables (`NEXT_PUBLIC_...`).
-3.  Deploy.
-
-### AI Agent
-Deploy on a VPS or cloud provider (Railway, Heroku):
-1.  Use a process manager like `pm2`.
-2.  Start command: `npm start`.
+## 📦 Deployment Matrix
+- **Frontend**: Vercel (Auto-deployed via GitHub).
+- **Agent**: Node.js/PM2 (Railway or VPS).
+- **Database**: Supabase (Cloud).
