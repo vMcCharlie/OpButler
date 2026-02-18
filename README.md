@@ -20,10 +20,25 @@ Our core differentiator is the **Autonomous AI Risk Agent**.
 
 ## 🚀 Key Features
 
-| Yield Dashboard | AI Risk Agent | Strategy Simulator |
-| :---: | :---: | :---: |
-| ![Dashboard](./src/frontend/screenshots/portfolio.png) | ![Telegram Bot](./src/telegrambot/screenshots/analyze.png) | ![Simulator](./src/frontend/screenshots/strategy-builder.png) |
-| **Unified View** <br> Manage Venus, Kinza, and Radiant. | **24/7 Guardian** <br> Real-time status & risk alerts. | **Risk Architect** <br> Model loops before execution. |
+<table align="center">
+  <tr>
+    <td align="center" width="33%">
+      <b>Yield Dashboard</b><br>
+      <img src="./src/frontend/screenshots/portfolio.png" width="100%" alt="Dashboard"><br>
+      <sub>Unified View: Manage Venus, Kinza, and Radiant.</sub>
+    </td>
+    <td align="center" width="33%">
+      <b>AI Risk Agent</b><br>
+      <img src="./src/telegrambot/screenshots/analyze.png" width="100%" alt="Telegram Bot"><br>
+      <sub>24/7 Guardian: Real-time status & risk alerts.</sub>
+    </td>
+    <td align="center" width="33%">
+      <b>Strategy Simulator</b><br>
+      <img src="./src/frontend/screenshots/strategy-builder.png" width="100%" alt="Simulator"><br>
+      <sub>Risk Architect: Model loops before execution.</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
