@@ -459,12 +459,12 @@ function generateSuggestions(proto: ProtocolData, targetHF: number = 1.5): strin
 
     if (repayAmount > 0.01) {
         const repayPct = ((repayAmount / debt) * 100).toFixed(1);
-        lines.push(`  • Repay ~$${fmt$(repayAmount)} debt (${repayPct}%)`);
+        lines.push(`  • Repay ~*$${fmt$(repayAmount)}* debt (${repayPct}%)`);
     }
 
     if (addAmount > 0.01) {
         const addPct = collateral > 0 ? ((addAmount / collateral) * 100).toFixed(1) : "N/A";
-        lines.push(`  • Deposit ~$${fmt$(addAmount)} collateral (+${addPct}%)`);
+        lines.push(`  • Deposit ~*$${fmt$(addAmount)}* collateral (+${addPct}%)`);
     }
 
     if (lines.length === 0) return "";
@@ -607,7 +607,50 @@ bot.command("settings", async (ctx) => {
         `• /settings — View alert settings\n` +
         `• /setinterval — Change polling frequency\n` +
         `• /setalert <value> — Change HF threshold\n` +
-        `• /togglealerts — Enable/disable alerts`,
+        `• /togglealerts — Enable/disable alerts\n` +
+        `• /disconnect — Unlink wallet`,
+        { parse_mode: "Markdown" }
+    );
+});
+
+// /disconnect — Unlink wallet (Step 1: Confirmation)
+bot.command("disconnect", async (ctx) => {
+    const keyboard = new InlineKeyboard()
+        .text("Yes, Disconnect", "disconnect_confirm")
+        .text("No, Cancel", "disconnect_cancel");
+
+    await ctx.reply(
+        "⚠️ *Are you sure?*\n\n" +
+        "This will unlink your wallet and stop all portfolio tracking.",
+        { parse_mode: "Markdown", reply_markup: keyboard }
+    );
+});
+
+// Handle Disconnect Confirmation
+bot.callbackQuery("disconnect_confirm", async (ctx) => {
+    const { error } = await supabase
+        .from("users")
+        .delete()
+        .eq("chat_id", ctx.from.id);
+
+    if (error) {
+        return ctx.answerCallbackQuery({ text: "Failed to disconnect", show_alert: true });
+    }
+
+    await ctx.answerCallbackQuery({ text: "Wallet disconnected" });
+    await ctx.editMessageText(
+        "👋 *Wallet Disconnected*\n\n" +
+        "I have stopped tracking your positions.\n" +
+        "Use `/start` to reconnect anytime.",
+        { parse_mode: "Markdown" }
+    );
+});
+
+// Handle Disconnect Cancel
+bot.callbackQuery("disconnect_cancel", async (ctx) => {
+    await ctx.answerCallbackQuery({ text: "Cancelled" });
+    await ctx.editMessageText(
+        "✅ *Disconnect Cancelled*\n\nI am still tracking your positions.",
         { parse_mode: "Markdown" }
     );
 });
@@ -864,8 +907,7 @@ async function getPortfolioSummary(protocols: ProtocolData[], walletAddr: string
         if (hf < 1.1) statusIcon = "🔴 *CRITICAL*";
         else if (hf < 1.5) statusIcon = "🟡 *WARNING*";
 
-        msg += `──────────────\n`;
-        msg += `🏦 *${p.protocol}* ${statusIcon}\n`;
+        msg += `\n🏦 *${p.protocol}* ${statusIcon}\n`;
         msg += `Health Factor: *${fmtHF(hf)}*\n`;
         msg += `Collateral: $${fmt$(p.totalCollateralUSD)} | Debt: $${fmt$(p.totalDebtUSD)}\n`;
 
@@ -987,6 +1029,7 @@ bot.api.setMyCommands([
     { command: "settings", description: "View Alerts & Settings" },
     { command: "help", description: "List all commands" },
     { command: "forcecheck", description: "Test Health Alerts" },
+    { command: "disconnect", description: "Unlink Wallet" },
     { command: "debug", description: "Diagnostics" },
     { command: "start", description: "Restart & Link Wallet" },
 ]);
