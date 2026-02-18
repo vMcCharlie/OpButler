@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Markets } from "@/components/Markets"
@@ -70,8 +71,8 @@ export function Dashboard() {
     const kinzaNetAPY = calculateNetAPY(kinzaPositions || [], kinzaSupply - kinzaBorrow);
     const radiantNetAPY = calculateNetAPY(radiantPositions || [], radiantSupply - radiantBorrow);
 
-    // Prepare data for AI Agent
-    const portfolioForAI = {
+    // Prepare data for AI Agent - Memoized to prevent frequent re-renders of AIInsights
+    const portfolioForAI = useMemo(() => ({
         totalNetWorth,
         totalSupplied,
         totalBorrowed,
@@ -79,8 +80,14 @@ export function Dashboard() {
         venus: { supply: venusSupply, borrow: venusBorrow, health: healthData.venus.healthFactor },
         kinza: { supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza.healthFactor },
         radiant: { supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant.healthFactor },
-        positions: allPositions // Detailed breakdown for AI analysis
-    };
+        positions: allPositions
+    }), [
+        totalNetWorth, totalSupplied, totalBorrowed, globalNetAPY,
+        venusSupply, venusBorrow, healthData.venus.healthFactor,
+        kinzaSupply, kinzaBorrow, healthData.kinza.healthFactor,
+        radiantSupply, radiantBorrow, healthData.radiant.healthFactor,
+        allPositions.length // Shallow check for positions count
+    ]);
 
     return (
         <div className="container pt-0 md:pt-8 pb-24 space-y-8 max-w-screen-2xl mx-auto px-4 md:px-16">
@@ -101,8 +108,8 @@ export function Dashboard() {
                 )}
             </div>
 
-            {/* AI Insights Section */}
-            {address && <AIInsights portfolioData={portfolioForAI} />}
+            {/* AI Insights Section - Always rendered, handles its own empty/auth state internally */}
+            <AIInsights portfolioData={portfolioForAI} />
 
             {/* Top Stats: Aggregated Financials */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">

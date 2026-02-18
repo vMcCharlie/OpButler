@@ -11,7 +11,7 @@ interface AIInsightsProps {
 }
 
 const CACHE_KEY_PREFIX = 'opbutler_ai_insights_';
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION = 60 * 1000; // 1 minute cache for performance and stability
 
 export function AIInsights({ portfolioData }: AIInsightsProps) {
     const { address } = useAccount();
@@ -42,7 +42,7 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
                 threshold: settings?.alert_threshold
             });
 
-            // 3. Check Cache
+            // 3. Check Cache Freshness
             const cacheKey = `${CACHE_KEY_PREFIX}${address}`;
             const cached = localStorage.getItem(cacheKey);
 
@@ -51,16 +51,23 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
                 const isFresh = (Date.now() - timestamp) < CACHE_DURATION;
                 const isSameData = inputHash === currentDataString;
 
-                if (isFresh && isSameData) {
+                // Optimization: If cache is fresh (< 1 min), use it regardless of small data changes
+                // This prevents the AI from "re-thinking" too often if prices wiggle by $0.01
+                if (isFresh) {
                     setTips(data);
                     lastAnalyzedData.current = currentDataString;
-                    return; // Use cache, skip fetch
+                    return;
+                }
+
+                // If cache is same data but not fresh, we still don't need to re-fetch 
+                // unless the data actually changed (to save API costs).
+                // However, the user wants "store for next one minute", so we prioritize isFresh.
+                if (isSameData && !loading) {
+                    return;
                 }
             }
 
-            // 4. If we are here, we need to fetch. 
-            // BUT, only if the data actually changed from the last render's fetch attempt
-            // This prevents the "loop" if the parent keeps re-rendering with the same data object reference
+            // 4. Check if we just tried this exact data (prevent internal loops)
             if (lastAnalyzedData.current === currentDataString && !loading) {
                 return;
             }
@@ -107,15 +114,38 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
 
     // Manual Refresh Handler
     const handleRefresh = () => {
+        if (!address) return;
         localStorage.removeItem(`${CACHE_KEY_PREFIX}${address}`);
-        lastAnalyzedData.current = ""; // Force re-fetch
-        // Trigger re-run by temporarily toggling a state or determining a way to re-run.
-        // Easiest is to clear cache and reload page, or better: extract fetch logic. 
-        // For now, simpler: user waits for next update or we just reload.
+        lastAnalyzedData.current = "";
         window.location.reload();
     };
 
-    if (!address) return null;
+    // Prompt to connect wallet if not connected
+    if (!address) {
+        return (
+            <Card className="bg-gradient-to-br from-[#CEFF00]/5 to-primary/5 border-white/10 shadow-lg relative overflow-hidden group">
+                <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg font-outfit text-muted-foreground group-hover:text-primary transition-colors">
+                        <Sparkles className="w-5 h-5 opacity-50 group-hover:opacity-100" />
+                        AI Risk Agent Insights
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="py-6">
+                    <div className="flex flex-col items-center justify-center text-center space-y-4">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                            <Sparkles className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="font-bold text-white text-base">Unlock AI-Driven Protection</p>
+                            <p className="text-sm text-muted-foreground max-w-[300px]">
+                                Connect your wallet to enable 24/7 autonomous monitoring and personalized risk insights.
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className="bg-gradient-to-br from-[#CEFF00]/10 to-emerald-500/10 border-emerald-500/20 shadow-lg relative overflow-hidden">
