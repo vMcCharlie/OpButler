@@ -20,11 +20,15 @@ A premium interface that aggregates **Venus, Kinza, and Radiant**.
 ![Dashboard Preview](../src/frontend/screenshots/dashboard.png)
 
 ### AI Risk Guard (Semantic Synthesis)
+
 Uses **Gemini 1.5 Flash** to provide natural-language risk assessments.
+
 ![AI Analysis](../src/telegrambot/screenshots/analyze.png)
 
 ### Strategy Simulator (Risk Architecture)
+
 A sandbox for modeling "Smart Loops" to maximize APY while projecting liquidation thresholds.
+
 ![Simulator](../src/frontend/screenshots/strategy-builder.png)
 
 ---
