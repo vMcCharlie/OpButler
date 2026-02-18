@@ -14,7 +14,9 @@ Managing high-yield positions on BNB Chain is currently a fragmented, high-stres
 OpButler acts as an **Agentic Portfolio Concierge**. It synthesizes cross-protocol data into a high-fidelity "God Mode" dashboard and deploys an autonomous watchdog for every user.
 
 ### Unified Dashboard
+
 A premium interface that aggregates **Venus, Kinza, and Radiant**.
+
 ![Dashboard Preview](../src/frontend/screenshots/dashboard.png)
 
 ### AI Risk Guard (Semantic Synthesis)
