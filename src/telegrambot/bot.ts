@@ -748,18 +748,45 @@ bot.command("togglealerts", async (ctx) => {
 
     if (!user) return ctx.reply("❌ No wallet linked. Use /start to begin.");
 
+    const status = user.alerts_enabled ? "✅ ENABLED" : "❌ DISABLED";
+    const action = user.alerts_enabled ? "Disable" : "Enable";
+
+    const keyboard = new InlineKeyboard()
+        .text(`${action} Alerts`, "confirm_toggle_alerts")
+        .text("Cancel", "dismiss_message");
+
+    await ctx.reply(
+        `🔔 *Liquidation Alerts*\n\n` +
+        `Current Status: *${status}*\n\n` +
+        `Do you want to *${action}* alerts?`,
+        { parse_mode: "Markdown", reply_markup: keyboard }
+    );
+});
+
+bot.callbackQuery("confirm_toggle_alerts", async (ctx) => {
+    const { data: user } = await supabase
+        .from("users").select("alerts_enabled")
+        .eq("chat_id", ctx.from?.id).single();
+
+    if (!user) return ctx.answerCallbackQuery({ text: "Error fetching settings" });
+
     const newState = !user.alerts_enabled;
     await supabase
         .from("users")
         .update({ alerts_enabled: newState, updated_at: new Date().toISOString() })
         .eq("chat_id", ctx.from?.id);
 
-    await ctx.reply(
+    await ctx.answerCallbackQuery({ text: newState ? "Alerts Enabled" : "Alerts Disabled" });
+    await ctx.editMessageText(
         newState
             ? "🔔 *Liquidation Alerts Enabled*\nYou will receive liquidation warnings."
             : "🔕 *Liquidation Alerts Disabled*\nYou won't receive automatic alerts.",
         { parse_mode: "Markdown" }
     );
+});
+
+bot.callbackQuery("dismiss_message", async (ctx) => {
+    await ctx.deleteMessage();
 });
 
 // /toggledaily — Enable/disable daily briefings
@@ -770,13 +797,36 @@ bot.command("toggledaily", async (ctx) => {
 
     if (!user) return ctx.reply("❌ No wallet linked. Use /start to begin.");
 
+    const status = user.daily_updates_enabled ? "✅ ENABLED" : "❌ DISABLED";
+    const action = user.daily_updates_enabled ? "Disable" : "Enable";
+
+    const keyboard = new InlineKeyboard()
+        .text(`${action} Daily Briefing`, "confirm_toggle_daily")
+        .text("Cancel", "dismiss_message");
+
+    await ctx.reply(
+        `☀️ *Daily Briefing*\n\n` +
+        `Current Status: *${status}*\n\n` +
+        `Do you want to *${action}* daily reports?`,
+        { parse_mode: "Markdown", reply_markup: keyboard }
+    );
+});
+
+bot.callbackQuery("confirm_toggle_daily", async (ctx) => {
+    const { data: user } = await supabase
+        .from("users").select("daily_updates_enabled")
+        .eq("chat_id", ctx.from?.id).single();
+
+    if (!user) return ctx.answerCallbackQuery({ text: "Error fetching settings" });
+
     const newState = !user.daily_updates_enabled;
     await supabase
         .from("users")
         .update({ daily_updates_enabled: newState, updated_at: new Date().toISOString() })
         .eq("chat_id", ctx.from?.id);
 
-    await ctx.reply(
+    await ctx.answerCallbackQuery({ text: newState ? "Daily Briefing Enabled" : "Daily Briefing Disabled" });
+    await ctx.editMessageText(
         newState
             ? "☀️ *Daily Briefings Enabled*\nI will send you a portfolio summary every 24 hours."
             : "🌑 *Daily Briefings Disabled*\nI will stay silent unless there is an alert.",
@@ -803,8 +853,8 @@ bot.command("status", async (ctx) => {
         `⏱ *Last Check:* ${diffMins} mins ago\n` +
         `⏳ *Next Check:* in ~${Math.max(0, nextCheckMins)} mins\n` +
         `🛡 *Active Monitors:* Venus, Kinza, Radiant\n` +
-        `⚡ *System Uptime:* ${uptimeDays} days\n` +
-        `📋 *Daily Briefing:* ${user.daily_updates_enabled ? "ON" : "OFF"}`,
+        `📋 *Daily Briefing:* ${user.daily_updates_enabled ? "ON" : "OFF"}\n` +
+        `🔔 *Liquidation Alerts:* ${user.alerts_enabled ? "ON" : "OFF"}`,
         { parse_mode: "Markdown" }
     );
 });
@@ -1032,8 +1082,7 @@ bot.command("help", async (ctx) => {
         "/toggledaily — Turn Daily Briefing On/Off\n" +
         "/status — Check Agent Heartbeat\n" +
         "/disconnect — Unlink Wallet\n" +
-        "/start — Restart & Link Wallet\n\n" +
-        "💡 *Tip:* You can also just chat with me! Ask \"How is my portfolio?\"",
+        "/start — Restart & Link Wallet",
         { parse_mode: "Markdown" }
     );
 });
@@ -1071,7 +1120,8 @@ bot.command("analyze", async (ctx) => {
 bot.on("message", (ctx) => {
     ctx.reply(
         "🤖 *OpButler Agent:* I am tracking your positions.\n" +
-        "Use /analyze for a status report or /settings to configure alerts."
+        "Use /analyze for a status report or /settings to configure alerts.",
+        { parse_mode: "Markdown" }
     );
 });
 
@@ -1089,30 +1139,15 @@ setInterval(runPollingCycle, POLLING_HEARTBEAT_MS);
 // Start bot
 bot.api.setMyCommands([
     { command: "analyze", description: "AI Portfolio Report" },
+    { command: "status", description: "Agent Pulse" },
     { command: "settings", description: "View Alerts & Settings" },
     { command: "help", description: "List all commands" },
-    { command: "settings", description: "View Alerts & Settings" },
-    { command: "help", description: "List all commands" },
-    { command: "disconnect", description: "Unlink Wallet" },
     { command: "disconnect", description: "Unlink Wallet" },
     { command: "debug", description: "Diagnostics" },
     { command: "start", description: "Restart & Link Wallet" },
 ]);
 
-bot.command("debug", async (ctx) => {
-    const uptime = process.uptime();
-    const pid = process.pid;
-    await ctx.reply(
-        `🛠 **Bot Diagnostics**\n` +
-        `PID: \`${pid}\`\n` +
-        `Uptime: ${uptime.toFixed(0)}s\n` +
-        `Polling Mutex: ${pollingMutex ? "LOCKED" : "OPEN"}\n` +
-        `Heartbeat: ${POLLING_HEARTBEAT_MS / 1000}s`,
-        { parse_mode: "Markdown" }
-    );
-});
-
-// Handle fatal errors during startup
+// Start the bot using handleUpdate to avoid polling conflicts if needed, but start() is fine for now
 bot.start({
     onStart: (botInfo) => {
         console.log(`🤖 OpButler Bot Started (@${botInfo.username}) — Monitoring Venus, Kinza, Radiant on BSC`);
