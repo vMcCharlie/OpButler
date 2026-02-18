@@ -10,6 +10,7 @@ import { useVenusPortfolio } from "@/hooks/useVenusPortfolio";
 import { useKinzaPortfolio } from "@/hooks/useKinzaPortfolio";
 import { useRadiantPortfolio } from "@/hooks/useRadiantPortfolio";
 import { TrendingUp, AlertTriangle, Heart, Plus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const chartData = [
     { name: 'Mon', value: 1000 },
@@ -37,39 +38,55 @@ export function Dashboard() {
     const isLoading = healthData.isLoading;
 
     // 3. Fetch Portfolio Data
-    const { totalSupplyUSD: venusSupply, totalBorrowUSD: venusBorrow, positions: venusPositions } = useVenusPortfolio();
-    const { totalSupplyUSD: kinzaSupply, totalBorrowUSD: kinzaBorrow, positions: kinzaPositions } = useKinzaPortfolio();
-    const { totalSupplyUSD: radiantSupply, totalBorrowUSD: radiantBorrow, positions: radiantPositions } = useRadiantPortfolio();
+    const venus = useVenusPortfolio();
+    const kinza = useKinzaPortfolio();
+    const radiant = useRadiantPortfolio();
 
-    // Helper to calculate Net APY
-    const calculateNetAPY = (positions: any[], netWorth: number) => {
-        if (netWorth <= 0) return 0;
-        let totalAnnualIncome = 0;
-        let totalAnnualCost = 0;
+    const isDashboardLoading = healthData.isLoading || venus.isLoading || kinza.isLoading || radiant.isLoading;
 
-        positions.forEach(pos => {
-            if (pos.supplyUSD > 0) {
-                totalAnnualIncome += pos.supplyUSD * (pos.apy / 100);
-            }
-            if (pos.borrowUSD > 0) {
-                totalAnnualCost += pos.borrowUSD * (pos.borrowApy / 100);
-            }
-        });
+    // Financial calculations - Memoized to prevent constant rendering
+    const stats = useMemo(() => {
+        const calculateNetAPY = (positions: any[], netWorth: number) => {
+            if (netWorth <= 0) return 0;
+            let totalAnnualIncome = 0;
+            let totalAnnualCost = 0;
 
-        const netAnnual = totalAnnualIncome - totalAnnualCost;
-        return (netAnnual / netWorth) * 100;
-    };
+            positions.forEach(pos => {
+                if (pos.supplyUSD > 0) {
+                    totalAnnualIncome += pos.supplyUSD * (pos.apy / 100);
+                }
+                if (pos.borrowUSD > 0) {
+                    totalAnnualCost += pos.borrowUSD * (pos.borrowApy / 100);
+                }
+            });
 
-    const totalSupplied = venusSupply + kinzaSupply + radiantSupply;
-    const totalBorrowed = venusBorrow + kinzaBorrow + radiantBorrow;
-    const totalNetWorth = totalSupplied - totalBorrowed;
+            const netAnnual = totalAnnualIncome - totalAnnualCost;
+            return (netAnnual / netWorth) * 100;
+        };
 
-    // Calculate APYs
-    const allPositions = [...(venusPositions || []), ...(kinzaPositions || []), ...(radiantPositions || [])];
-    const globalNetAPY = calculateNetAPY(allPositions, totalNetWorth);
-    const venusNetAPY = calculateNetAPY(venusPositions || [], venusSupply - venusBorrow);
-    const kinzaNetAPY = calculateNetAPY(kinzaPositions || [], kinzaSupply - kinzaBorrow);
-    const radiantNetAPY = calculateNetAPY(radiantPositions || [], radiantSupply - radiantBorrow);
+        const totalSupplied = venus.totalSupplyUSD + kinza.totalSupplyUSD + radiant.totalSupplyUSD;
+        const totalBorrowed = venus.totalBorrowUSD + kinza.totalBorrowUSD + radiant.totalBorrowUSD;
+        const totalNetWorth = totalSupplied - totalBorrowed;
+
+        const allPositions = [...(venus.positions || []), ...(kinza.positions || []), ...(radiant.positions || [])];
+        const globalNetAPY = calculateNetAPY(allPositions, totalNetWorth);
+        const venusNetAPY = calculateNetAPY(venus.positions || [], venus.totalSupplyUSD - venus.totalBorrowUSD);
+        const kinzaNetAPY = calculateNetAPY(kinza.positions || [], kinza.totalSupplyUSD - kinza.totalBorrowUSD);
+        const radiantNetAPY = calculateNetAPY(radiant.positions || [], radiant.totalSupplyUSD - radiant.totalBorrowUSD);
+
+        return {
+            totalSupplied,
+            totalBorrowed,
+            totalNetWorth,
+            globalNetAPY,
+            venusNetAPY,
+            kinzaNetAPY,
+            radiantNetAPY,
+            allPositions
+        };
+    }, [venus, kinza, radiant]);
+
+    const { totalSupplied, totalBorrowed, totalNetWorth, globalNetAPY, venusNetAPY, kinzaNetAPY, radiantNetAPY, allPositions } = stats;
 
     // Prepare data for AI Agent - Memoized to prevent frequent re-renders of AIInsights
     const portfolioForAI = useMemo(() => ({
@@ -77,16 +94,16 @@ export function Dashboard() {
         totalSupplied,
         totalBorrowed,
         globalNetAPY,
-        venus: { supply: venusSupply, borrow: venusBorrow, health: healthData.venus.healthFactor },
-        kinza: { supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza.healthFactor },
-        radiant: { supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant.healthFactor },
+        venus: { supply: venus.totalSupplyUSD, borrow: venus.totalBorrowUSD, health: healthData.venus.healthFactor },
+        kinza: { supply: kinza.totalSupplyUSD, borrow: kinza.totalBorrowUSD, health: healthData.kinza.healthFactor },
+        radiant: { supply: radiant.totalSupplyUSD, borrow: radiant.totalBorrowUSD, health: healthData.radiant.healthFactor },
         positions: allPositions
     }), [
         totalNetWorth, totalSupplied, totalBorrowed, globalNetAPY,
-        venusSupply, venusBorrow, healthData.venus.healthFactor,
-        kinzaSupply, kinzaBorrow, healthData.kinza.healthFactor,
-        radiantSupply, radiantBorrow, healthData.radiant.healthFactor,
-        allPositions.length // Shallow check for positions count
+        venus.totalSupplyUSD, venus.totalBorrowUSD, healthData.venus.healthFactor,
+        kinza.totalSupplyUSD, kinza.totalBorrowUSD, healthData.kinza.healthFactor,
+        radiant.totalSupplyUSD, radiant.totalBorrowUSD, healthData.radiant.healthFactor,
+        allPositions.length
     ]);
 
     return (
@@ -125,13 +142,13 @@ export function Dashboard() {
                             </div>
                         </div>
                         <div>
-                            <div className="text-2xl md:text-5xl font-bold text-white leading-none tracking-tight mb-2 md:mb-3">
-                                ${!address ? '0.00' : isLoading ? '...' : totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <div className="text-2xl md:text-5xl font-bold text-white leading-none tracking-tight mb-2 md:mb-3 h-[1.2em] flex items-center">
+                                {!address ? '$0.00' : isDashboardLoading ? <Skeleton className="h-8 md:h-12 w-32 md:w-48 bg-white/10" /> : `$${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 h-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                {isLoading && address ? (
-                                    <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Loading...</span>
+                                {isDashboardLoading && address ? (
+                                    <Skeleton className="h-3 w-20 bg-emerald-500/10" />
                                 ) : (
                                     <div className="flex items-baseline gap-1.5">
                                         <span className="text-sm font-black text-emerald-400 leading-none">
@@ -159,12 +176,16 @@ export function Dashboard() {
                             </div>
                         </div>
                         <div>
-                            <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3">
-                                ${!address ? '0.00' : isLoading ? '...' : totalSupplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3 h-[1.2em] flex items-center">
+                                {!address ? '$0.00' : isDashboardLoading ? <Skeleton className="h-8 md:h-12 w-32 md:w-48 bg-emerald-400/10" /> : `$${totalSupplied.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 h-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Active</span>
+                                {isDashboardLoading && address ? (
+                                    <Skeleton className="h-3 w-16 bg-emerald-400/10" />
+                                ) : (
+                                    <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Active</span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -182,12 +203,16 @@ export function Dashboard() {
                             </div>
                         </div>
                         <div>
-                            <div className="text-2xl md:text-5xl font-bold text-red-500 leading-none tracking-tight mb-2 md:mb-3">
-                                ${!address ? '0.00' : isLoading ? '...' : totalBorrowed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <div className="text-2xl md:text-5xl font-bold text-red-500 leading-none tracking-tight mb-2 md:mb-3 h-[1.2em] flex items-center">
+                                {!address ? '$0.00' : isDashboardLoading ? <Skeleton className="h-8 md:h-12 w-32 md:w-48 bg-red-500/10" /> : `$${totalBorrowed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 h-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Liability</span>
+                                {isDashboardLoading && address ? (
+                                    <Skeleton className="h-3 w-16 bg-red-500/10" />
+                                ) : (
+                                    <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Liability</span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -210,59 +235,80 @@ export function Dashboard() {
                             </div>
                         </div>
                         <div>
-                            <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3">
-                                ${!address ? '0.00' : isLoading ? '...' : (totalNetWorth * (globalNetAPY / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <div className="text-2xl md:text-5xl font-bold text-emerald-400 leading-none tracking-tight mb-2 md:mb-3 h-[1.2em] flex items-center">
+                                {!address ? '$0.00' : isDashboardLoading ? <Skeleton className="h-8 md:h-12 w-32 md:w-48 bg-emerald-400/10" /> : `$${(totalNetWorth * (globalNetAPY / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 h-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Projected Annual Yield</span>
+                                {isDashboardLoading && address ? (
+                                    <Skeleton className="h-3 w-32 bg-emerald-500/10" />
+                                ) : (
+                                    <span className="text-[8px] md:text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest leading-none">Projected Annual Yield</span>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Protocol Health Matrix */}
             <div className="grid gap-4 md:grid-cols-3">
                 {[
-                    { name: 'Venus Protocol', img: '/venus.png', supply: venusSupply, borrow: venusBorrow, health: healthData.venus, apy: venusNetAPY },
-                    { name: 'Kinza Finance', img: '/kinza.png', supply: kinzaSupply, borrow: kinzaBorrow, health: healthData.kinza, apy: kinzaNetAPY },
-                    { name: 'Radiant V2', img: '/radiant.jpeg', supply: radiantSupply, borrow: radiantBorrow, health: healthData.radiant, apy: radiantNetAPY },
+                    { name: 'Venus Protocol', img: '/venus.png', supply: venus.totalSupplyUSD, borrow: venus.totalBorrowUSD, health: healthData.venus, apy: venusNetAPY },
+                    { name: 'Kinza Finance', img: '/kinza.png', supply: kinza.totalSupplyUSD, borrow: kinza.totalBorrowUSD, health: healthData.kinza, apy: kinzaNetAPY },
+                    { name: 'Radiant V2', img: '/radiant.jpeg', supply: radiant.totalSupplyUSD, borrow: radiant.totalBorrowUSD, health: healthData.radiant, apy: radiantNetAPY },
                 ].map((proto) => (
-                    <Card key={proto.name} className="bg-card/50 border-input">
+                    <Card key={proto.name} className="bg-card/50 border-input overflow-hidden">
                         <CardHeader className="pb-2">
                             <CardTitle className="flex items-center gap-2 text-base">
-                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white">
+                                <div className="w-6 h-6 rounded-full overflow-hidden bg-white shrink-0">
                                     <img src={proto.img} className="w-full h-full object-cover" alt={proto.name} />
                                 </div>
-                                {proto.name}
+                                <span className="truncate">{proto.name}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-1">
-                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Supplied</span> <span className="font-mono">${proto.supply.toFixed(2)}</span></div>
-                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Borrowed</span> <span className="font-mono text-red-400">${proto.borrow.toFixed(2)}</span></div>
-                            <div className="mt-3 pt-2 border-t border-border flex justify-between items-center">
-                                <span className="text-xs font-bold uppercase text-muted-foreground">Health</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${proto.health.status === 'safe' ? 'bg-emerald-500/20 text-emerald-500' :
-                                    proto.health.status === 'warning' ? 'bg-amber-500/20 text-amber-400' :
-                                        proto.health.status === 'danger' ? 'bg-red-500/20 text-red-500' :
-                                            'bg-muted/50 text-muted-foreground'
-                                    }`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${proto.health.status === 'safe' ? 'bg-emerald-400' :
-                                        proto.health.status === 'warning' ? 'bg-amber-400' :
-                                            proto.health.status === 'danger' ? 'bg-red-400' : 'bg-muted-foreground'
-                                        }`} />
-                                    {proto.health.hasPositions ? `${proto.health.healthFactor.toFixed(2)}` : 'N/A'}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Supplied</span>
+                                <span className="font-mono">
+                                    {isDashboardLoading && address ? <Skeleton className="h-4 w-12" /> : `$${proto.supply.toFixed(2)}`}
                                 </span>
                             </div>
-                            {proto.supply > 0 && (
-                                <div className="pt-2 flex justify-between items-center border-t border-border mt-2">
-                                    <span className="text-xs font-bold uppercase text-muted-foreground">Net APY</span>
-                                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                                        {proto.apy.toFixed(2)}%
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Borrowed</span>
+                                <span className="font-mono text-red-400">
+                                    {isDashboardLoading && address ? <Skeleton className="h-4 w-12" /> : `$${proto.borrow.toFixed(2)}`}
+                                </span>
+                            </div>
+                            <div className="mt-3 pt-2 border-t border-border flex justify-between items-center h-8">
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Health</span>
+                                {isDashboardLoading && address ? (
+                                    <Skeleton className="h-6 w-16 rounded-full" />
+                                ) : (
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${proto.health.status === 'safe' ? 'bg-emerald-500/20 text-emerald-500' :
+                                        proto.health.status === 'warning' ? 'bg-amber-500/20 text-amber-400' :
+                                            proto.health.status === 'danger' ? 'bg-red-500/20 text-red-500' :
+                                                'bg-muted/50 text-muted-foreground'
+                                        }`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${proto.health.status === 'safe' ? 'bg-emerald-400' :
+                                            proto.health.status === 'warning' ? 'bg-amber-400' :
+                                                proto.health.status === 'danger' ? 'bg-red-400' : 'bg-muted-foreground'
+                                            }`} />
+                                        {proto.health.hasPositions ? `${proto.health.healthFactor.toFixed(2)}` : 'N/A'}
                                     </span>
-                                </div>
-                            )}
+                                )}
+                            </div>
+                            <div className="pt-2 flex justify-between items-center border-t border-border mt-2 h-8">
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Net APY</span>
+                                {isDashboardLoading && address ? (
+                                    <Skeleton className="h-6 w-14 rounded-full" />
+                                ) : (
+                                    proto.supply > 0 && (
+                                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                            {proto.apy.toFixed(2)}%
+                                        </span>
+                                    )
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 ))}

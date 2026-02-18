@@ -84,7 +84,8 @@ export function useVenusPortfolio() {
             totalBorrowUSD: 0,
             netWorthUSD: 0,
             positions: [],
-            isLoading: true
+            isLoading: !!address, // true if we have address but no data yet
+            refetch
         };
 
         let totalSupplyUSD = 0;

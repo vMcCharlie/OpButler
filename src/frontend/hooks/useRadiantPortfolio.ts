@@ -101,56 +101,65 @@ export function useRadiantPortfolio() {
 
     // 5. Process results
     return useMemo(() => {
+        if (!balanceData || !prices || !address || tokenAddresses.length === 0) {
+            return {
+                totalSupplyUSD: 0,
+                totalBorrowUSD: 0,
+                netWorthUSD: 0,
+                positions: [],
+                isLoading: !!address, // true if we have address but no data yet
+                refetch
+            };
+        }
+
         let totalSupplyUSD = 0;
         let totalBorrowUSD = 0;
         const positions: any[] = [];
 
-        if (balanceData && prices && tokenAddresses.length > 0) {
-            for (let i = 0; i < tokenAddresses.length; i++) {
-                const baseIndex = i * 2;
-                const aTokenBalRes = balanceData[baseIndex];
-                const varDebtBalRes = balanceData[baseIndex + 1];
+        for (let i = 0; i < tokenAddresses.length; i++) {
+            const baseIndex = i * 2;
+            const aTokenBalRes = balanceData[baseIndex];
+            const varDebtBalRes = balanceData[baseIndex + 1];
 
-                const aTokenBal = aTokenBalRes?.status === 'success' ? (aTokenBalRes.result as bigint) : BigInt(0);
-                const varDebtBal = varDebtBalRes?.status === 'success' ? (varDebtBalRes.result as bigint) : BigInt(0);
+            const aTokenBal = aTokenBalRes?.status === 'success' ? (aTokenBalRes.result as bigint) : BigInt(0);
+            const varDebtBal = varDebtBalRes?.status === 'success' ? (varDebtBalRes.result as bigint) : BigInt(0);
 
-                if (aTokenBal === BigInt(0) && varDebtBal === BigInt(0)) continue;
+            if (aTokenBal === BigInt(0) && varDebtBal === BigInt(0)) continue;
 
-                const { symbol: rawSymbol, decimals } = tokenAddresses[i];
-                let symbol = rawSymbol;
-                if (symbol === 'WBNB') symbol = 'BNB';
+            const { symbol: rawSymbol, decimals } = tokenAddresses[i];
+            let symbol = rawSymbol;
+            if (symbol === 'WBNB') symbol = 'BNB';
 
-                const price = prices.getPrice(symbol);
+            const price = prices.getPrice(symbol);
 
-                const supplyNum = parseFloat(formatUnits(aTokenBal, decimals));
-                const borrowNum = parseFloat(formatUnits(varDebtBal, decimals));
+            const supplyNum = parseFloat(formatUnits(aTokenBal, decimals));
+            const borrowNum = parseFloat(formatUnits(varDebtBal, decimals));
 
-                const supplyUSD = supplyNum * price;
-                const borrowUSD = borrowNum * price;
+            const supplyUSD = supplyNum * price;
+            const borrowUSD = borrowNum * price;
 
-                totalSupplyUSD += supplyUSD;
-                totalBorrowUSD += borrowUSD;
+            totalSupplyUSD += supplyUSD;
+            totalBorrowUSD += borrowUSD;
 
-                // Find APY data
-                const assetConfig = (allowedAssets.radiant as any[]).find(
-                    a => a.symbol === symbol || a.originalSymbol === symbol
-                );
-                const supplyAPY = assetConfig ? assetConfig.apy : 0;
-                const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
-                const ltv = assetConfig ? assetConfig.ltv : 0;
+            // Find APY data
+            const assetConfig = (allowedAssets.radiant as any[]).find(
+                a => a.symbol === symbol || a.originalSymbol === symbol
+            );
+            const supplyAPY = assetConfig ? assetConfig.apy : 0;
+            const borrowAPY = assetConfig ? assetConfig.apyBaseBorrow : 0;
+            const ltv = assetConfig ? assetConfig.ltv : 0;
 
-                positions.push({
-                    symbol,
-                    supply: supplyNum,
-                    supplyUSD,
-                    borrow: borrowNum,
-                    borrowUSD,
-                    price,
-                    apy: supplyAPY,
-                    borrowApy: borrowAPY,
-                    ltv
-                });
-            }
+            positions.push({
+                symbol,
+                supply: supplyNum,
+                supplyUSD,
+                borrow: borrowNum,
+                borrowUSD,
+                price,
+                apy: supplyAPY,
+                borrowApy: borrowAPY,
+                ltv
+            });
         }
 
         return {
@@ -161,5 +170,5 @@ export function useRadiantPortfolio() {
             isLoading: false,
             refetch
         };
-    }, [balanceData, prices, tokenAddresses, refetch]);
+    }, [balanceData, prices, tokenAddresses, refetch, address]);
 }

@@ -11,7 +11,7 @@ interface AIInsightsProps {
 }
 
 const CACHE_KEY_PREFIX = 'opbutler_ai_insights_';
-const CACHE_DURATION = 60 * 1000; // 1 minute cache for performance and stability
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minute cache for stability
 
 export function AIInsights({ portfolioData }: AIInsightsProps) {
     const { address } = useAccount();
@@ -19,8 +19,9 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Use a ref to track the last analyzed data string to prevent loops
+    // Use refs to track the last analyzed data and session status
     const lastAnalyzedData = useRef<string>("");
+    const hasFetchedThisSession = useRef<boolean>(false);
 
     const { settings, loading: settingsLoading } = useUserSettings();
 
@@ -42,7 +43,7 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
                 threshold: settings?.alert_threshold
             });
 
-            // 3. Check Cache Freshness
+            // 3. Check Cache Freshness & Session Status
             const cacheKey = `${CACHE_KEY_PREFIX}${address}`;
             const cached = localStorage.getItem(cacheKey);
 
@@ -51,24 +52,29 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
                 const isFresh = (Date.now() - timestamp) < CACHE_DURATION;
                 const isSameData = inputHash === currentDataString;
 
-                // Optimization: If cache is fresh (< 1 min), use it regardless of small data changes
-                // This prevents the AI from "re-thinking" too often if prices wiggle by $0.01
+                // If cache is fresh, use it and mark as fetched for this session
                 if (isFresh) {
                     setTips(data);
                     lastAnalyzedData.current = currentDataString;
+                    hasFetchedThisSession.current = true;
                     return;
                 }
 
-                // If cache is same data but not fresh, we still don't need to re-fetch 
-                // unless the data actually changed (to save API costs).
-                // However, the user wants "store for next one minute", so we prioritize isFresh.
-                if (isSameData && !loading) {
+                // If we've already shown insights (fresh or not) and data hasn't changed, 
+                // don't poll again while we are on this same page.
+                if (hasFetchedThisSession.current && isSameData) {
                     return;
                 }
             }
 
             // 4. Check if we just tried this exact data (prevent internal loops)
             if (lastAnalyzedData.current === currentDataString && !loading) {
+                return;
+            }
+
+            // If we've already fetched ONCE this session, don't auto-poll again
+            // unless the data actually changed (inputHash check above).
+            if (hasFetchedThisSession.current && lastAnalyzedData.current === currentDataString) {
                 return;
             }
 
@@ -97,6 +103,7 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
                     data: data.tips,
                     inputHash: currentDataString
                 }));
+                hasFetchedThisSession.current = true;
 
             } catch (err) {
                 console.error(err);
