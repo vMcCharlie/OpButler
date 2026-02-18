@@ -510,16 +510,16 @@ bot.command("start", async (ctx) => {
 
     await ctx.reply(
         `🤖 *OpButler AI Risk Agent Online*\n\n` +
-        `I am your autonomous guardian for DeFi positions on Venus, Kinza, and Radiant.\n\n` +
+        `I am your autonomous guardian for DeFi positions on Venus, Kinza, and Radiant on **Binance Smart Chain (BSC)**.\n\n` +
         `*Capabilities:*\n` +
         `• 🧠 *AI Analysis:* /analyze - Get "Good Vibes" risk advice\n` +
         `• 🛡️ *24/7 Watch:* I monitor your Health Factor while you sleep\n` +
         `• 🚨 *Instant Alerts:* I notify you before liquidation happens\n\n` +
         `*Commands:*\n` +
         `• /analyze — AI Portfolio Audit\n` +
-        `• /settings — View alert config\n` +
-        `• /setinterval — Set check frequency\n` +
-        `• /setalert <value> — Set safety net\n\n` +
+        `• /settings — View Risk & Alert Settings\n` +
+        `• /setinterval — Set AI Agent Polling Frequency\n` +
+        `• /setalert <value> — Set Liquidation Threshold\n\n` +
         `*Setup:*\n` +
         `1. Open Dashboard > Settings\n` +
         `2. Enter Telegram ID: \`${ctx.from?.id}\`\n` +
@@ -592,7 +592,7 @@ bot.command("settings", async (ctx) => {
         .eq("chat_id", ctx.from?.id).single();
 
     if (!user) {
-        return ctx.reply("❌ No wallet linked. Use `/start` to begin.", { parse_mode: "Markdown" });
+        return ctx.reply("❌ No wallet linked. Use /start to begin.", { parse_mode: "Markdown" });
     }
 
     const intervalLabel = INTERVAL_LABELS[user.polling_interval] || `${user.polling_interval} min`;
@@ -641,7 +641,7 @@ bot.callbackQuery("disconnect_confirm", async (ctx) => {
     await ctx.editMessageText(
         "👋 *Wallet Disconnected*\n\n" +
         "I have stopped tracking your positions.\n" +
-        "Use `/start` to reconnect anytime.",
+        "Use /start to reconnect anytime.",
         { parse_mode: "Markdown" }
     );
 });
@@ -739,7 +739,7 @@ bot.command("togglealerts", async (ctx) => {
         .from("users").select("alerts_enabled")
         .eq("chat_id", ctx.from?.id).single();
 
-    if (!user) return ctx.reply("❌ No wallet linked.");
+    if (!user) return ctx.reply("❌ No wallet linked. Use /start to begin.");
 
     const newState = !user.alerts_enabled;
     await supabase
@@ -941,15 +941,17 @@ async function getPortfolioSummary(protocols: ProtocolData[], walletAddr: string
 }
 
 // /help — List all commands
+// /help — List all commands
 bot.command("help", async (ctx) => {
     await ctx.reply(
         "📚 *OpButler Commands*\n\n" +
         "/analyze — AI Portfolio Report\n" +
-        "/settings — View your risk settings\n" +
-        "/settings — View your risk settings\n" +
-        "/setalert <value> — Set Health Factor threshold (e.g., 1.5)\n" +
-        "/togglealerts — Turn alerts on/off\n" +
-        "/start — Link your wallet\n\n" +
+        "/settings — View Risk & Alert Settings\n" +
+        "/setinterval — Set AI Agent Polling Frequency\n" +
+        "/setalert <value> — Set Liquidation Threshold (e.g., 1.5)\n" +
+        "/togglealerts — Turn Liquidation Alerts On/Off\n" +
+        "/disconnect — Unlink Wallet\n" +
+        "/start — Restart & Link Wallet\n\n" +
         "💡 *Tip:* You can also just chat with me! Ask \"How is my portfolio?\"",
         { parse_mode: "Markdown" }
     );
