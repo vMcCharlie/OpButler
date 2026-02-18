@@ -7,7 +7,7 @@ This guide covers the architecture, setup, and deployment of the **OpButler** pr
 OpButler consists of two main components working in tandem to provide a "concierge" experience:
 
 1.  **Frontend (Next.js)**: A responsive web dashboard for users to connect their wallets, view positions, and execute simulated strategies. It communicates with the blockchain via Wagmi/Viem and sends analysis requests to our API.
-2.  **AI Risk Agent (Node.js/Grammy)**: A backend service that monitors user positions on the blockchain 24/7. It uses **Google Gemini** to analyze portfolio health and generates natural language risk reports sent via Telegram.
+2.  **AI Risk Agent (Node.js/Grammy)**: A backend service that monitors user positions on the blockchain 24/7. It uses **Google Gemini** to analyze portfolio health and generates natural language risk reports sent via Telegram and Frontend Dashboard.
 
 ### Tech Stack
 
@@ -24,17 +24,20 @@ To get OpButler running locally, you need to set up both the Frontend and the Te
 -   **Node.js** v18+
 -   **Supabase Project**: For storing user preferences and chat IDs.
 -   **Telegram Bot Token**: Get one from [@BotFather](https://t.me/BotFather).
--   **Google Gemini API Key**: For the AI analysis features.
+-   **Google Gemini API Key**: For the AI Agent features.
 -   **WalletConnect Project ID**: For the frontend wallet connection.
 
 ### Quick Start
 
 We have detailed instructions for each component:
 
-1.  **[Frontend Setup Guide](../src/frontend/README.md)**  
+1.  **[Database Setup Guide](../src/supabase/README.md)**  
+    *Run the SQL migrations here first.*
+
+2.  **[Frontend Setup Guide](../src/frontend/README.md)**  
     *Go here to launch the web dashboard.*
 
-2.  **[AI Agent Setup Guide](../src/telegrambot/README.md)**  
+3.  **[AI Agent Setup Guide](../src/telegrambot/README.md)**  
     *Go here to launch the Telegram bot.*
 
 ## 🧪 Demo Flow

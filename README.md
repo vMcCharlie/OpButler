@@ -44,6 +44,7 @@ We stripped away the complexity.
 
 - **[Project Overview](./docs/PROJECT.md)**: The problem, solution, and roadmap.
 - **[Technical Architecture](./docs/TECHNICAL.md)**: How it works and how to set it up.
+- **[Database Migrations](./src/supabase/README.md)**: Supabase schema and setup instructions.
 - **[Frontend Guide](./src/frontend/README.md)**: Setup instructions for the Next.js App.
 - **[Telegram Bot Guide](./src/telegrambot/README.md)**: Setup instructions for the AI Agent.
 

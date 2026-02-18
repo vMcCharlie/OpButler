@@ -44,25 +44,9 @@ This is the backend service for **OpButler**. It acts as an autonomous "AI Risk 
 
 ### Database Setup
 
-Run the SQL migration in your Supabase SQL Editor to create the users table:
+Database migrations are now located in the **[src/supabase/](../supabase/)** folder. 
 
-```sql
-create table public.users (
-  id uuid not null default gen_random_uuid (),
-  chat_id bigint not null,
-  username text null,
-  wallet_address text null,
-  alert_threshold numeric null default 1.1,
-  polling_interval integer null default 60,
-  alerts_enabled boolean null default true,
-  last_checked timestamp with time zone null,
-  last_alert_sent timestamp with time zone null,
-  created_at timestamp with time zone not null default now(),
-  updated_at timestamp with time zone null,
-  constraint users_pkey primary key (id),
-  constraint users_chat_id_key unique (chat_id)
-) tablespace pg_default;
-```
+Please follow the instructions in **[/src/supabase/README.md](../supabase/README.md)** to set up your project.
 
 ### Running the Bot
 
