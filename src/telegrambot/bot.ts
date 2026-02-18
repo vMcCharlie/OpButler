@@ -840,15 +840,59 @@ async function runPollingCycle(): Promise<void> {
 
 async function getPortfolioSummary(protocols: ProtocolData[]): Promise<string> {
     const activeProtocols = protocols.filter(p => p.status !== "inactive");
-    if (activeProtocols.length === 0) return "🤖 *OpButler:* No active positions found.";
 
-    let msg = "📊 *Portfolio Snapshot*\n\n";
-    for (const p of activeProtocols) {
-        msg += `*${p.protocol}*: HF ${p.healthFactor.toFixed(2)}\n`;
-        msg += `Collateral: $${(p.totalCollateralUSD).toFixed(0)}\n`;
-        msg += `Debt: $${(p.totalDebtUSD).toFixed(0)}\n\n`;
+    if (activeProtocols.length === 0) {
+        return "👋 *Welcome to OpButler!* \n\nI don't see any active DeFi positions yet.\n" +
+            "Connect your wallet on the dashboard to get started.";
     }
-    msg += "To get AI insights, this feature is currently maintenance mode.";
+
+    let msg = "📊 *Your DeFi Portfolio Report*\n";
+    const totalCollateral = activeProtocols.reduce((sum, p) => sum + p.totalCollateralUSD, 0);
+    const totalDebt = activeProtocols.reduce((sum, p) => sum + p.totalDebtUSD, 0);
+    const netWorth = totalCollateral - totalDebt;
+
+    msg += `💰 *Net Worth:* $${fmt$(netWorth)}\n`;
+    msg += `📉 *Total Debt:* $${fmt$(totalDebt)}\n\n`;
+
+    for (const p of activeProtocols) {
+        // Health Bar Visual
+        const hf = p.healthFactor;
+        const maxBar = 10;
+        const filled = Math.min(Math.max(Math.floor(hf * 2), 0), maxBar);
+        // Logic: HF 1.5 -> 3 blocks? No, let's say HF 2.0 is full safe.
+        // Let's use a simpler logic:
+        // HF < 1.1: 🔴
+        // HF < 1.5: 🟡
+        // HF > 1.5: 🟢
+        let statusIcon = "🟢";
+        if (hf < 1.1) statusIcon = "🔴 *CRITICAL*";
+        else if (hf < 1.5) statusIcon = "🟡 *WARNING*";
+
+        msg += `──────────────\n`;
+        msg += `🏦 *${p.protocol}* ${statusIcon}\n`;
+        msg += `Health Factor: *${fmtHF(hf)}*\n`;
+        msg += `Collateral: $${fmt$(p.totalCollateralUSD)} | Debt: $${fmt$(p.totalDebtUSD)}\n`;
+
+        // List Positions (Top 3 by value)
+        const topSupplies = p.positions.filter(pos => pos.supplyUSD > 1).sort((a, b) => b.supplyUSD - a.supplyUSD).slice(0, 3);
+        const topBorrows = p.positions.filter(pos => pos.borrowUSD > 1).sort((a, b) => b.borrowUSD - a.borrowUSD).slice(0, 3);
+
+        if (topSupplies.length > 0) {
+            msg += `\n📥 *Supply:*\n`;
+            topSupplies.forEach(pos => {
+                msg += `• ${pos.symbol}: $${fmt$(pos.supplyUSD)}\n`;
+            });
+        }
+        if (topBorrows.length > 0) {
+            msg += `\n📤 *Borrow:*\n`;
+            topBorrows.forEach(pos => {
+                msg += `• ${pos.symbol}: $${fmt$(pos.borrowUSD)}\n`;
+            });
+        }
+        msg += `\n`;
+    }
+
+    msg += `_Updated: ${new Date().toLocaleTimeString()}_`;
     return msg;
 }
 
