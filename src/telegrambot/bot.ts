@@ -455,21 +455,21 @@ function generateSuggestions(proto: ProtocolData, targetHF: number = 1.5): strin
     const targetCollateral = (targetHF * debt) / effectiveLTV;
     const addAmount = Math.max(0, targetCollateral - collateral);
 
-    let suggestions = "";
+    let lines: string[] = [];
 
     if (repayAmount > 0.01) {
         const repayPct = ((repayAmount / debt) * 100).toFixed(1);
-        suggestions += `  • Repay ~$${fmt$(repayAmount)} of debt (${repayPct}% of total)\n`;
+        lines.push(`  • Repay ~$${fmt$(repayAmount)} debt (${repayPct}%)`);
     }
 
     if (addAmount > 0.01) {
         const addPct = collateral > 0 ? ((addAmount / collateral) * 100).toFixed(1) : "N/A";
-        suggestions += `  • Deposit ~$${fmt$(addAmount)} more collateral (+${addPct}%)\n`;
+        lines.push(`  • Deposit ~$${fmt$(addAmount)} collateral (+${addPct}%)`);
     }
 
-    if (!suggestions) return "";
+    if (lines.length === 0) return "";
 
-    return `\n💡 *To reach HF ${targetHF.toFixed(2)} on ${proto.protocol}:*\n` + suggestions;
+    return `\n💡 *To reach HF ${targetHF.toFixed(2)} on ${proto.protocol}:*\n` + lines.join("\n      *— OR —*\n");
 }
 
 // ============================================================
@@ -847,6 +847,7 @@ async function getPortfolioSummary(protocols: ProtocolData[], walletAddr: string
     const netWorth = totalCollateral - totalDebt;
 
     msg += `💰 *Net Worth:* $${fmt$(netWorth)}\n`;
+    msg += `🏦 *Total Supply:* $${fmt$(totalCollateral)}\n`;
     msg += `📉 *Total Debt:* $${fmt$(totalDebt)}\n\n`;
 
     for (const p of activeProtocols) {
@@ -943,7 +944,7 @@ bot.command("analyze", async (ctx) => {
     if (!user) return ctx.reply("❌ No wallet linked.");
 
     // Faster, more "Agentic" response
-    const statusMsg = await ctx.reply("🕵️‍♂️ *OpButler Agent:* Fetching latest on-chain data...");
+    const statusMsg = await ctx.reply("🕵️‍♂️ *OpButler Agent:* Fetching latest on-chain data...", { parse_mode: "Markdown" });
 
     try {
         const protocols = await fetchAllProtocols(user.wallet_address as Address);
