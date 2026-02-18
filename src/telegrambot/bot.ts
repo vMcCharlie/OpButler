@@ -438,48 +438,38 @@ function generateSuggestions(proto: ProtocolData, targetHF: number = 1.5): strin
 
     const debt = proto.totalDebtUSD;
     const collateral = proto.totalCollateralUSD;
-    if (debt < 0.01) return "";
+    if (debt < 0.01 || collateral < 0.01) return "";
 
-    // For Venus: HF = (Collateral * CF) / Debt → need (targetHF * Debt) / CF collateral
-    // For Aave: HF = (Collateral * LT) / Debt → same pattern
-    const avgFactor = proto.protocol === "Venus" ? 0.75 : 0.80; // Average LT
+    // Derive effective LTV from current state to be more accurate than hardcoded defaults
+    // HF = (Collateral * LTV) / Debt  =>  LTV = (HF * Debt) / Collateral
+    let effectiveLTV = (proto.healthFactor * debt) / collateral;
 
-    // Option 1: Repay debt → newDebt = (Collateral * Factor) / targetHF
-    const targetDebt = (collateral * avgFactor) / targetHF;
+    // Clamp LTV to reasonable bounds to avoid wild swings on bad data
+    effectiveLTV = Math.min(Math.max(effectiveLTV, 0.1), 0.95);
+
+    // Option 1: Repay debt → newDebt = (Collateral * LTV) / targetHF
+    const targetDebt = (collateral * effectiveLTV) / targetHF;
     const repayAmount = Math.max(0, debt - targetDebt);
 
-    // Option 2: Add collateral → newCollateral = (targetHF * Debt) / Factor
-    const targetCollateral = (targetHF * debt) / avgFactor;
+    // Option 2: Add collateral → newCollateral = (targetHF * Debt) / LTV
+    const targetCollateral = (targetHF * debt) / effectiveLTV;
     const addAmount = Math.max(0, targetCollateral - collateral);
 
-    let msg = `\n💡 *To reach HF ${targetHF.toFixed(2)} on ${proto.protocol}:*\n`;
+    let suggestions = "";
 
     if (repayAmount > 0.01) {
         const repayPct = ((repayAmount / debt) * 100).toFixed(1);
-        msg += `  • Repay ~$${fmt$(repayAmount)} of debt (${repayPct}% of total)\n`;
+        suggestions += `  • Repay ~$${fmt$(repayAmount)} of debt (${repayPct}% of total)\n`;
     }
 
     if (addAmount > 0.01) {
         const addPct = collateral > 0 ? ((addAmount / collateral) * 100).toFixed(1) : "N/A";
-        msg += `  • Deposit ~$${fmt$(addAmount)} more collateral (+${addPct}%)\n`;
+        suggestions += `  • Deposit ~$${fmt$(addAmount)} more collateral (+${addPct}%)\n`;
     }
 
-    // Specific asset suggestions if we have positions
-    if (proto.positions.length > 0) {
-        const borrowedAssets = proto.positions.filter(p => p.borrow > 0);
-        const suppliedAssets = proto.positions.filter(p => p.supply > 0);
+    if (!suggestions) return "";
 
-        if (borrowedAssets.length > 0 && repayAmount > 0.01) {
-            const topBorrow = borrowedAssets[0];
-            msg += `  → e.g., repay some ${topBorrow.symbol} debt\n`;
-        }
-        if (suppliedAssets.length > 0 && addAmount > 0.01) {
-            const topSupply = suppliedAssets[0];
-            msg += `  → e.g., deposit more ${topSupply.symbol}\n`;
-        }
-    }
-
-    return msg;
+    return `\n💡 *To reach HF ${targetHF.toFixed(2)} on ${proto.protocol}:*\n` + suggestions;
 }
 
 // ============================================================
