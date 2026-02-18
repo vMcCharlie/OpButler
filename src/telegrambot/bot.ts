@@ -469,7 +469,7 @@ function generateSuggestions(proto: ProtocolData, targetHF: number = 1.5): strin
 
     if (lines.length === 0) return "";
 
-    return `\n💡 *To reach HF ${targetHF.toFixed(2)} on ${proto.protocol}:*\n` + lines.join("\n      *— OR —*\n");
+    return `💡 *To reach HF ${targetHF.toFixed(2)} on ${proto.protocol}:*\n` + lines.join("\n      *— OR —*\n");
 }
 
 // ============================================================
@@ -600,9 +600,9 @@ bot.command("settings", async (ctx) => {
     await ctx.reply(
         `⚙️ *Your Settings*\n\n` +
         `🔗 Wallet: \`${user.wallet_address}\`\n` +
-        `⏰ Polling Interval: *${intervalLabel}*\n` +
+        `⏰ AI Agent Polling Interval: *${intervalLabel}*\n` +
         `⚠️ Alert Threshold: HF < *${user.alert_threshold}*\n` +
-        `🔔 Alerts: ${user.alerts_enabled ? "✅ Enabled" : "❌ Disabled"}\n\n` +
+        `🔔 Liquidation Alerts: ${user.alerts_enabled ? "✅ Enabled" : "❌ Disabled"}\n\n` +
         `*Commands:*\n` +
         `• /settings — View alert settings\n` +
         `• /setinterval — Change polling frequency\n` +
@@ -663,7 +663,7 @@ bot.command("setinterval", async (ctx) => {
         .text("16 hours", "interval_960").text("24 hours", "interval_1440");
 
     await ctx.reply(
-        "⏰ *Select Polling Interval*\n\nHow often should I check your positions?",
+        "⏰ *Select AI Agent Polling Interval*\n\nHow often should I check your positions?",
         { parse_mode: "Markdown", reply_markup: keyboard }
     );
 });
@@ -946,36 +946,16 @@ bot.command("help", async (ctx) => {
         "📚 *OpButler Commands*\n\n" +
         "/analyze — AI Portfolio Report\n" +
         "/settings — View your risk settings\n" +
+        "/settings — View your risk settings\n" +
         "/setalert <value> — Set Health Factor threshold (e.g., 1.5)\n" +
         "/togglealerts — Turn alerts on/off\n" +
-        "/forcecheck — ⚠️ Run immediate health check\n" +
         "/start — Link your wallet\n\n" +
         "💡 *Tip:* You can also just chat with me! Ask \"How is my portfolio?\"",
         { parse_mode: "Markdown" }
     );
 });
 
-// /forcecheck — Debugging tool to test alerts immediately
-bot.command("forcecheck", async (ctx) => {
-    const { data: user } = await supabase
-        .from("users").select("*")
-        .eq("chat_id", ctx.from?.id).single();
 
-    if (!user) return ctx.reply("❌ No wallet linked.");
-
-    await ctx.reply("🕵️‍♂️ *OpButler Agent:* Scanning blockchain for updated positions...");
-
-    try {
-        const protocols = await fetchAllProtocols(user.wallet_address as Address);
-
-        // Uses the same beautiful summary for forcecheck too
-        const summary = await getPortfolioSummary(protocols, user.wallet_address, user.alert_threshold);
-        await ctx.reply(summary, { parse_mode: "Markdown" });
-
-    } catch (err) {
-        await ctx.reply("❌ Error checking protocols: " + err);
-    }
-});
 
 // /analyze — AI Portfolio Report (Simplified to "Agent Report")
 bot.command("analyze", async (ctx) => {
@@ -1028,7 +1008,9 @@ bot.api.setMyCommands([
     { command: "analyze", description: "AI Portfolio Report" },
     { command: "settings", description: "View Alerts & Settings" },
     { command: "help", description: "List all commands" },
-    { command: "forcecheck", description: "Test Health Alerts" },
+    { command: "settings", description: "View Alerts & Settings" },
+    { command: "help", description: "List all commands" },
+    { command: "disconnect", description: "Unlink Wallet" },
     { command: "disconnect", description: "Unlink Wallet" },
     { command: "debug", description: "Diagnostics" },
     { command: "start", description: "Restart & Link Wallet" },
