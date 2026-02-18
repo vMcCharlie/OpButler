@@ -213,10 +213,18 @@ export default function Settings() {
                                         <Button
                                             variant="outline"
                                             className="w-full text-xs h-8 border-dashed hover:bg-primary/10"
-                                            onClick={() => setStep(1)} // Allow re-linking if needed
+                                            onClick={() => {
+                                                setIsLinked(false);
+                                                setStep(1);
+                                                setTelegramId('');
+                                                setSignature('');
+                                            }}
                                         >
                                             Link different account
                                         </Button>
+                                        <p className="text-[10px] text-muted-foreground text-center pt-2">
+                                            To permanently disconnect, send <code className="bg-secondary px-1 rounded">/disconnect</code> to the bot.
+                                        </p>
                                     </div>
                                 ) : (
                                     <>
@@ -274,7 +282,7 @@ export default function Settings() {
                             </CardContent>
                         </Card>
 
-                        {/* Polling Interval Card */}
+                        {/* Polling Interval Card (Read-Only) */}
                         <Card className="glass-card">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -282,77 +290,85 @@ export default function Settings() {
                                     Polling Frequency
                                 </CardTitle>
                                 <CardDescription>
-                                    How often should we check your positions?
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {isFetchingSettings ? (
-                                        Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)
-                                    ) : (
-                                        POLLING_OPTIONS.map((option) => (
-                                            <Button
-                                                key={option.value}
-                                                variant={pollingInterval === option.value ? "default" : "outline"}
-                                                className={`${pollingInterval === option.value
-                                                    ? "bg-primary text-black opacity-100"
-                                                    : "opacity-40"}`}
-                                                disabled={true} // Read-only
-                                            >
-                                                {option.label}
-                                                {pollingInterval === option.value && <div className="absolute top-0 right-0 w-2 h-2 bg-primary animate-ping rounded-full" />}
-                                            </Button>
-                                        ))
-                                    )}
-                                </div>
-                                <div className="mt-4 p-3 rounded bg-secondary/20 border border-border flex items-start gap-2">
-                                    <ShieldCheck size={14} className="text-primary shrink-0 mt-0.5" />
-                                    <p className="text-[10px] leading-tight text-muted-foreground">
-                                        Settings are managed via the Telegram Bot. Use <code className="bg-secondary px-1 rounded">/setinterval</code> in the bot to change this frequency.
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Alert Threshold Card */}
-                        <Card className="glass-card">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <AlertTriangle className="text-orange-500" />
-                                    Alert Threshold
-                                </CardTitle>
-                                <CardDescription>
-                                    Receive alerts when Health Factor drops below this value.
+                                    How often your Agent checks your positions.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-sm text-muted-foreground">Health Factor &lt;</span>
-                                        <div className="flex-1 opacity-50 cursor-not-allowed">
-                                            <input
-                                                type="range"
-                                                min="1.0"
-                                                max="2.0"
-                                                step="0.1"
-                                                value={alertThreshold}
-                                                disabled={true}
-                                                className="w-full accent-primary"
+                                    <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/20 border border-primary/20">
+                                        <span className="text-sm font-medium">Active Interval</span>
+                                        <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-sm py-1 px-3">
+                                            Every {POLLING_OPTIONS.find(o => o.value === pollingInterval)?.label || `${pollingInterval} mins`}
+                                        </Badge>
+                                    </div>
+                                    <div className="p-3 rounded bg-secondary/20 border border-border flex items-start gap-2">
+                                        <ShieldCheck size={14} className="text-primary shrink-0 mt-0.5" />
+                                        <p className="text-[10px] leading-tight text-muted-foreground">
+                                            Managed via Telegram. Use <code className="bg-secondary px-1 rounded">/setinterval</code> to change.
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Alert Threshold Card (Read-Only) */}
+                        <Card className="glass-card">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="text-orange-500" />
+                                    Risk Thresholds
+                                </CardTitle>
+                                <CardDescription>
+                                    Your Agent's trigger points for notifications.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-6">
+
+                                    {/* Health Factor Threshold */}
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Liquidation Alert at HF &lt;</span>
+                                            <span className="font-mono font-bold text-orange-500">{alertThreshold.toFixed(1)}</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-red-500 to-orange-500"
+                                                style={{ width: `${((alertThreshold - 1.0) / 1.0) * 100}%` }}
                                             />
                                         </div>
-                                        <span className="text-2xl font-mono font-bold text-orange-500 min-w-[60px] text-right">
-                                            {alertThreshold.toFixed(1)}
-                                        </span>
+                                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                                            <span>1.0 (High Risk)</span>
+                                            <span>2.0 (Safe)</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>1.0 (Risky)</span>
-                                        <span>1.5 (Moderate)</span>
-                                        <span>2.0 (Safe)</span>
+
+                                    {/* Monitoring Toggles Status */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-3 rounded bg-secondary/10 border border-border flex flex-col gap-2">
+                                            <span className="text-xs text-muted-foreground">Liquidation Alerts</span>
+                                            <div className="flex items-center gap-2">
+                                                {linkedUser?.alerts_enabled
+                                                    ? <><Check className="w-4 h-4 text-emerald-500" /><span className="text-sm font-bold text-emerald-500">Active</span></>
+                                                    : <><span className="text-sm font-bold text-muted-foreground">Disabled</span></>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded bg-secondary/10 border border-border flex flex-col gap-2">
+                                            <span className="text-xs text-muted-foreground">Daily Briefing</span>
+                                            <div className="flex items-center gap-2">
+                                                {linkedUser?.daily_updates_enabled
+                                                    ? <><Check className="w-4 h-4 text-emerald-500" /><span className="text-sm font-bold text-emerald-500">Active</span></>
+                                                    : <><span className="text-sm font-bold text-muted-foreground">Disabled</span></>
+                                                }
+                                            </div>
+                                        </div>
                                     </div>
+
                                     <div className="p-3 rounded bg-secondary/20 border border-border flex items-start gap-2">
                                         <AlertTriangle size={14} className="text-orange-500 shrink-0 mt-0.5" />
                                         <p className="text-[10px] leading-tight text-muted-foreground">
-                                            Use <code className="bg-secondary px-1 rounded">/setalert {alertThreshold.toFixed(1)}</code> in Telegram to adjust your danger zone threshold.
+                                            Use <code className="bg-secondary px-1 rounded">/setalert</code> or <code className="bg-secondary px-1 rounded">/togglealerts</code> in Telegram to configure.
                                         </p>
                                     </div>
                                 </div>
@@ -369,20 +385,17 @@ export default function Settings() {
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm text-muted-foreground">
                                 <p>
-                                    <strong className="text-foreground">1. Link Wallet:</strong> Sign a message to prove ownership and link your Telegram.
+                                    <strong className="text-foreground">24/7 AI Guardian:</strong> Your Agent monitors the blockchain while you sleep, ensuring you never miss a critical liquidation risk.
                                 </p>
                                 <p>
-                                    <strong className="text-foreground">2. Configure Alerts:</strong> Set how often to check and when to alert.
+                                    <strong className="text-foreground">Sleep Peacefully:</strong> Get daily briefings and instant alerts so you can relax knowing your portfolio is watched.
                                 </p>
                                 <p>
-                                    <strong className="text-foreground">3. Receive Alerts:</strong> Get notified on Telegram when your Health Factor drops.
-                                </p>
-                                <p>
-                                    <strong className="text-foreground">4. Take Action:</strong> Click the link in alerts to manage positions on this dashboard.
+                                    <strong className="text-foreground">Secure & Anonymous:</strong> This dashboard is read-only for your privacy. All critical actions (configuration, alerts) are handled securely via your private Telegram chat.
                                 </p>
                                 <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
                                     <p className="text-xs">
-                                        🔒 <strong>Security:</strong> Telegram bot is read-only. All transactions happen here via your wallet.
+                                        🔒 <strong>Security:</strong> We never ask for private keys. All on-chain transactions must be signed by your wallet.
                                     </p>
                                 </div>
                             </CardContent>

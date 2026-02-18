@@ -512,7 +512,7 @@ bot.command("start", async (ctx) => {
 
     await ctx.reply(
         `🤖 *OpButler AI Risk Agent Online*\n\n` +
-        `I am your autonomous guardian for DeFi positions on Venus, Kinza, and Radiant on **Binance Smart Chain (BSC)**.\n\n` +
+        `I am your autonomous guardian for DeFi positions on Venus, Kinza, and Radiant on *Binance Smart Chain (BSC)*.\n\n` +
         `*Capabilities:*\n` +
         `• 🧠 *AI Analysis:* /analyze - Get "Good Vibes" risk advice\n` +
         `• 🛡️ *24/7 Watch:* I monitor your Health Factor while you sleep\n` +
