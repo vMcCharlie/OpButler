@@ -30,7 +30,7 @@ Manage your positions across Venus, Kinza, and Radiant from a single, high-fidel
 **24/7 Agentic Guardian**
 Our Gemini-powered watchdog synthesizes on-chain metrics into natural language risk audits. Get instant Telegram alerts for liquidation risks and proactive strategy suggestions.
 
-![AI Risk Agent](./src/telegrambot/screenshots/analyze.png)
+![AI Risk Agent](./src/telegrambot/screenshots/alert.png)
 
 ### 🧪 Strategy Simulator
 **Risk-Aware Architect**
