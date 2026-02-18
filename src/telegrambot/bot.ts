@@ -97,6 +97,8 @@ interface UserData {
     last_checked: string;
     alerts_enabled: boolean;
     last_alert_sent?: string;
+    daily_updates_enabled?: boolean;
+    last_daily_report_sent?: string;
 }
 
 interface AssetPosition {
@@ -602,12 +604,17 @@ bot.command("settings", async (ctx) => {
         `🔗 Wallet: \`${user.wallet_address}\`\n` +
         `⏰ AI Agent Polling Interval: *${intervalLabel}*\n` +
         `⚠️ Alert Threshold: HF < *${user.alert_threshold}*\n` +
-        `🔔 Liquidation Alerts: ${user.alerts_enabled ? "✅ Enabled" : "❌ Disabled"}\n\n` +
+        `⏰ AI Agent Polling Interval: *${intervalLabel}*\n` +
+        `⚠️ Alert Threshold: HF < *${user.alert_threshold}*\n` +
+        `🔔 Liquidation Alerts: ${user.alerts_enabled ? "✅ Enabled" : "❌ Disabled"}\n` +
+        `☀️ Daily Briefing: ${user.daily_updates_enabled ? "✅ Enabled" : "❌ Disabled"}\n\n` +
         `*Commands:*\n` +
         `• /settings — View alert settings\n` +
         `• /setinterval — Change polling frequency\n` +
         `• /setalert <value> — Change HF threshold\n` +
-        `• /togglealerts — Enable/disable alerts\n` +
+        `• /togglealerts — Toggle liquidation alerts\n` +
+        `• /toggledaily — Toggle daily briefing\n` +
+        `• /status — Check agent heartbeat\n` +
         `• /disconnect — Unlink wallet`,
         { parse_mode: "Markdown" }
     );
@@ -749,8 +756,55 @@ bot.command("togglealerts", async (ctx) => {
 
     await ctx.reply(
         newState
-            ? "🔔 *Alerts Enabled*\nYou will receive liquidation warnings."
-            : "🔕 *Alerts Disabled*\nYou won't receive automatic alerts.",
+            ? "🔔 *Liquidation Alerts Enabled*\nYou will receive liquidation warnings."
+            : "🔕 *Liquidation Alerts Disabled*\nYou won't receive automatic alerts.",
+        { parse_mode: "Markdown" }
+    );
+});
+
+// /toggledaily — Enable/disable daily briefings
+bot.command("toggledaily", async (ctx) => {
+    const { data: user } = await supabase
+        .from("users").select("daily_updates_enabled")
+        .eq("chat_id", ctx.from?.id).single();
+
+    if (!user) return ctx.reply("❌ No wallet linked. Use /start to begin.");
+
+    const newState = !user.daily_updates_enabled;
+    await supabase
+        .from("users")
+        .update({ daily_updates_enabled: newState, updated_at: new Date().toISOString() })
+        .eq("chat_id", ctx.from?.id);
+
+    await ctx.reply(
+        newState
+            ? "☀️ *Daily Briefings Enabled*\nI will send you a portfolio summary every 24 hours."
+            : "🌑 *Daily Briefings Disabled*\nI will stay silent unless there is an alert.",
+        { parse_mode: "Markdown" }
+    );
+});
+
+// /status — Agent Pulse (Heartbeat)
+bot.command("status", async (ctx) => {
+    const { data: user } = await supabase
+        .from("users").select("*")
+        .eq("chat_id", ctx.from?.id).single();
+
+    if (!user) return ctx.reply("❌ No wallet linked. Use /start to begin.");
+
+    const uptimeDays = (process.uptime() / 86400).toFixed(1);
+    const lastCheck = new Date(user.last_checked);
+    const now = new Date();
+    const diffMins = Math.floor((now.getTime() - lastCheck.getTime()) / 60000);
+    const nextCheckMins = user.polling_interval - diffMins;
+
+    await ctx.reply(
+        `🟢 *Agent Status: Online*\n\n` +
+        `⏱ *Last Check:* ${diffMins} mins ago\n` +
+        `⏳ *Next Check:* in ~${Math.max(0, nextCheckMins)} mins\n` +
+        `🛡 *Active Monitors:* Venus, Kinza, Radiant\n` +
+        `⚡ *System Uptime:* ${uptimeDays} days\n` +
+        `📋 *Daily Briefing:* ${user.daily_updates_enabled ? "ON" : "OFF"}`,
         { parse_mode: "Markdown" }
     );
 });
@@ -765,6 +819,9 @@ bot.command("togglealerts", async (ctx) => {
 
 const POLLING_HEARTBEAT_MS = 60_000; // 60 seconds
 const ALERT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+const POLLING_HEARTBEAT_MS = 60_000; // 60 seconds
+const ALERT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const USER_STAGGER_MS = 500; // 500ms between users to avoid RPC rate limits
 let pollingMutex = false;
 
@@ -788,7 +845,10 @@ async function runPollingCycle(): Promise<void> {
         const { data: users, error } = await supabase
             .from("users")
             .select("*")
-            .eq("alerts_enabled", true);
+        const { data: users, error } = await supabase
+            .from("users")
+            .select("*")
+            .or("alerts_enabled.eq.true,daily_updates_enabled.eq.true");
 
         if (error || !users || users.length === 0) {
             if (error) console.error("Error fetching users:", error);
@@ -843,6 +903,28 @@ async function runPollingCycle(): Promise<void> {
 
                     } catch (sendErr) {
                         console.error(`Failed to send alert to ${user.chat_id}:`, sendErr);
+                    }
+                }
+
+                // Daily Briefing Logic
+                if (user.daily_updates_enabled) {
+                    const lastReport = user.last_daily_report_sent ? new Date(user.last_daily_report_sent) : new Date(0);
+                    if (now.getTime() - lastReport.getTime() > DAILY_INTERVAL_MS) {
+                        try {
+                            const summary = await getPortfolioSummary(protocols, user.wallet_address, user.alert_threshold);
+                            const briefingMsg = "☀️ *Daily Briefing*\n\n" + summary;
+
+                            await bot.api.sendMessage(user.chat_id, briefingMsg, { parse_mode: "Markdown" });
+
+                            await supabase
+                                .from("users")
+                                .update({ last_daily_report_sent: now.toISOString() })
+                                .eq("chat_id", user.chat_id);
+
+                            console.log(`☀️ Daily briefing sent to ${user.chat_id}`);
+                        } catch (dailyErr) {
+                            console.error(`Failed to send daily briefing to ${user.chat_id}:`, dailyErr);
+                        }
                     }
                 }
 
@@ -950,6 +1032,8 @@ bot.command("help", async (ctx) => {
         "/setinterval — Set AI Agent Polling Frequency\n" +
         "/setalert <value> — Set Liquidation Threshold (e.g., 1.5)\n" +
         "/togglealerts — Turn Liquidation Alerts On/Off\n" +
+        "/toggledaily — Turn Daily Briefing On/Off\n" +
+        "/status — Check Agent Heartbeat\n" +
         "/disconnect — Unlink Wallet\n" +
         "/start — Restart & Link Wallet\n\n" +
         "💡 *Tip:* You can also just chat with me! Ask \"How is my portfolio?\"",
