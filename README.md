@@ -20,25 +20,23 @@ Our core differentiator is the **Autonomous AI Risk Agent**.
 
 ## 🚀 Key Features
 
-<table align="center">
-  <tr>
-    <td align="center" width="33%">
-      <b>Yield Dashboard</b><br>
-      <img src="./src/frontend/screenshots/portfolio.png" width="100%" alt="Dashboard"><br>
-      <sub>Unified View: Manage Venus, Kinza, and Radiant.</sub>
-    </td>
-    <td align="center" width="33%">
-      <b>AI Risk Agent</b><br>
-      <img src="./src/telegrambot/screenshots/analyze.png" width="100%" alt="Telegram Bot"><br>
-      <sub>24/7 Guardian: Real-time status & risk alerts.</sub>
-    </td>
-    <td align="center" width="33%">
-      <b>Strategy Simulator</b><br>
-      <img src="./src/frontend/screenshots/strategy-builder.png" width="100%" alt="Simulator"><br>
-      <sub>Risk Architect: Model loops before execution.</sub>
-    </td>
-  </tr>
-</table>
+### 📊 Yield Dashboard
+**Unified Portfolio Management**
+Manage your positions across Venus, Kinza, and Radiant from a single, high-fidelity interface. Monitor Net Worth, Net APY, and Health Factors in real-time.
+
+![Dashboard Preview](./src/frontend/screenshots/dashboard.png)
+
+### 🤖 AI Risk Agent
+**24/7 Agentic Guardian**
+Our Gemini-powered watchdog synthesizes on-chain metrics into natural language risk audits. Get instant Telegram alerts for liquidation risks and proactive strategy suggestions.
+
+![AI Risk Agent](./src/telegrambot/screenshots/analyze.png)
+
+### 🧪 Strategy Simulator
+**Risk-Aware Architect**
+Model complex "Smart Loop" strategies before you execute. Project your liquidation thresholds and maximize your yield with confidence.
+
+![Strategy Simulator](./src/frontend/screenshots/strategy-builder.png)
 
 ---
 
