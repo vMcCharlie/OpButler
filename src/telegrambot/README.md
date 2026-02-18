@@ -47,3 +47,13 @@ npm start
 -   **Framework**: Grammy.js
 -   **Data Storage**: Supabase PostgREST
 -   **Risk Logic**: Threshold-based polling with LLM-narrative synthesis.
+
+---
+
+## ✅ Complete the Setup
+
+To fully deploy the OpButler ecosystem, ensure you have completed all three pillars:
+
+1.  **[Current] AI Risk Agent**: (You are here) The 24/7 monitoring backend.
+2.  **[Database Schema](../supabase/README.md)**: SQL migrations for user storage.
+3.  **[Frontend Dashboard](../frontend/README.md)**: The main user interface.

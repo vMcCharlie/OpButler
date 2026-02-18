@@ -22,3 +22,13 @@ The main table is `public.users`, which stores:
 ## 🔒 Security
 
 We use **Row Level Security (RLS)**. The migrations enable a policy that allows the `service_role` (used by the Telegram Agent backend) full access to manage user data.
+
+---
+
+## ✅ Complete the Setup
+
+To fully deploy the OpButler ecosystem, ensure you have completed all three pillars:
+
+1.  **[Current] Database Schema**: (You are here) The foundation for user data.
+2.  **[AI Risk Agent](../telegrambot/README.md)**: The 24/7 monitoring backend.
+3.  **[Frontend Dashboard](../frontend/README.md)**: The main user interface.

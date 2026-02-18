@@ -41,3 +41,13 @@ npm run dev
 -   **Styling**: Tailwind CSS & shadcn/ui
 -   **Blockchain**: Wagmi & Viem
 -   **AI**: Google Gemini 1.5 Flash
+
+---
+
+## ✅ Complete the Setup
+
+To fully deploy the OpButler ecosystem, ensure you have completed all three pillars:
+
+1.  **[Current] Frontend Dashboard**: (You are here) The user interface.
+2.  **[Database Schema](../supabase/README.md)**: SQL migrations for user storage.
+3.  **[AI Risk Agent](../telegrambot/README.md)**: The 24/7 monitoring backend.
