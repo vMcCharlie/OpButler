@@ -452,7 +452,7 @@ function generateSuggestions(proto: ProtocolData, targetHF: number = 1.5): strin
     const targetCollateral = (targetHF * debt) / avgFactor;
     const addAmount = Math.max(0, targetCollateral - collateral);
 
-    let msg = `\n💡 *To reach HF ${targetHF.toFixed(1)} on ${proto.protocol}:*\n`;
+    let msg = `\n💡 *To reach HF ${targetHF.toFixed(2)} on ${proto.protocol}:*\n`;
 
     if (repayAmount > 0.01) {
         const repayPct = ((repayAmount / debt) * 100).toFixed(1);
@@ -923,51 +923,41 @@ bot.command("forcecheck", async (ctx) => {
 
     try {
         const protocols = await fetchAllProtocols(user.wallet_address as Address);
-        let alertTriggered = false;
 
-        for (const proto of protocols) {
-            if (proto.status === "inactive") continue;
-
-            // Check condition
-            const isCritical = proto.healthFactor < user.alert_threshold;
-
-            await ctx.reply(
-                `🔎 *${proto.protocol} Check*\n` +
-                `Health: ${proto.healthFactor.toFixed(2)} / ${user.alert_threshold}\n` +
-                `Result: ${isCritical ? "🚨 CRITICAL" : "✅ SAFE"}`,
-                { parse_mode: "Markdown" }
-            );
-
-            if (isCritical) {
-                alertTriggered = true;
-                // We don't send the official alert here to avoid messing up the cooldown/database state,
-                // but we visually confirm it would trigger.
-            }
-        }
-
-        if (alertTriggered) {
-            await ctx.reply("⚠️ Alerts WOULD trigger based on these values.");
-        } else {
-            await ctx.reply("👍 System checks out. No alerts needed right now.");
-        }
+        // Uses the same beautiful summary for forcecheck too
+        const summary = await getPortfolioSummary(protocols, user.wallet_address, user.alert_threshold);
+        await ctx.reply(summary, { parse_mode: "Markdown" });
 
     } catch (err) {
         await ctx.reply("❌ Error checking protocols: " + err);
     }
 });
 
+// /analyze — AI Portfolio Report (Simplified to "Agent Report")
 bot.command("analyze", async (ctx) => {
     const { data: user } = await supabase
-        .from("users").select("wallet_address")
+        .from("users").select("*")
         .eq("chat_id", ctx.from?.id).single();
 
     if (!user) return ctx.reply("❌ No wallet linked.");
 
-    await ctx.reply("🤖 *OpButler:* analyzing...", { parse_mode: "Markdown" });
-    const protocols = await fetchAllProtocols(user.wallet_address as Address);
-    const summary = await getPortfolioSummary(protocols);
+    // Faster, more "Agentic" response
+    const statusMsg = await ctx.reply("🕵️‍♂️ *OpButler Agent:* Fetching latest on-chain data...");
 
-    await ctx.reply(summary, { parse_mode: "Markdown" });
+    try {
+        const protocols = await fetchAllProtocols(user.wallet_address as Address);
+        const summary = await getPortfolioSummary(protocols, user.wallet_address, user.alert_threshold);
+
+        // Delete "fetching" message to keep chat clean (optional, but cleaner)
+        try { await ctx.api.deleteMessage(ctx.chat.id, statusMsg.message_id); } catch { }
+
+        const keyboard = new InlineKeyboard()
+            .url("Open Portfolio", `${DASHBOARD_URL}/portfolio`);
+
+        await ctx.reply(summary, { parse_mode: "Markdown", reply_markup: keyboard });
+    } catch (err) {
+        await ctx.reply("❌ Error fetching data: " + err);
+    }
 });
 
 // Simple catch-all for unknown commands
