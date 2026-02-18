@@ -838,7 +838,7 @@ async function runPollingCycle(): Promise<void> {
 // let aiClient: GoogleGenAI | null = null;
 // ... (Code removed for simplification)
 
-async function getPortfolioSummary(protocols: ProtocolData[]): Promise<string> {
+async function getPortfolioSummary(protocols: ProtocolData[], walletAddr: string, threshold: number): Promise<string> {
     const activeProtocols = protocols.filter(p => p.status !== "inactive");
 
     if (activeProtocols.length === 0) {
@@ -846,7 +846,12 @@ async function getPortfolioSummary(protocols: ProtocolData[]): Promise<string> {
             "Connect your wallet on the dashboard to get started.";
     }
 
-    let msg = "📊 *Your DeFi Portfolio Report*\n";
+    // Shorten wallet for display
+    const shortWallet = `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
+
+    let msg = `👤 *Wallet:* \`${shortWallet}\`\n`;
+    msg += "📊 *Your DeFi Portfolio Report*\n";
+
     const totalCollateral = activeProtocols.reduce((sum, p) => sum + p.totalCollateralUSD, 0);
     const totalDebt = activeProtocols.reduce((sum, p) => sum + p.totalDebtUSD, 0);
     const netWorth = totalCollateral - totalDebt;
@@ -872,6 +877,12 @@ async function getPortfolioSummary(protocols: ProtocolData[]): Promise<string> {
         msg += `🏦 *${p.protocol}* ${statusIcon}\n`;
         msg += `Health Factor: *${fmtHF(hf)}*\n`;
         msg += `Collateral: $${fmt$(p.totalCollateralUSD)} | Debt: $${fmt$(p.totalDebtUSD)}\n`;
+
+        // Check if we need suggestions (if HF < Threshold)
+        if (hf < threshold) {
+            const suggestions = generateSuggestions(p, threshold);
+            if (suggestions) msg += suggestions + "\n";
+        }
 
         // List Positions (Top 3 by value)
         const topSupplies = p.positions.filter(pos => pos.supplyUSD > 1).sort((a, b) => b.supplyUSD - a.supplyUSD).slice(0, 3);
