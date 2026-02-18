@@ -5,6 +5,9 @@ import { Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccount } from 'wagmi';
 import { useUserSettings } from '@/hooks/useUserSettings';
+import { Button } from "@/components/ui/button";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { Wallet } from 'lucide-react';
 
 interface AIInsightsProps {
     portfolioData: any;
@@ -13,6 +16,16 @@ interface AIInsightsProps {
 
 const CACHE_KEY_PREFIX = 'opbutler_ai_insights_';
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minute cache for stability
+
+const LOADING_MESSAGES = [
+    "Fetching your protocol positions...",
+    "Syncing market data from BNB Chain...",
+    "Calculating individual Health Factors...",
+    "Analyzing debt-to-collateral ratios...",
+    "Scanning for yield optimization paths...",
+    "Generating safety recommendations...",
+    "Finalizing personalized AI insights..."
+];
 
 export function AIInsights({ portfolioData, isLoading: isParentLoading }: AIInsightsProps) {
     const { address } = useAccount();
@@ -23,8 +36,29 @@ export function AIInsights({ portfolioData, isLoading: isParentLoading }: AIInsi
     // Use refs to track the last analyzed data and session status
     const lastAnalyzedData = useRef<string>("");
     const hasFetchedThisSession = useRef<boolean>(false);
+    const [messageIndex, setMessageIndex] = useState(0);
 
     const { settings, loading: settingsLoading } = useUserSettings();
+
+    // Dynamic loading messages logic
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        if (loading || isParentLoading) {
+            const cycleMessage = () => {
+                const randomTime = Math.floor(Math.random() * (2500 - 1000 + 1) + 1000);
+                timeoutId = setTimeout(() => {
+                    setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+                    cycleMessage();
+                }, randomTime);
+            };
+            cycleMessage();
+        } else {
+            setMessageIndex(0);
+        }
+
+        return () => clearTimeout(timeoutId);
+    }, [loading, isParentLoading]);
 
     useEffect(() => {
         async function fetchInsights() {
@@ -133,25 +167,41 @@ export function AIInsights({ portfolioData, isLoading: isParentLoading }: AIInsi
     // Prompt to connect wallet if not connected
     if (!address) {
         return (
-            <Card className="bg-gradient-to-br from-[#CEFF00]/5 to-primary/5 border-white/10 shadow-lg relative overflow-hidden group">
-                <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-lg font-outfit text-muted-foreground group-hover:text-primary transition-colors">
-                        <Sparkles className="w-5 h-5 opacity-50 group-hover:opacity-100" />
-                        AI Risk Agent Insights
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="py-6">
-                    <div className="flex flex-col items-center justify-center text-center space-y-4">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                            <Sparkles className="w-6 h-6 text-primary" />
-                        </div>
-                        <div className="space-y-1">
-                            <p className="font-bold text-white text-base">Unlock AI-Driven Protection</p>
-                            <p className="text-sm text-muted-foreground max-w-[300px]">
-                                Connect your wallet to enable 24/7 autonomous monitoring and personalized risk insights.
-                            </p>
-                        </div>
+            <Card className="bg-[#0A0A0B] border-white/10 shadow-2xl relative overflow-hidden group min-h-[300px] flex flex-col items-center justify-center">
+                {/* Background Glow Effects */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
+                <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+                <CardContent className="relative z-10 py-12 flex flex-col items-center text-center space-y-8 max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-emerald-500/10 flex items-center justify-center border border-white/10 shadow-2xl rotate-3 group-hover:rotate-6 transition-transform duration-500">
+                        <Sparkles className="w-8 h-8 text-primary animate-pulse" />
                     </div>
+
+                    <div className="space-y-3">
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                            Unlock AI-Driven Protection
+                        </h2>
+                        <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+                            Connect your wallet to enable 24/7 autonomous monitoring,
+                            real-time risk alerts, and personalized yield optimization tips.
+                        </p>
+                    </div>
+
+                    <ConnectButton.Custom>
+                        {({ openConnectModal, mounted }) => {
+                            if (!mounted) return null;
+                            return (
+                                <Button
+                                    onClick={openConnectModal}
+                                    size="lg"
+                                    className="bg-primary text-black font-bold h-12 px-8 rounded-full shadow-[0_0_20px_rgba(206,255,0,0.2)] hover:shadow-[0_0_30px_rgba(206,255,0,0.4)] transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                >
+                                    <Wallet className="w-5 h-5" />
+                                    Connect Wallet
+                                </Button>
+                            );
+                        }}
+                    </ConnectButton.Custom>
                 </CardContent>
             </Card>
         );
@@ -173,11 +223,16 @@ export function AIInsights({ portfolioData, isLoading: isParentLoading }: AIInsi
             <CardContent>
                 {loading || isParentLoading ? (
                     <div className="space-y-3 py-2">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                        <div className="flex items-center gap-3 text-muted-foreground mb-4">
                             <Loader2 className="w-4 h-4 animate-spin text-[#CEFF00]" />
-                            <span className="animate-pulse text-xs uppercase font-bold tracking-widest">
-                                {isParentLoading ? "Syncing Portfolio..." : "Agent Analyzing..."}
-                            </span>
+                            <div className="overflow-hidden h-4">
+                                <span
+                                    key={messageIndex}
+                                    className="text-xs uppercase font-bold tracking-widest block animate-in fade-in slide-in-from-bottom-1 duration-500"
+                                >
+                                    {isParentLoading ? "Syncing Portfolio..." : LOADING_MESSAGES[messageIndex]}
+                                </span>
+                            </div>
                         </div>
                         <div className="space-y-3">
                             {[1, 2, 3].map((i) => (
