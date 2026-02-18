@@ -8,12 +8,13 @@ import { useUserSettings } from '@/hooks/useUserSettings';
 
 interface AIInsightsProps {
     portfolioData: any;
+    isLoading?: boolean;
 }
 
 const CACHE_KEY_PREFIX = 'opbutler_ai_insights_';
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minute cache for stability
 
-export function AIInsights({ portfolioData }: AIInsightsProps) {
+export function AIInsights({ portfolioData, isLoading: isParentLoading }: AIInsightsProps) {
     const { address } = useAccount();
     const [tips, setTips] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
@@ -30,6 +31,8 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
             if (!address || !portfolioData || settingsLoading) return;
 
             // 1. Check for significant data (ignore empty/loading states)
+            if (isParentLoading || settingsLoading) return;
+
             const hasData = (portfolioData.totalSupplied > 0 || portfolioData.totalBorrowed > 0);
             if (!hasData) return;
 
@@ -168,10 +171,19 @@ export function AIInsights({ portfolioData }: AIInsightsProps) {
                 )}
             </CardHeader>
             <CardContent>
-                {loading ? (
-                    <div className="flex items-center gap-2 text-muted-foreground py-4">
-                        <Loader2 className="w-4 h-4 animate-spin text-[#CEFF00]" />
-                        <span className="animate-pulse">Analyzing your portfolio for optimization opportunities...</span>
+                {loading || isParentLoading ? (
+                    <div className="space-y-3 py-2">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#CEFF00]" />
+                            <span className="animate-pulse text-xs uppercase font-bold tracking-widest">
+                                {isParentLoading ? "Syncing Portfolio..." : "Agent Analyzing..."}
+                            </span>
+                        </div>
+                        <div className="space-y-3">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="h-12 w-full bg-white/5 animate-pulse rounded-lg border border-white/5" />
+                            ))}
+                        </div>
                     </div>
                 ) : error ? (
                     <div className="flex flex-col gap-2">

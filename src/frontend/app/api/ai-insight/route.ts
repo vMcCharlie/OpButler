@@ -27,12 +27,12 @@ export async function POST(req: Request) {
       - Total Supplied: $${portfolio.totalSupplied?.toFixed(2)}
       - Total Borrowed: $${portfolio.totalBorrowed?.toFixed(2)}
       - Global Net APY: ${portfolio.globalNetAPY?.toFixed(2)}%
-      - **User Alert Threshold:** Health Factor < ${threshold}
+      - **Target Safe Health Factor:** 1.5
       
       **Protocol Health:**
-      - Venus: HF ${portfolio.venus?.health?.toFixed(2)} (Supply: $${portfolio.venus?.supply?.toFixed(2)})
-      - Kinza: HF ${portfolio.kinza?.health?.toFixed(2)} (Supply: $${portfolio.kinza?.supply?.toFixed(2)})
-      - Radiant: HF ${portfolio.radiant?.health?.toFixed(2)} (Supply: $${portfolio.radiant?.supply?.toFixed(2)})
+      - Venus: HF ${portfolio.venus?.health?.toFixed(2)} (Supply: $${portfolio.venus?.supply?.toFixed(2)}, Borrow: $${portfolio.venus?.borrow?.toFixed(2)})
+      - Kinza: HF ${portfolio.kinza?.health?.toFixed(2)} (Supply: $${portfolio.kinza?.supply?.toFixed(2)}, Borrow: $${portfolio.kinza?.borrow?.toFixed(2)})
+      - Radiant: HF ${portfolio.radiant?.health?.toFixed(2)} (Supply: $${portfolio.radiant?.supply?.toFixed(2)}, Borrow: $${portfolio.radiant?.borrow?.toFixed(2)})
 
       **Detailed Positions:**
       ${JSON.stringify(portfolio.positions, null, 2)}
@@ -41,12 +41,17 @@ export async function POST(req: Request) {
       Analyze this portfolio and generate 3 short, actionable, "Good Vibes" tips.
       
       **Guidelines:**
-      1. **Check Thresholds:** If any protocol Health Factor is below ${threshold + 0.1}, PRIORITIZE a warning and specific fix (e.g., "Repay BNB on Venus").
-      2. **Optimize Yield:** If health is safe (>1.5), suggest ways to boost APY (e.g., "Loop USDT on Kinza").
-      3. **Tone:** Professional but relaxed ("Good Vibes"). No doom-mongering unless liquidation is imminent.
-      4. **Specifics:** Mention specific assets and protocols from the positions list.
+      1. **Address Risk First:** If any protocol HF is below 1.4, use the following math to give EXACT dollar and percentage figures in your tip:
+         - **To reach Target HF 1.5 by Repaying:** Repay Amount = CurrentBorrow - ((Supply * LTV) / 1.5).
+         - **To reach Target HF 1.5 by Depositing:** Deposit Amount = (Borrow * 1.5 / LTV) - Supply.
+         - *Note: Average LTV is roughly 0.75-0.80. Use the 'ltv' field from the positions if available, or assume 0.8.*
+         - **Vibe:** "Repay ~$X to hit 1.5 HF" or "Deposit ~$Y more to sleep better."
+      
+      2. **Specific Tips:** If health is safe (>1.5), suggest ways to flip yield if negative, or boost it if positive.
+      3. **Natural Formatting:** Do not use bullet points or dry tables. Keep it conversational but data-rich. Use the "$" and "%" symbols and mention the specific assets (e.g., USDT, BNB).
+      4. **Consistency:** Ensure the numbers you mention match the reality of the portfolio data provided.
       5. **Format:** JSON array of strings only. Example: ["Tip 1", "Tip 2", "Tip 3"].
-      Do not include markdown formatting like \`\`\`json. Just the raw JSON array.
+      Just the raw JSON array.
     `;
 
         const result = await ai.models.generateContent({
