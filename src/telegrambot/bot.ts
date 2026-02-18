@@ -817,8 +817,7 @@ bot.command("status", async (ctx) => {
 // Background Health Monitor (Polling Loop)
 // ============================================================
 
-const POLLING_HEARTBEAT_MS = 60_000; // 60 seconds
-const ALERT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+
 const POLLING_HEARTBEAT_MS = 60_000; // 60 seconds
 const ALERT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
 const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -842,9 +841,7 @@ async function runPollingCycle(): Promise<void> {
         console.log(`⏱️ Starting Polling Cycle at ${new Date().toISOString()}`);
         const now = new Date();
 
-        const { data: users, error } = await supabase
-            .from("users")
-            .select("*")
+
         const { data: users, error } = await supabase
             .from("users")
             .select("*")
