@@ -54,7 +54,7 @@ Trustless, atomic execution of leverage and deleverage loops.
 ```text
 /README.md             ← Concierge Overview & Quick Start
 /docs/
-  PROJECT.md           ← Problem, Solution, HITL-to-Autonomous Roadmap
+  PROJECT.md           ← Problem, Solution, Path to Superintelligence
   TECHNICAL.md         ← Architecture, Setup, Verification Guide
   EXTRAS.md            ← Presentation Slides & Demo Video
 /src/
@@ -94,5 +94,18 @@ OpButler is pre-wired to our **verified OpLoopVault** on BSC Mainnet (`0x0C0D...
 
 ---
 
-## 📈 Impact & Vision
-OpButler triggers a paradigm shift from "User-Initiated" to **"Agent-Initiated"** DeFi. We combine **Gemini's semantic reasoning** with **verified on-chain execution vaults** to create a true concierge experience: the AI monitors the chain 24/7 and drafts complex **Smart Loop transactions** for you, bridging the gap between passive holding and algorithmic yield farming.
+## 🔮 Vision: Path to Superintelligence
+
+OpButler is evolving from a passive dashboard into a **Self-Driving DeFi Guard**.
+
+### Phase 1: Agent-Initiated Autonomy [LIVE]
+**The AI does the work; you hold the keys.**
+The Agent monitors the chain 24/7, computing risk and drafting complex **Smart Loop** transactions. You simply act as the "Security Keymaster," signing the pre-optimized payloads.
+
+### Phase 2: Trustless Delegated Execution [NEXT]
+**Non-Custodial Automation.**
+We are integrating **Session Keys** to allow the Agent to autonomously execute specific safety actions (like "Panic Repay") within user-defined bounds—no signature required.
+
+### Phase 3: Cross-Chain Hivemind [FUTURE]
+**Ecosystem-Wide Intelligence.**
+Expanding the Agent's context window to orchestrate yield across PancakeSwap, Lista DAO, and beyond.

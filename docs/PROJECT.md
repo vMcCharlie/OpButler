@@ -38,16 +38,17 @@ OpButler facilitates deeper liquidity on BNB Chain by removing the "Bad Vibes" o
 
 ---
 
-## 🗺️ Roadmap: The Path to Autonomy
+## 🗺️ Roadmap: The Path to Superintelligence
 
-### Phase 1: HITL (Human-in-the-Loop) Governance [CURRENT]
-- **Status**: Production-ready.
-- **Mechanism**: AI decision support. The agent monitors the chain and suggests remedial actions. Execution requires user confirmation (HITL) on-chain to ensure governance integrity.
+### Phase 1: Agent-Initiated Autonomy [LIVE]
+- **Status**: **Active Mainnet Deployment**.
+- **Mechanism**: The Agent operates as a **24/7 autonomous watchdog**, monitoring 3+ protocols and computing complex risk scenarios off-chain. It actively **constructs and proposes** high-fidelity execution payloads (Smart Loops). The user serves as the final "Security Keymaster," signing the optimized transactions prepared by the AI. This ensures maximum security while offloading 99% of the cognitive labor to the Agent.
 
-### Phase 2: Autonomous On-chain Decision Synthesis
-- **Goal**: Full Agentic Autonomy.
-- **Mechanism**: Integrating **OpenClaw** for verifiable agent actions. Enabling the agent to execute "Panic Repay" or "Yield Migration" automatically via threshold-triggered smart contracts when risk parameters are breached.
+### Phase 2: Trustless Delegated Execution
+- **Goal**: Non-Custodial "Session Key" Automation.
+- **Mechanism**: Upgrading the `OpLoopVault` to support **Restricted Session Keys**. This allows the Agent to autonomously execute *specific* safety actions (e.g., "Panic Repay" or "Yield Migration") within strict, user-defined boundaries without requiring a real-time signature.
+- **Technology**: Integration with **OpenClaw** for verifiable, proof-backed agent actions.
 
-### Phase 3: Cross-Chain Concierge Expansion
-- **Goal**: Multichain Agentic Presence.
-- **Mechanism**: Support for PancakeSwap Lending and Lista DAO, expanding the AI's "Context Window" to the entire BNB Ecosystem.
+### Phase 3: Cross-Chain Hivemind
+- **Goal**: Multi-Chain Liquidity Arbitrage.
+- **Mechanism**: Expanding the Agent's context window to the entire BNB Ecosystem (PancakeSwap, Lista DAO) and bridging intelligence across chains (Arbitrum/Optimism), effectively creating a "Hivemind" of yield-optimizing agents.
