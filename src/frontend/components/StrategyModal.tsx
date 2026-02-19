@@ -568,29 +568,23 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                                         <div className="flex justify-between items-center px-1">
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Balance:</span>
                                             <div className="flex items-center gap-3">
-                                                {walletBalanceFormatted ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => {
-                                                                const bal = parseFloat(walletBalanceFormatted);
-                                                                setAmount((bal * 0.5).toFixed(6));
-                                                            }}
-                                                            className="text-[10px] font-bold text-muted-foreground hover:text-[#CEFF00] hover:underline cursor-pointer transition-colors"
-                                                        >
-                                                            50%
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setAmount(truncateAmount(walletBalanceFormatted));
-                                                            }}
-                                                            className="text-[10px] font-bold text-[#CEFF00] hover:underline cursor-pointer"
-                                                        >
-                                                            {truncateAmount(walletBalanceFormatted)} {inputToken} (Max)
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-muted-foreground animate-pulse">Loading...</span>
-                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        const bal = parseFloat(walletBalanceFormatted || '0');
+                                                        setAmount((bal * 0.5).toFixed(6));
+                                                    }}
+                                                    className="text-[10px] font-bold text-muted-foreground hover:text-[#CEFF00] hover:underline cursor-pointer transition-colors"
+                                                >
+                                                    50%
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setAmount(truncateAmount(walletBalanceFormatted || '0'));
+                                                    }}
+                                                    className="text-[10px] font-bold text-[#CEFF00] hover:underline cursor-pointer"
+                                                >
+                                                    {truncateAmount(walletBalanceFormatted || '0')} {inputToken} (Max)
+                                                </button>
                                             </div>
                                         </div>
                                     )}
