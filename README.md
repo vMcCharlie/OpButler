@@ -1,6 +1,6 @@
 # OpButler - Your Personal DeFi Concierge
 
-> **The easiest way to manage and grow your DeFi positions on BNB Chain from one unified interface. Powered by Gemini, watching your back 24/7.**
+> **The easiest way to manage and grow your DeFi positions on BNB Chain from one unified interface. Powered by Gemini, watching your back 24/7 and executing your strategies on-chain.**
 
 [![Live on BSC](https://img.shields.io/badge/Live%20on-BSC-F3BA2F?style=for-the-badge&logo=binance)](https://opbutler.xyz)
 [![AI Agent](https://img.shields.io/badge/AI%20Agent-Watchdog-brightgreen?style=for-the-badge&logo=telegram)](https://t.me/OpButlerBot)
@@ -11,21 +11,19 @@
 Our core differentiator is the **Autonomous AI Risk Agent**. 
 - **Continuous Monitoring**: Scans user positions across Venus, Kinza, and Radiant every block (using a similar polling approach to **OpenClaw**).
 - **Gemini-Powered Synthesis**: Translates complex on-chain metrics into actionable, natural-language risk assessments.
-- **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*) and executes automated "Smart Loops" on-chain when authorized.
+- **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*).
 
 ---
 
-## � Integrated Application & Execution
+## 📦 Integrated Application & Execution
 OpButler is not just an agent; it is a full-stack DeFi powerhouse backed by verified smart contracts.
 - **Yield Dashboards**: A "God Mode" interface aggregating Venus, Kinza, and Radiant.
 - **Strategy Builder**: Architect complex loop strategies with real-time simulation.
 - **Executor**: Atomic, trustless execution of strategies via the `OpLoopVault` contract.
 
----
+## 🚀 Key Features
 
-## �🚀 Key Features
-
-### 📊 Yield Dashboard
+### 📊 Yield Dashboard with AI Risk Guard
 **Unified Portfolio Management**
 Manage your positions across Venus, Kinza, and Radiant from a single, high-fidelity interface. Monitor Net Worth, Net APY, and Health Factors in real-time.
 
@@ -51,21 +49,6 @@ Trustless, atomic execution of leverage and deleverage loops.
 
 ---
 
-## 🔄 Sample Flow: The "Smart Loop"
-
-1.  **User Action**: Selects "Long BNB" strategy on the Dashboard.
-2.  **Simulation**: Frontend projects APY and Liquidation Price.
-3.  **Execution**: User signs a transaction to the `OpLoopVault` contract.
-4.  **On-Chain Magic**:
-    - Contract accepts User's BNB.
-    - Flash swaps additional BNB from PancakeSwap (Leverage).
-    - Supplies total to Venus.
-    - Borrows USDT.
-    - Swaps USDT for BNB to repay the flash loan.
-5.  **Result**: User holds a leveraged supply position, earning compounded yields, all in one transaction.
-
----
-
 ## 📂 Repository Layout
 
 ```text
@@ -86,18 +69,20 @@ Trustless, atomic execution of leverage and deleverage loops.
 ### 1. Database Setup
 See **[Database Setup Guide](./src/supabase/README.md)**. Run the consolidated SQL migrations in your Supabase project.
 
-### 2. AI Agent Secret Configuration
-Configure `.env` in `src/telegramagent` (see **[Bot Guide](./src/telegramagent/README.md)**):
-```env
-TELEGRAM_BOT_TOKEN=...
-GEMINI_API_KEY=...
-SUPABASE_URL=...
+### 2. AI Agent (The Watchdog)
+Navigate to `src/telegramagent`, setup secrets, and launch.
+```bash
+cd src/telegramagent
+cp .env.example .env  # Fill in your keys
+npm install
+npm start
 ```
 
-### 3. Frontend Launch
-Configure `.env.local` in `src/frontend` (see **[Frontend Guide](./src/frontend/README.md)**):
+### 3. Frontend Dashboard
+Navigate to `src/frontend` and start the UI.
 ```bash
 cd src/frontend
+cp .env.example .env.local  # Optional: Configure custom RPCs
 npm install
 npm run dev
 ```
@@ -105,6 +90,4 @@ npm run dev
 ---
 
 ## 📈 Impact & Vision
-OpButler simplifies the "Bad Vibes" of DeFi (stress and fragmentation) into a "Good Vibes" concierge experience. By leveraging LLM-driven analysis, we provide the safety net required for the next wave of liquidity participants on BNB Chain.
-
-[MIT](./LICENSE)
+OpButler triggers a paradigm shift from "User-Initiated" to **"Agent-Initiated"** DeFi. We combine **Gemini's semantic reasoning** with **verified on-chain execution vaults** to create a true concierge experience: the AI monitors the chain 24/7 and drafts complex **Smart Loop transactions** for you, bridging the gap between passive holding and algorithmic yield farming.
