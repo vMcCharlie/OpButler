@@ -37,7 +37,7 @@ npm start
 
 -   **/start**: Initial greeting and dashboard link.
 -   **/verify <sig>**: Securely link your wallet address.
--   **/analyze**: Generate a Gemini-powered risk report for your portfolio.
+-   **/analyze**: Generate an on-chain risk report for your portfolio.
 -   **/settings**: View threshold and polling frequency.
 -   **/help**: Detailed list of agent capabilities.
     

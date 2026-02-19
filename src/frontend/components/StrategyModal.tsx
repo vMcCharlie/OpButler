@@ -448,13 +448,13 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
         } catch (err: any) {
             console.error("Execution error:", err);
             const msg = err?.shortMessage || err?.message || '';
-            let friendlyMsg = 'Transaction could not be completed. Please try again.';
+            let friendlyMsg = 'Transaction could not be completed. Try changing the amount and leverage position to get filled.';
             if (msg.includes('User rejected') || msg.includes('User denied')) {
-                friendlyMsg = 'You cancelled the transaction.';
+                friendlyMsg = 'You cancelled the transaction. Try changing the amount and leverage position to get filled.';
             } else if (msg.includes('insufficient funds') || msg.includes('exceeds balance')) {
                 friendlyMsg = 'Insufficient balance for this transaction.';
             } else if (msg.includes('reverted')) {
-                friendlyMsg = 'Transaction reverted on-chain. Try reducing leverage or amount.';
+                friendlyMsg = 'Transaction reverted on-chain. Try changing the amount and leverage position to get filled.';
             }
             toast({
                 title: "Execution Failed",
@@ -465,6 +465,15 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
             setIsExecuting(false);
             setTxStep('idle');
         }
+    };
+
+    const truncateAmount = (val: string | null) => {
+        if (!val) return '0';
+        const [int, dec] = val.split('.');
+        if (dec && dec.length > 8) {
+            return `${int}.${dec.substring(0, 8)}`;
+        }
+        return val;
     };
 
     return (
@@ -548,11 +557,11 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                                                 </button>
                                                 <button
                                                     onClick={() => {
-                                                        setAmount(walletBalanceFormatted);
+                                                        setAmount(truncateAmount(walletBalanceFormatted));
                                                     }}
                                                     className="text-[10px] font-bold text-[#CEFF00] hover:underline cursor-pointer"
                                                 >
-                                                    {formatSmallNumber(parseFloat(walletBalanceFormatted))} {inputToken} (Max)
+                                                    {truncateAmount(walletBalanceFormatted)} {inputToken} (Max)
                                                 </button>
                                             </div>
                                         </div>
