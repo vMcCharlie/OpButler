@@ -40,6 +40,7 @@ npm start
 -   **/analyze**: Generate a Gemini-powered risk report for your portfolio.
 -   **/settings**: View threshold and polling frequency.
 -   **/help**: Detailed list of agent capabilities.
+    
     ![Help](./screenshots/help.png)
 
 ## 📡 Backend Specifications
