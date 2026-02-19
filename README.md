@@ -8,7 +8,7 @@
 ![Hero Preview](./src/frontend/screenshots/homepage.png)
 
 ## 🤖 Agentic Blockchain 24/7 Watch
-Our core differentiator is the **Autonomous AI Risk Agent**. It doesn't just "watch"—it **thinks**.
+Our core differentiator is the **Autonomous AI Risk Agent**. It doesn't just "watch"-it **thinks**.
 - **Perpetual Audit**: Runs a localized simulation of your portfolio every block, benchmarking it against millisecond-level market volatility.
 - **Cognitive Intelligence**: Uses Gemini to decode raw hex data into high-level strategy. It understands *context*, not just numbers.
 - **Agent-Initiated Action**: It goes beyond alerts. The Agent **automatically drafts the exact transaction payloads** (e.g., *"Refinance to USDT"*) needed to save your position, requiring only your final "Keymaster" signature.
