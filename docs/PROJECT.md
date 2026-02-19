@@ -25,11 +25,11 @@ Uses **Gemini 1.5 Flash** to provide natural-language risk assessments.
 
 ![AI Analysis](../src/telegramagent/screenshots/analyze.png)
 
-### Strategy Simulator (Risk Architecture)
+### Strategy Executor (Smart Loops)
 
-A sandbox for modeling "Smart Loops" to maximize APY while projecting liquidation thresholds.
+A sandbox for modeling "Smart Loop" strategies to maximize APY while projecting liquidation thresholds, with **atomic on-chain execution**.
 
-![Simulator](../src/frontend/screenshots/strategy-builder.png)
+![Executor](../src/frontend/screenshots/strategy-builder.png)
 
 ---
 

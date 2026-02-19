@@ -1,64 +1,89 @@
-# OpButler Smart Contract Deployment Guide (BSC)
+# OpLoop Vault V3 - On-Chain Execution
 
-This guide provides instructions on how to deploy the `OpLoopVault` contract to the Binance Smart Chain (BSC) to enable automated leverage loops for Venus and Kinza Finance.
+This folder contains the **OpLoopVaultV3** smart contract, which powers the "Smart Loop" strategies on the OpButler dashboard.
 
-## Prerequisites
+## 📍 Deployed Contract (BSC Mainnet)
 
-1.  **MetaMask**: Installed and configured for BSC (Mainnet or Testnet).
-2.  **BNB**: For gas fees on BSC.
+| Contract | Address |
+| :--- | :--- |
+| **OpLoopVaultV3** | [`0x0C0D77F03d98Be4e4E1FA7be0591ec3bEcF14f03`](https://bscscan.com/address/0x0C0D77F03d98Be4e4E1FA7be0591ec3bEcF14f03) |
+
+---
+
+## ⚡ Features
+
+1.  **Multi-Protocol Support**: Executes leverage loops on **Venus**, **Kinza**, and **Radiant**.
+2.  **Flash Deleverage**: Atomically unwinds leveraged positions in a single transaction using PancakeSwap flash swaps.
+3.  **User-Owned Positions**: uses credit delegation (Kinza/Radiant) so user funds remain in their own wallet, visible on the dashboard.
+4.  **Input Flexibility**: Accepts any token (or native BNB) and auto-swaps to the required collateral asset.
+
+---
+
+## 🚀 Deployment Guide (Do It Yourself)
+
+If you wish to deploy your own instance of the vault:
+
+### Prerequisites
+1.  **MetaMask**: Installed and configured for BSC.
+2.  **BNB**: Approx 0.01 BNB for gas fees.
 3.  **Remix IDE**: [remix.ethereum.org](https://remix.ethereum.org)
 
-## Deployment Steps
+### Step 1: Load Code
+1.  Open [Remix IDE](https://remix.ethereum.org).
+2.  Create a file named `OpLoopVault.sol`.
+3.  Copy and paste the code from [`OpLoopVault.sol`](./OpLoopVault.sol).
 
-### 1. Load Contract in Remix
-- Open [Remix IDE](https://remix.ethereum.org).
-- Create a new file named `OpLoopVault.sol`.
-- Paste the content of `src/contracts/OpLoopVault.sol` into the file.
+### Step 2: Compile
+1.  Go to the **Solidity Compiler** tab (Left Sidebar).
+2.  Set Compiler Version to `0.8.20`.
+3.  Click **Compile OpLoopVault.sol**.
 
-### 2. Compile
-- Go to the **Solidity Compiler** tab.
-- Select version `0.8.20`.
-- Click **Compile OpLoopVault.sol**.
+### Step 3: Deploy
+1.  Go to the **Deploy & Run Transactions** tab.
+2.  Set Environment to **Injected Provider - MetaMask**.
+3.  Click **Deploy**.
+4.  Confirm in MetaMask.
 
-### 3. Deploy
-- Go to the **Deploy & Run Transactions** tab.
-- Set "Environment" to **Injected Provider - MetaMask**.
-- Ensure MetaMask is on BSC (Chain ID 56) or BSC Testnet (Chain ID 97).
-- Click **Deploy**.
-- Confirm the transaction in MetaMask.
+### Step 4: Verify
+1.  Copy your new contract address.
+2.  Go to [BscScan Verify](https://bscscan.com/verifyContract).
+3.  Select **Solidity (Single File)** and version `0.8.20`.
+4.  Paste the code and submit.
 
-### 4. Verify on BscScan
-- Once deployed, copy the contract address.
-- Go to [BscScan](https://bscscan.com/) and search for your address.
-- Click **Contract** -> **Verify and Publish**.
-- Select **Solidity (Single File)** and Compiler Version `0.8.20`.
-- Paste the source code and complete the verification.
+---
 
-## Contract Interfacing
+## ✅ Complete the Deployment
 
-The contract supports:
-- `leverageVenus(address vToken, uint256 amount, uint256 targetLeverage)`
-- `leverageKinza(address asset, uint256 amount, uint256 targetLeverage)`
+To fully deploy the OpButler ecosystem, ensure you have completed all 4 pillars:
 
-> [!WARNING]
-> **Flash Loan Fees**: PancakeSwap charges a fee for flash swaps. Ensure the contract has enough balance or the loop profit covers the fee.
-> **Beta Status**: This contract is for hackathon demonstration. Always audit and test thoroughly with small amounts first.
+1.  **[Current] Smart Contracts**: (You are here) The execution layer.
+2.  **[Database Schema](../supabase/README.md)**: User data storage.
+3.  **[AI Agent](../telegramagent/README.md)**: The autonomous risk manager.
+4.  **[Frontend Dashboard](../frontend/README.md)**: The user interface.
 
-## Security Features
+---
 
-The contract includes several layer of protection:
-- **ReentrancyGuard**: Prevents nested call attacks.
-- **SafeERC20**: Handles tokens with non-standard transfer behaviors.
-- **Input Validation**: Leverage is capped at 4x (400) to prevent accidental liquidations.
-- **Caller Verification**: The `pancakeCall` function expects to be called only by a legitimate liquidity pair.
+## 🛠️ Interface Reference
 
-> [!CAUTION]
-> **Audit Recommended**: This contract has been refactored for security but still requires a professional third-party audit before handling significant funds. Use at your own risk.
+```solidity
+// Leverage (Kinza Example)
+function leverageKinza(
+    address inputToken,
+    address supplyAsset,
+    address borrowAsset,
+    uint256 amount,
+    uint256 flashAmount,
+    uint256 borrowAmount,
+    address pancakePair
+) external payable;
 
-## Technical Details
-
-| Asset | Mainnet Address |
-| :--- | :--- |
-| Pancake Factory | `0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73` |
-| Venus Comptroller | `0xfD36E2c2a6789Db23113685031d7F16329158384` |
-| Kinza Pool | `0x65572E68E5679f44847c223546250149C9853a11` |
+// Deleverage (Flash Unwind)
+function deleverageKinza(
+    address supplyAsset,
+    address borrowAsset,
+    address aToken,
+    uint256 repayAmount,
+    uint256 withdrawAmount,
+    address pancakePair
+) external;
+```

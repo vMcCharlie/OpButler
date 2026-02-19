@@ -14,7 +14,7 @@ OpButler is a high-yield management concierge built for the **"Good Vibes Only"*
 Our core differentiator is the **Autonomous AI Risk Agent**. 
 - **Continuous Monitoring**: Scans user positions across Venus, Kinza, and Radiant every block.
 - **Gemini-Powered Synthesis**: Translates complex on-chain metrics into actionable, natural-language risk assessments.
-- **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*) to prevent liquidation before it happens.
+- **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*) and executes automated "Smart Loops" on-chain when authorized.
 
 ---
 
@@ -32,11 +32,32 @@ Our Gemini-powered watchdog synthesizes on-chain metrics into natural language r
 
 ![AI Risk Agent](./src/telegramagent/screenshots/alert.png)
 
-### 🧪 Strategy Simulator
+### ⚡ Strategy Executor (Smart Loops)
 **Risk-Aware Architect**
-Model complex "Smart Loop" strategies before you execute. Project your liquidation thresholds and maximize your yield with confidence.
+Model complex "Smart Loop" strategies and **execute them on-chain** via our verified `OpLoopVault` contract on BSC.
 
-![Strategy Simulator](./src/frontend/screenshots/strategy-builder.png)
+![Strategy Executor](./src/frontend/screenshots/strategy-builder.png)
+
+### 🔗 Smart Contracts
+**Verified Execution Layer**
+Trustless, atomic execution of leverage and deleverage loops.
+- **Contract**: `OpLoopVaultV3`
+- **Address**: [`0x0C0D77F03d98Be4e4E1FA7be0591ec3bEcF14f03`](https://bscscan.com/address/0x0C0D77F03d98Be4e4E1FA7be0591ec3bEcF14f03)
+
+---
+
+## 🔄 Sample Flow: The "Smart Loop"
+
+1.  **User Action**: Selects "Long BNB" strategy on the Dashboard.
+2.  **Simulation**: Frontend projects APY and Liquidation Price.
+3.  **Execution**: User signs a transaction to the `OpLoopVault` contract.
+4.  **On-Chain Magic**:
+    - Contract accepts User's BNB.
+    - Flash swaps additional BNB from PancakeSwap (Leverage).
+    - Supplies total to Venus.
+    - Borrows USDT.
+    - Swaps USDT for BNB to repay the flash loan.
+5.  **Result**: User holds a leveraged supply position, earning compounded yields, all in one transaction.
 
 ---
 
@@ -50,7 +71,8 @@ Model complex "Smart Loop" strategies before you execute. Project your liquidati
   EXTRAS.md            ← Presentation Slides & Demo Video
 /src/
   frontend/            ← Next.js Web Dashboard
-  telegramagent/         ← AI Agent Logic & Backend
+  telegramagent/       ← AI Agent Logic & Backend
+  contracts/           ← Solidity Smart Contracts (OpLoopVault)
   supabase/            ← Consolidated Database Migrations
 ```
 

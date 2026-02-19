@@ -9,6 +9,7 @@ OpButler is built on a distributed agentic stack:
 1.  **Frontend (Next.js 14)**: The primary interaction layer. It uses `wagmi` for secure on-chain connectivity and `viem` for blazing-fast state reads.
 2.  **Agent Logic (Node.js)**: The core "Brain". This service polls the BSC RPC, calculates Health Factors across protocols, and passes data to **Gemini API** for risk synthesis.
 3.  **Database (Supabase)**: Stores persistent user preferences and allows for 24/7 alert persistence.
+4.  **Smart Contracts (Solidity)**: The `OpLoopVault` verifies and executes leverage/deleverage loops atomically on-chain.
 
 ---
 
@@ -61,3 +62,4 @@ Ask the bot for a detailed risk audit.
 - **Frontend**: Vercel (Auto-deployed via GitHub).
 - **Agent**: Node.js/PM2 (Railway or VPS).
 - **Database**: Supabase (Cloud).
+- **Contracts**: BSC Mainnet.
