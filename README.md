@@ -8,10 +8,10 @@
 ![Hero Preview](./src/frontend/screenshots/homepage.png)
 
 ## 🤖 Agentic Blockchain 24/7 Watch
-Our core differentiator is the **Autonomous AI Risk Agent**. 
-- **Continuous Monitoring**: Scans user positions across Venus, Kinza, and Radiant every block (using a similar polling approach to **OpenClaw**).
-- **Gemini-Powered Synthesis**: Translates complex on-chain metrics into actionable, natural-language risk assessments.
-- **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*).
+Our core differentiator is the **Autonomous AI Risk Agent**. It doesn't just "watch"—it **thinks**.
+- **Perpetual Audit**: Runs a localized simulation of your portfolio every block, benchmarking it against millisecond-level market volatility.
+- **Cognitive Intelligence**: Uses Gemini to decode raw hex data into high-level strategy. It understands *context*, not just numbers.
+- **Agent-Initiated Action**: It goes beyond alerts. The Agent **automatically drafts the exact transaction payloads** (e.g., *"Refinance to USDT"*) needed to save your position, requiring only your final "Keymaster" signature.
 
 ## 📦 Integrated Application & Execution
 OpButler is not just an agent; it is a full-stack DeFi powerhouse backed by verified smart contracts.
