@@ -50,4 +50,4 @@ To fully deploy the OpButler ecosystem, ensure you have completed all three pill
 
 1.  **[Current] Frontend Dashboard**: (You are here) The user interface.
 2.  **[Database Schema](../supabase/README.md)**: SQL migrations for user storage.
-3.  **[AI Risk Agent](../telegrambot/README.md)**: The 24/7 monitoring backend.
+3.  **[Agent](./src/telegramagent/README.md)**: The autonomous risk manager.
