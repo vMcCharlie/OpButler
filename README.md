@@ -13,8 +13,6 @@ Our core differentiator is the **Autonomous AI Risk Agent**.
 - **Gemini-Powered Synthesis**: Translates complex on-chain metrics into actionable, natural-language risk assessments.
 - **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*).
 
----
-
 ## 📦 Integrated Application & Execution
 OpButler is not just an agent; it is a full-stack DeFi powerhouse backed by verified smart contracts.
 - **Yield Dashboards**: A "God Mode" interface aggregating Venus, Kinza, and Radiant.
