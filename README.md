@@ -1,4 +1,4 @@
-# OpButler - Your Personal DeFi Concierge
+# OpButler - Your Personal Agentic DeFi Concierge
 
 > **The easiest way to manage and grow your DeFi positions on BNB Chain from one unified interface. Powered by Gemini, watching your back 24/7 and executing your strategies on-chain.**
 
@@ -86,6 +86,11 @@ cp .env.example .env.local  # Optional: Configure custom RPCs
 npm install
 npm run dev
 ```
+
+### 4. Smart Contract (Execution Layer)
+OpButler is pre-wired to our **verified OpLoopVault** on BSC Mainnet (`0x0C0D...`).
+- **Default**: No action required. Use our public execution layer.
+- **Custom Deployment**: To deploy your own vault, see **[Contracts Guide](./src/contracts/README.md)** and update `src/frontend/lib/pool-config.ts`.
 
 ---
 
