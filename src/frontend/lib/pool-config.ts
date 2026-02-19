@@ -1,5 +1,6 @@
 import { parseAbi } from 'viem';
 import allowedAssets from '@/lib/allowedAssets.json';
+import OpLoopVaultAbi from '@/abis/OpLoopVault.json';
 
 // ============================================================================
 //                        CONTRACT ADDRESSES (BSC MAINNET)
@@ -16,6 +17,9 @@ export const RADIANT_LENDING_POOL = '0xCcf31D54C3A94f67b8cEFF8DD771DE5846dA032c'
 
 // PancakeSwap V2 Router
 export const PANCAKE_ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E' as `0x${string}`;
+
+// OpButler Loop Vault (Mainnet)
+export const LOOP_VAULT_ADDRESS = '0x0C0D77F03d98Be4e4E1FA7be0591ec3bEcF14f03' as `0x${string}`;
 
 // vToken Mappings for Venus (Asset Symbol -> vToken Address)
 export const VENUS_VTOKENS: Record<string, `0x${string}`> = {
@@ -71,12 +75,12 @@ export const UNDERLYING_TOKENS: Record<string, `0x${string}`> = {
  * Uses allowedAssets.json underlyingTokens array first, then fallback to static map.
  */
 export function getUnderlyingAddress(symbol: string, project: string): `0x${string}` | undefined {
-    if (symbol === 'BNB' || symbol === 'WBNB') return undefined; // Native BNB
+    if (symbol === 'BNB' || symbol === 'WBNB') return '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as `0x${string}`;
 
     // Find in allowedAssets.json
     const protocolKey = project === 'venus' ? 'venus' :
-        project === 'kinza-finance' ? 'kinza' :
-            project === 'radiant-v2' ? 'radiant' : null;
+        (project === 'kinza-finance' || project === 'kinza') ? 'kinza' :
+            (project === 'radiant-v2' || project === 'radiant') ? 'radiant' : null;
 
     if (protocolKey && (allowedAssets as any)[protocolKey]) {
         const asset = ((allowedAssets as any)[protocolKey] as any[]).find(
@@ -203,3 +207,6 @@ export const RADIANT_GATEWAY = '0xD0FC69Dc0e720d5be669E53b7B5015F6FC258Ac9' as `
 
 // Legacy generic alias
 export const LENDING_POOL_ABI = KINZA_POOL_ABI;
+
+// OpLoopVault ABI
+export const LOOP_VAULT_ABI = OpLoopVaultAbi as any;

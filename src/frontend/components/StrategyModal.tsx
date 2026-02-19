@@ -9,7 +9,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useBalance } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, usePublicClient, useBalance } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { useYields } from "@/hooks/useYields";
@@ -27,12 +27,17 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import {
     getProtocolAddress,
+    getUnderlyingAddress,
     UNDERLYING_TOKENS,
     ERC20_ABI,
 } from '@/lib/pool-config';
 import { RiskMonitor } from './RiskMonitor';
-import { formatUnits } from 'viem';
+import { formatUnits, parseUnits, getAddress } from 'viem';
 import { toPlainString, formatSmallNumber } from "@/lib/utils";
+import {
+    LOOP_VAULT_ADDRESS,
+    LOOP_VAULT_ABI,
+} from '@/lib/pool-config';
 
 
 // --- Types & Helper Components ---
@@ -106,10 +111,64 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
     const [protocol, setProtocol] = useState<'venus' | 'kinza' | 'radiant'>('venus');
     const [tokenA, setTokenA] = useState('USDC'); // Supply
     const [tokenB, setTokenB] = useState('USDT'); // Borrow
-    const [inputToken, setInputToken] = useState('BNB');
+    const [inputToken, setInputToken] = useState(initialData?.supplyAsset || 'USDT');
     const [amount, setAmount] = useState('1000');
 
-    const [leverage, setLeverage] = useState(1.5);
+    const [leverage, setLeverage] = useState(2.0);
+    const [isExecuting, setIsExecuting] = useState(false);
+    const [txStep, setTxStep] = useState<'idle' | 'approving' | 'executing'>('idle');
+
+    // -- Contract Hooks --
+    const { writeContractAsync } = useWriteContract();
+    const publicClient = usePublicClient();
+
+    // Track balance/allowance based on inputToken
+    const isPayingWithBNB = inputToken === 'BNB';
+
+    const assetAddress = useMemo(() => {
+        if (isPayingWithBNB) return getUnderlyingAddress(tokenA, protocol); // fallback for non-BNB hooks
+        return getUnderlyingAddress(inputToken, protocol) || getUnderlyingAddress(inputToken, 'venus');
+    }, [inputToken, isPayingWithBNB, tokenA, protocol]);
+
+    const { data: allowance } = useReadContract({
+        address: assetAddress,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: address && assetAddress && !isPayingWithBNB ? [address, LOOP_VAULT_ADDRESS] : undefined,
+        query: { enabled: !isPayingWithBNB },
+    });
+
+    const { data: tokenBalanceData } = useReadContract({
+        address: assetAddress,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: address && assetAddress && !isPayingWithBNB ? [address] : undefined,
+        query: { enabled: !isPayingWithBNB },
+    });
+
+    const { data: tokenDecimals } = useReadContract({
+        address: assetAddress,
+        abi: ERC20_ABI,
+        functionName: 'decimals',
+        query: { enabled: !isPayingWithBNB },
+    });
+
+    // Native BNB balance
+    const { data: bnbBalanceData } = useBalance({
+        address: address,
+        query: { enabled: isPayingWithBNB },
+    });
+
+    const walletBalanceFormatted = useMemo(() => {
+        if (isPayingWithBNB) {
+            if (!bnbBalanceData) return null;
+            return bnbBalanceData.formatted;
+        }
+        if (!tokenBalanceData || !tokenDecimals) return null;
+        return formatUnits(tokenBalanceData as bigint, tokenDecimals as number);
+    }, [isPayingWithBNB, bnbBalanceData, tokenBalanceData, tokenDecimals]);
+
+    const decimals = isPayingWithBNB ? 18 : (tokenDecimals as number) || 18;
 
     // Initialize from props
     useEffect(() => {
@@ -117,6 +176,7 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
             setProtocol(initialData.protocol);
             setTokenA(initialData.supplyAsset);
             setTokenB(initialData.borrowAsset);
+            setInputToken(initialData.supplyAsset);
             // Reset state
             setAmount('');
             setAmount('1000');
@@ -144,12 +204,14 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
     const poolB = protocolYields.find(y => y.symbol === tokenB);
 
     const ltv = poolA?.ltv || 0.8;
-    const maxLeverage = Math.min(4, 1 / (1 - ltv));
+    const maxLeverage = Math.min(3, 1 / (1 - ltv));
 
     const priceA = getPrice(tokenA);
     const priceB = getPrice(tokenB);
+    const priceInput = getPrice(inputToken) || priceA;
 
-    const principalUSD = parseFloat(amount) || 0;
+    const tokenAmount = parseFloat(amount) || 0;
+    const principalUSD = tokenAmount * priceInput; // USD value of what user sends
     const totalExposureUSD = principalUSD * leverage;
     const totalDebtUSD = totalExposureUSD - principalUSD;
 
@@ -175,6 +237,235 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
             { label: '3 Years', value: calculateReturn(3), time: '3y' }
         ];
     }, [principalUSD, netApy]);
+    // -- Execution Flow --
+    const handleExecute = async () => {
+        if (!address) {
+            openConnectModal?.();
+            return;
+        }
+
+        if (leverage < 1.5) {
+            toast({ title: "Invalid Leverage", description: "Minimum leverage is 1.5x.", variant: "destructive" });
+            return;
+        }
+        if (!tokenAmount || tokenAmount <= 0) {
+            toast({ title: "Invalid Amount", description: "Enter an amount greater than 0.", variant: "destructive" });
+            return;
+        }
+        if (walletBalanceFormatted && tokenAmount > parseFloat(walletBalanceFormatted)) {
+            toast({ title: "Insufficient Balance", description: `You only have ${walletBalanceFormatted} ${inputToken} in your wallet.`, variant: "destructive" });
+            return;
+        }
+
+        const rawAmount = parseUnits(amount, decimals);
+
+        // --- Resolve token addresses ---
+        const supplyAssetAddr = getUnderlyingAddress(tokenA, protocol) as `0x${string}`;
+        const borrowAssetAddr = getUnderlyingAddress(tokenB, protocol) as `0x${string}`;
+
+        // Input token — what the user actually sends (could differ from supplyAsset)
+        // If inputToken === tokenA (supply asset), no extra swap. Otherwise contract swaps.
+        // For native BNB, use address(0).
+        const inputTokenAddr = (inputToken === 'BNB')
+            ? '0x0000000000000000000000000000000000000000' as `0x${string}`
+            : (getUnderlyingAddress(inputToken, protocol) || supplyAssetAddr) as `0x${string}`;
+        const isNativeBNB = inputToken === 'BNB';
+
+        if (!supplyAssetAddr || !borrowAssetAddr) {
+            toast({ title: "Error", description: "Could not resolve token addresses.", variant: "destructive" });
+            return;
+        }
+
+        // --- PancakeSwap Pair ---
+        const WBNB = getAddress('0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c');
+        const PCS_FACTORY = getAddress('0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73');
+
+        let pancakePair: `0x${string}`;
+        try {
+            const pairTokenA = supplyAssetAddr.toLowerCase() === WBNB.toLowerCase() ? borrowAssetAddr : supplyAssetAddr;
+            const pairTokenB = WBNB;
+            let pairResult = await publicClient!.readContract({
+                address: PCS_FACTORY,
+                abi: [{ "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "address", "name": "", "type": "address" }], "name": "getPair", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }],
+                functionName: 'getPair',
+                args: [pairTokenA, pairTokenB],
+            });
+            if (!pairResult || (pairResult as string) === '0x0000000000000000000000000000000000000000') {
+                pairResult = await publicClient!.readContract({
+                    address: PCS_FACTORY,
+                    abi: [{ "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "address", "name": "", "type": "address" }], "name": "getPair", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }],
+                    functionName: 'getPair',
+                    args: [supplyAssetAddr, borrowAssetAddr],
+                });
+            }
+            pancakePair = pairResult as `0x${string}`;
+            if (!pancakePair || pancakePair === '0x0000000000000000000000000000000000000000') {
+                toast({ title: "Error", description: "No liquidity pair found for this strategy.", variant: "destructive" });
+                return;
+            }
+        } catch (e) {
+            toast({ title: "Error", description: "Failed to resolve liquidity pair.", variant: "destructive" });
+            return;
+        }
+
+        // --- Calculate amounts in supplyAsset terms ---
+        // When paying with BNB (or any non-supply token), the contract will swap
+        // inputToken → supplyAsset. We estimate the supply equivalent based on USD prices.
+        const inputValueUSD = tokenAmount * priceInput;
+        const supplyEquivalent = priceA > 0 ? inputValueUSD / priceA : tokenAmount;
+
+        // Supply asset decimals (need this for flash/borrow raw amounts)
+        let supplyDecimals = decimals; // default to inputToken decimals
+        if (inputToken !== tokenA && !isPayingWithBNB) {
+            supplyDecimals = 18; // most BSC tokens are 18 decimals
+        }
+        // For common stablecoins on BSC, use known decimals
+        if (tokenA === 'USDT' || tokenA === 'USDC' || tokenA === 'FDUSD') supplyDecimals = 18;
+        if (tokenA === 'BTCB' || tokenA === 'ETH' || tokenA === 'BNB') supplyDecimals = 18;
+
+        // Flash amount in supply asset terms (not input token!)
+        const flashAmountFloat = supplyEquivalent * (leverage - 1);
+        const rawFlashAmount = parseUnits(flashAmountFloat.toFixed(8), supplyDecimals);
+
+        // --- Calculate borrow amount ---
+        const totalSupplyUSD = supplyEquivalent * priceA * leverage;
+        const safetyFactor = 0.92;
+        const borrowableUSD = totalSupplyUSD * ltv * safetyFactor;
+        const flashRepayUSD = flashAmountFloat * priceA * 1.0025;
+        const neededBorrowUSD = Math.min(flashRepayUSD / 0.9975, borrowableUSD);
+        const borrowAmountFloat = neededBorrowUSD / priceB;
+        const borrowDecimals = 18;
+        const rawBorrowAmount = parseUnits(borrowAmountFloat.toFixed(8), borrowDecimals);
+        const totalFeesUSD = flashAmountFloat * priceA * 0.005;
+
+        // Credit delegation ABI for Aave V2/V3 variable debt tokens
+        const DELEGATION_ABI = [
+            { "inputs": [{ "name": "delegatee", "type": "address" }, { "name": "amount", "type": "uint256" }], "name": "approveDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "name": "fromUser", "type": "address" }, { "name": "toUser", "type": "address" }], "name": "borrowAllowance", "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+        ] as const;
+
+        try {
+            setIsExecuting(true);
+
+            // Step 1: Approve input token to vault (skip for native BNB)
+            if (!isNativeBNB) {
+                if (!allowance || (allowance as bigint) < rawAmount) {
+                    setTxStep('approving');
+                    const approveAddr = inputTokenAddr !== '0x0000000000000000000000000000000000000000'
+                        ? inputTokenAddr : supplyAssetAddr;
+                    await writeContractAsync({
+                        address: approveAddr,
+                        abi: ERC20_ABI,
+                        functionName: 'approve',
+                        args: [LOOP_VAULT_ADDRESS, rawAmount],
+                    });
+                    toast({ title: "Approved!", description: "Input token approved for the vault." });
+                }
+            }
+
+            // Step 2: Credit delegation for Kinza / Radiant (borrow on behalf of user)
+            // The user approves the vault to take debt on their behalf
+            if (protocol === 'kinza' || protocol === 'radiant') {
+                setTxStep('approving');
+
+                // Get the variable debt token address from the lending pool
+                const poolAddr = protocol === 'kinza'
+                    ? getAddress('0xcB0620b181140e57D1C0D8b724cde623cA963c8C')
+                    : getAddress('0xCcf31D54C3A94f67b8cEFF8DD771DE5846dA032c');
+
+                const RESERVE_DATA_ABI = [{ "inputs": [{ "name": "asset", "type": "address" }], "name": "getReserveData", "outputs": [{ "components": [{ "name": "configuration", "type": "uint256" }, { "name": "liquidityIndex", "type": "uint128" }, { "name": "variableBorrowIndex", "type": "uint128" }, { "name": "currentLiquidityRate", "type": "uint128" }, { "name": "currentVariableBorrowRate", "type": "uint128" }, { "name": "currentStableBorrowRate", "type": "uint128" }, { "name": "lastUpdateTimestamp", "type": "uint40" }, { "name": "aTokenAddress", "type": "address" }, { "name": "stableDebtTokenAddress", "type": "address" }, { "name": "variableDebtTokenAddress", "type": "address" }, { "name": "interestRateStrategyAddress", "type": "address" }, { "name": "id", "type": "uint8" }], "name": "", "type": "tuple" }], "stateMutability": "view", "type": "function" }] as const;
+
+                try {
+                    const reserveData = await publicClient!.readContract({
+                        address: poolAddr,
+                        abi: RESERVE_DATA_ABI,
+                        functionName: 'getReserveData',
+                        args: [borrowAssetAddr],
+                    }) as any;
+
+                    const variableDebtToken = reserveData.variableDebtTokenAddress as `0x${string}`;
+
+                    // Check current delegation allowance
+                    const currentAllowance = await publicClient!.readContract({
+                        address: variableDebtToken,
+                        abi: DELEGATION_ABI,
+                        functionName: 'borrowAllowance',
+                        args: [address, LOOP_VAULT_ADDRESS],
+                    }) as bigint;
+
+                    if (currentAllowance < rawBorrowAmount) {
+                        toast({ title: "Credit Delegation", description: "Approving vault to borrow on your behalf..." });
+                        await writeContractAsync({
+                            address: variableDebtToken,
+                            abi: DELEGATION_ABI,
+                            functionName: 'approveDelegation',
+                            args: [LOOP_VAULT_ADDRESS, rawBorrowAmount * BigInt(2)], // 2x buffer
+                        });
+                        toast({ title: "Delegated!", description: "Credit delegation approved." });
+                    }
+                } catch (e) {
+                    console.warn("Credit delegation check failed, proceeding anyway:", e);
+                }
+            }
+
+            setTxStep('executing');
+            const txValue = isPayingWithBNB ? rawAmount : BigInt(0);
+
+            if (protocol === 'venus') {
+                const vTokenSupply = getProtocolAddress('venus', tokenA) as `0x${string}`;
+                const vTokenBorrow = getProtocolAddress('venus', tokenB) as `0x${string}`;
+                await writeContractAsync({
+                    address: LOOP_VAULT_ADDRESS,
+                    abi: LOOP_VAULT_ABI,
+                    functionName: 'leverageVenus',
+                    args: [inputTokenAddr, vTokenSupply, vTokenBorrow, rawAmount, rawFlashAmount, rawBorrowAmount, pancakePair, supplyAssetAddr, borrowAssetAddr],
+                    value: txValue,
+                });
+            } else if (protocol === 'kinza') {
+                await writeContractAsync({
+                    address: LOOP_VAULT_ADDRESS,
+                    abi: LOOP_VAULT_ABI,
+                    functionName: 'leverageKinza',
+                    args: [inputTokenAddr, supplyAssetAddr, borrowAssetAddr, rawAmount, rawFlashAmount, rawBorrowAmount, pancakePair],
+                    value: txValue,
+                });
+            } else if (protocol === 'radiant') {
+                await writeContractAsync({
+                    address: LOOP_VAULT_ADDRESS,
+                    abi: LOOP_VAULT_ABI,
+                    functionName: 'leverageRadiant',
+                    args: [inputTokenAddr, supplyAssetAddr, borrowAssetAddr, rawAmount, rawFlashAmount, rawBorrowAmount, pancakePair],
+                    value: txValue,
+                });
+            }
+
+            toast({
+                title: "Strategy Executed!",
+                description: `${tokenA}/${tokenB} loop at ${leverage.toFixed(1)}x on ${protocol}. Flash: $${(flashAmountFloat * priceA).toFixed(2)}, Fees: ~$${totalFeesUSD.toFixed(2)}`,
+            });
+            onClose();
+
+        } catch (err: any) {
+            console.error("Execution error:", err);
+            const msg = err?.shortMessage || err?.message || '';
+            let friendlyMsg = 'Transaction could not be completed. Please try again.';
+            if (msg.includes('User rejected') || msg.includes('User denied')) {
+                friendlyMsg = 'You cancelled the transaction.';
+            } else if (msg.includes('insufficient funds') || msg.includes('exceeds balance')) {
+                friendlyMsg = 'Insufficient balance for this transaction.';
+            } else if (msg.includes('reverted')) {
+                friendlyMsg = 'Transaction reverted on-chain. Try reducing leverage or amount.';
+            }
+            toast({
+                title: "Execution Failed",
+                description: friendlyMsg,
+                variant: "destructive"
+            });
+        } finally {
+            setIsExecuting(false);
+            setTxStep('idle');
+        }
+    };
 
     return (
         <>
@@ -210,12 +501,62 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                     <div className="p-4 md:p-6 space-y-6 md:space-y-8">
                         {/* 1. Selection Row */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4 flex flex-col justify-center">
-                                <div className="text-center space-y-2">
-                                    <h3 className="text-lg font-bold text-white">Simulation Mode</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Simulating a <span className="text-[#CEFF00] font-bold">$1,000</span> initial deposit strategy.
-                                    </p>
+                            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+                                <span className="flex items-center gap-2 text-[#CEFF00] mb-2 font-bold text-sm uppercase tracking-widest">
+                                    Your Deposit
+                                </span>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1">
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">Amount</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="any"
+                                                value={amount}
+                                                onChange={(e) => setAmount(e.target.value)}
+                                                placeholder={`e.g. 10`}
+                                                className="w-full h-12 px-4 rounded-xl border border-white/10 bg-white/5 text-white font-bold text-lg focus:border-[#CEFF00]/50 focus:outline-none focus:ring-1 focus:ring-[#CEFF00]/30 transition-colors placeholder:text-white/20"
+                                            />
+                                        </div>
+                                        <div className="w-[120px] shrink-0">
+                                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">Pay With</label>
+                                            <div className="w-full h-12 px-3 rounded-xl border border-white/10 bg-white/5 text-white font-bold text-sm flex items-center justify-center gap-2">
+                                                <AssetIcon symbol={inputToken} size={20} />
+                                                <span>{inputToken}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {principalUSD > 0 && (
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">USD Value:</span>
+                                            <span className="text-[10px] font-bold text-white">${principalUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                    )}
+                                    {address && walletBalanceFormatted && (
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Balance:</span>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        const bal = parseFloat(walletBalanceFormatted);
+                                                        setAmount((bal * 0.5).toFixed(6));
+                                                    }}
+                                                    className="text-[10px] font-bold text-muted-foreground hover:text-[#CEFF00] hover:underline cursor-pointer transition-colors"
+                                                >
+                                                    50%
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setAmount(walletBalanceFormatted);
+                                                    }}
+                                                    className="text-[10px] font-bold text-[#CEFF00] hover:underline cursor-pointer"
+                                                >
+                                                    {formatSmallNumber(parseFloat(walletBalanceFormatted))} {inputToken} (Max)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -230,9 +571,9 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                                     </div>
                                     <input
                                         type="range"
-                                        min="1"
+                                        min="1.5"
                                         max={maxLeverage.toFixed(2)}
-                                        step="0.05"
+                                        step="0.1"
                                         value={leverage}
                                         onChange={(e) => setLeverage(parseFloat(e.target.value))}
                                         className="w-full accent-[#CEFF00] h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
@@ -264,65 +605,99 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                             </div>
                             <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col items-center">
                                 <span className="text-[10px] uppercase text-muted-foreground mb-1 font-bold">Total Debt</span>
-                                <span className="text-lg font-bold text-white">${totalDebtUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                <span className="text-lg font-bold text-white">${totalDebtUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col items-center">
                                 <span className="text-[10px] uppercase text-muted-foreground mb-1 font-bold">Exposure</span>
-                                <span className="text-lg font-bold text-white">${totalExposureUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                <span className="text-lg font-bold text-white">${totalExposureUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                             </div>
                         </div>
 
                         {/* 3. Beta Warning */}
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3">
-                            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                        <div className="bg-[#CEFF00]/10 border border-[#CEFF00]/20 rounded-xl p-4 flex gap-3">
+                            <Layers className="w-5 h-5 text-[#CEFF00] shrink-0" />
                             <div className="space-y-1">
-                                <h4 className="font-bold text-amber-500 text-sm">Beta Feature</h4>
+                                <h4 className="font-bold text-[#CEFF00] text-sm">Mainnet Execution Ready</h4>
                                 <p className="text-xs text-muted-foreground">
-                                    Simulate earnings only. Transaction execution is currently disabled for further testing.
+                                    This strategy will be executed on-chain via our secure vault contract.
                                 </p>
                             </div>
                         </div>
 
-                        {/* 4. Projections Table - Visible when Amount > 0 */}
-                        <div className={`transition-all duration-500 overflow-hidden space-y-4 ${(parseFloat(amount) > 0) ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                            {projections && (
-                                <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
-                                    <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-                                        <h3 className="font-bold text-white text-sm">Projected Earnings</h3>
-                                        <span className="text-xs text-muted-foreground">Based on current rates</span>
-                                    </div>
-                                    <div className="divide-y divide-white/5">
-                                        {projections.map((p) => (
-                                            <div key={p.time} className="flex justify-between items-center p-4 hover:bg-white/[0.02] transition-colors">
-                                                <span className="text-sm text-muted-foreground">{p.label}</span>
-                                                <div className="text-right">
-                                                    <div className="font-bold text-[#CEFF00] font-mono">
-                                                        +${p.value.toFixed(2)}
-                                                    </div>
-                                                    <div className="text-[10px] text-muted-foreground">
-                                                        Total: ${(principalUSD + p.value).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                                    </div>
+                        {/* Spacer for sticky footer */}
+                        <div className="h-24"></div>
+                    </div>
+
+                    {/* Projections Table - Visible when Amount > 0 */}
+                    <div className={`transition-all duration-500 overflow-hidden space-y-4 px-4 md:px-6 relative z-0 ${(parseFloat(amount) > 0) ? 'max-h-[1000px] opacity-100 mb-20' : 'max-h-0 opacity-0'}`}>
+                        {projections && (
+                            <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden mb-6">
+                                <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                                    <h3 className="font-bold text-white text-sm">Projected Earnings</h3>
+                                    <span className="text-xs text-muted-foreground">Based on current rates</span>
+                                </div>
+                                <div className="divide-y divide-white/5">
+                                    {projections.map((p) => (
+                                        <div key={p.time} className="flex justify-between items-center p-4 hover:bg-white/[0.02] transition-colors">
+                                            <span className="text-sm text-muted-foreground">{p.label}</span>
+                                            <div className="text-right">
+                                                <div className="font-bold text-[#CEFF00] font-mono">
+                                                    +${p.value.toFixed(2)}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground">
+                                                    Total: ${(principalUSD + p.value).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="pt-2">
-                            <Button
-                                variant="outline"
-                                className="w-full h-12 bg-[#CEFF00] text-black border-none hover:bg-[#b8e600] font-bold"
-                                onClick={onClose}
-                            >
-                                Exit Simulation
-                            </Button>
-                        </div>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Action Buttons - Sticky Footer */}
+                    <div className="sticky bottom-0 left-0 w-full p-4 md:p-6 bg-[#0f0f12]/95 backdrop-blur-xl border-t border-white/10 z-30 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)] flex flex-col gap-3">
+                        {!address ? (
+                            <Button
+                                className="w-full h-12 bg-[#CEFF00] text-black border-none hover:bg-[#b8e600] font-bold"
+                                onClick={() => openConnectModal?.()}
+                            >
+                                Connect Wallet to Execute
+                            </Button>
+                        ) : (
+                            <>
+
+                                <Button
+                                    disabled={isExecuting || !principalUSD}
+                                    className="w-full h-12 bg-[#CEFF00] text-black border-none hover:bg-[#b8e600] font-bold relative overflow-hidden group shadow-[0_0_20px_-5px_#CEFF00]"
+                                    onClick={handleExecute}
+                                >
+                                    {isExecuting ? (
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span>{txStep === 'approving' ? 'Approving Asset...' : 'Executing Loop...'}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <span>Execute Strategy</span>
+                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    className="w-full h-10 text-muted-foreground hover:text-white hover:bg-white/5"
+                                    onClick={onClose}
+                                    disabled={isExecuting}
+                                >
+                                    Cancel
+                                </Button>
+                            </>
+                        )}
+                    </div>
+
                 </DialogContent>
-            </Dialog>
+            </Dialog >
 
 
         </>

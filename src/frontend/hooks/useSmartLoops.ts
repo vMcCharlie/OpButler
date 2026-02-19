@@ -90,12 +90,12 @@ function isStablePair(supply: string, borrow: string): boolean {
  * Calculate max leverage from LTV using geometric series formula
  * MaxLeverage = 1 / (1 - LTV)
  * Example: LTV 75% = 0.75 -> MaxLev = 1 / (1 - 0.75) = 4x
- * Capped at 4x for sensible risk management
+ * Capped at 3x for sensible risk management
  */
 function getMaxLeverage(ltv: number): number {
-    if (ltv >= 0.80) return 4; // Cap at 4x
+    if (ltv >= 0.80) return 3; // Cap at 3x
     if (ltv <= 0) return 1;
-    return Math.min(4, 1 / (1 - ltv));
+    return Math.min(3, 1 / (1 - ltv));
 }
 
 /**
@@ -137,6 +137,8 @@ export function useSmartLoops() {
 
         // For each project, find optimal supply/borrow pairs
         Object.entries(yieldsByProject).forEach(([project, projectYields]) => {
+            const normalizedProject = PROTOCOL_NORMALIZE[project] || project;
+            if (normalizedProject === 'venus' || normalizedProject === 'kinza') return;
             // Filter for pools with positive supply APY for supply candidates
             const supplyPools = projectYields.filter(p => (p.apy || 0) > 0);
 
