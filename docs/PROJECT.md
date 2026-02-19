@@ -13,23 +13,23 @@ Managing high-yield positions on BNB Chain is currently a fragmented, high-stres
 
 OpButler acts as an **Agentic Portfolio Concierge**. It synthesizes cross-protocol data into a high-fidelity "God Mode" dashboard and deploys an autonomous watchdog for every user.
 
-### Unified Dashboard
+### Unified Dashboard (God Mode)
 
-A premium interface that aggregates **Venus, Kinza, and Radiant**.
+A premium interface that aggregates **Venus, Kinza, and Radiant** into a single net-worth snapshot, replacing the need for 5+ browser tabs.
 
-![Dashboard Preview](../src/frontend/screenshots/dashboard.png)
+![Portfolio Synthesis](../src/frontend/screenshots/portfolio.png)
 
 ### AI Risk Guard (Semantic Synthesis)
 
-Uses **Gemini 1.5 Flash** to provide natural-language risk assessments.
+Uses **Gemini 1.5 Flash** to provide natural-language risk assessments. It doesn't just show numbers; it explains *why* you are safe or at risk.
 
 ![AI Analysis](../src/telegramagent/screenshots/analyze.png)
 
-### Strategy Executor (Smart Loops)
+### Strategy Discovery & Execution
 
-A sandbox for modeling "Smart Loop" strategies to maximize APY while projecting liquidation thresholds, with **atomic on-chain execution**.
+The Agent proactively scans for "Market Opportunities" and high-yield loops. Users can view these opportunities and execute them atomically via the **OpLoopVault**.
 
-![Executor](../src/frontend/screenshots/strategy-builder.png)
+![Market Opportunities](../src/frontend/screenshots/market_opportunities.png)
 
 ---
 

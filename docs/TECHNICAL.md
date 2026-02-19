@@ -20,13 +20,13 @@ Deploy the schema in **[src/supabase/migrations.sql](../src/supabase/migrations.
 This establishes the foundation for user state and alert thresholds.
 
 ### 2. AI Risk Agent Configuration
-Navigate to `src/telegramagent`, install dependencies, and configure your secrets.
+Navigate to `src/telegramagent`, install dependencies, and configure your secrets (`.env.example` -> `.env`).
 ```bash
 cd src/telegramagent
 npm install
-npm run start
+npm start
 ```
-![Bot Start](../src/telegramagent/screenshots/start.png)
+![Agent Settings](../src/telegramagent/screenshots/settings.png)
 
 ### 3. Dashboard Connectivity
 Navigate to `src/frontend`, install dependencies, and start the development server.
@@ -41,20 +41,20 @@ npm run dev
 ## 🧪 Verification & Demo Guide
 
 ### Step 1: Link your Wallet
-Go to Settings on the Dashboard and type your Telegram ID.
+Go to Settings on the Dashboard and input your Telegram ID to bind your chain identity.
 ![Link Account](../src/frontend/screenshots/telegram-link.png)
 
-### Step 2: verify on Telegram
-Use the `/verify` command to securely link your wallet to the Agent.
+### Step 2: Verify on Telegram
+Use the `/verify` command to securely handshake your wallet with the Agent.
 ![Verify Command](../src/telegramagent/screenshots/verify.png)
 
-### Step 3: Global Portfolio Synthesis
-Navigate to the Portfolio page to see your aggregated positions and AI-driven insights.
-![Portfolio View](../src/frontend/screenshots/portfolio.png)
+### Step 3: Execution & Lending
+Navigate to the **Lend** page to execute supply/borrow interactions or enter a "Smart Loop".
+![Lend/Borrow Interaction](../src/frontend/screenshots/lend-borrow.png)
 
-### Step 4: AI Analysis Command
-Ask the bot for a detailed risk audit.
-![AI Analyze](../src/telegramagent/screenshots/analyze.png)
+### Step 4: System Status Check
+Run `/status` to verify the Agent is actively polling the RPC and monitoring your health factor.
+![System Status](../src/telegramagent/screenshots/status.png)
 
 ---
 
@@ -62,4 +62,4 @@ Ask the bot for a detailed risk audit.
 - **Frontend**: Vercel (Auto-deployed via GitHub).
 - **Agent**: Node.js/PM2 (Railway or VPS).
 - **Database**: Supabase (Cloud).
-- **Contracts**: BSC Mainnet.
+- **Contracts**: BSC Mainnet (`OpLoopVaultV3`).
