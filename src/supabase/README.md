@@ -27,8 +27,9 @@ We use **Row Level Security (RLS)**. The migrations enable a policy that allows 
 
 ## ✅ Complete the Setup
 
-To fully deploy the OpButler ecosystem, ensure you have completed all three pillars:
+To fully deploy the OpButler ecosystem, ensure you have completed all 4 pillars:
 
 1.  **[Current] Database Schema**: (You are here) The foundation for user data.
-23.  **[Agent](./src/telegramagent/README.md)**: The autonomous risk manager.nd.
-3.  **[Frontend Dashboard](../frontend/README.md)**: The main user interface.
+2.  **[Smart Contracts](../contracts/README.md)**: The execution layer.
+3.  **[AI Agent](../telegramagent/README.md)**: The autonomous risk manager.
+4.  **[Frontend Dashboard](../frontend/README.md)**: The user interface.

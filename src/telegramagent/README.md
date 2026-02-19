@@ -52,8 +52,9 @@ npm start
 
 ## ✅ Complete the Setup
 
-To fully deploy the OpButler ecosystem, ensure you have completed all three pillars:
+To fully deploy the OpButler ecosystem, ensure you have completed all 4 pillars:
 
 1.  **[Current] AI Risk Agent**: (You are here) The 24/7 monitoring backend.
-2.  **[Database Schema](../supabase/README.md)**: SQL migrations for user storage.
-3.  **[Frontend Dashboard](../frontend/README.md)**: The main user interface.
+2.  **[Smart Contracts](../contracts/README.md)**: The execution layer.
+3.  **[Database Schema](../supabase/README.md)**: SQL migrations for user storage.
+4.  **[Frontend Dashboard](../frontend/README.md)**: The user interface.
