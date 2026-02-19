@@ -44,6 +44,8 @@ Model complex "Smart Loop" strategies and **execute them on-chain** via our veri
 Trustless, atomic execution of leverage and deleverage loops.
 - **Contract**: `OpLoopVaultV3`
 - **Address**: [`0x0C0D77F03d98Be4e4E1FA7be0591ec3bEcF14f03`](https://bscscan.com/address/0x0C0D77F03d98Be4e4E1FA7be0591ec3bEcF14f03)
+- **Tx Hash**: [`0xb583...`](https://bscscan.com/tx/0xb58369c356595f1b35606517ebfce456fd888fe45c23f658288eb8f09762a8b1)
+- **Tx Hash**: [`0x6cf6...`](https://bscscan.com/tx/0x6cf6613ee1c16af657e18b6ea67c84f3a002fa816c8a4b18251ab9fd0db445cf)
 
 ---
 
