@@ -7,18 +7,23 @@
 
 ![Hero Preview](./src/frontend/screenshots/homepage.png)
 
-## 🏆 DeFi Track: Practical Utility
-OpButler is a high-yield management concierge built for the **"Good Vibes Only"** hackathon. It addresses the core stressors of DeFi—fragmentation, complexity, and liquidation risk—by providing a unified, agent-monitored dashboard.
-
-### 🤖 Agentic Blockchain 24/7 Watch
+## 🤖 Agentic Blockchain 24/7 Watch
 Our core differentiator is the **Autonomous AI Risk Agent**. 
-- **Continuous Monitoring**: Scans user positions across Venus, Kinza, and Radiant every block.
+- **Continuous Monitoring**: Scans user positions across Venus, Kinza, and Radiant every block (using a similar polling approach to **OpenClaw**).
 - **Gemini-Powered Synthesis**: Translates complex on-chain metrics into actionable, natural-language risk assessments.
 - **Proactive Mitigation**: Sends instant Telegram alerts with specific instructions (e.g., *"Repay 2.5 BNB"*) and executes automated "Smart Loops" on-chain when authorized.
 
 ---
 
-## 🚀 Key Features
+## � Integrated Application & Execution
+OpButler is not just an agent; it is a full-stack DeFi powerhouse backed by verified smart contracts.
+- **Yield Dashboards**: A "God Mode" interface aggregating Venus, Kinza, and Radiant.
+- **Strategy Builder**: Architect complex loop strategies with real-time simulation.
+- **Executor**: Atomic, trustless execution of strategies via the `OpLoopVault` contract.
+
+---
+
+## �🚀 Key Features
 
 ### 📊 Yield Dashboard
 **Unified Portfolio Management**
