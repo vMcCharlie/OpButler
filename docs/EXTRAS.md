@@ -4,13 +4,9 @@ This section contains links to demo materials and additional resources.
 
 ## 🎥 Demo Video
 
-*[Link to Demo Video pending]*
-
-## 📊 Presentation Deck
-
-*[Link to Slide Deck pending]*
+[![Demo Video](../src/frontend/screenshots/lend-earn.png)](https://www.youtube.com/watch?v=C9mvL0AJdhM)
 
 ## 🔗 Live Deployment
 
--   **Frontend**: [Link to live site]
--   **Telegram Bot**: [Link to bot]
+-   **Frontend**: [https://opbutler.xyz](https://opbutler.xyz)
+-   **Telegram Bot**: [https://t.me/OpButlerBot](https://t.me/OpButlerBot)
