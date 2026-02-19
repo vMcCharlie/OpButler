@@ -1143,7 +1143,7 @@ bot.api.setMyCommands([
     { command: "settings", description: "View Alerts & Settings" },
     { command: "help", description: "List all commands" },
     { command: "disconnect", description: "Unlink Wallet" },
-    { command: "debug", description: "Diagnostics" },
+
     { command: "start", description: "Restart & Link Wallet" },
 ]);
 
