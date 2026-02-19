@@ -19,13 +19,13 @@ Deploy the schema in **[src/supabase/migrations.sql](../src/supabase/migrations.
 This establishes the foundation for user state and alert thresholds.
 
 ### 2. AI Risk Agent Configuration
-Navigate to `src/telegrambot`, install dependencies, and configure your secrets.
+Navigate to `src/telegramagent`, install dependencies, and configure your secrets.
 ```bash
-cd src/telegrambot
+cd src/telegramagent
 npm install
 npm run start
 ```
-![Bot Start](../src/telegrambot/screenshots/start.png)
+![Bot Start](../src/telegramagent/screenshots/start.png)
 
 ### 3. Dashboard Connectivity
 Navigate to `src/frontend`, install dependencies, and start the development server.
@@ -45,7 +45,7 @@ Go to Settings on the Dashboard and type your Telegram ID.
 
 ### Step 2: verify on Telegram
 Use the `/verify` command to securely link your wallet to the Agent.
-![Verify Command](../src/telegrambot/screenshots/verify.png)
+![Verify Command](../src/telegramagent/screenshots/verify.png)
 
 ### Step 3: Global Portfolio Synthesis
 Navigate to the Portfolio page to see your aggregated positions and AI-driven insights.
@@ -53,7 +53,7 @@ Navigate to the Portfolio page to see your aggregated positions and AI-driven in
 
 ### Step 4: AI Analysis Command
 Ask the bot for a detailed risk audit.
-![AI Analyze](../src/telegrambot/screenshots/analyze.png)
+![AI Analyze](../src/telegramagent/screenshots/analyze.png)
 
 ---
 

@@ -30,7 +30,7 @@ Manage your positions across Venus, Kinza, and Radiant from a single, high-fidel
 **24/7 Agentic Guardian**
 Our Gemini-powered watchdog synthesizes on-chain metrics into natural language risk audits. Get instant Telegram alerts for liquidation risks and proactive strategy suggestions.
 
-![AI Risk Agent](./src/telegrambot/screenshots/alert.png)
+![AI Risk Agent](./src/telegramagent/screenshots/alert.png)
 
 ### 🧪 Strategy Simulator
 **Risk-Aware Architect**
@@ -50,7 +50,7 @@ Model complex "Smart Loop" strategies before you execute. Project your liquidati
   EXTRAS.md            ← Presentation Slides & Demo Video
 /src/
   frontend/            ← Next.js Web Dashboard
-  telegrambot/         ← AI Agent Logic & Backend
+  telegramagent/         ← AI Agent Logic & Backend
   supabase/            ← Consolidated Database Migrations
 ```
 
@@ -60,7 +60,7 @@ Model complex "Smart Loop" strategies before you execute. Project your liquidati
 See **[Database Setup Guide](./src/supabase/README.md)**. Run the consolidated SQL migrations in your Supabase project.
 
 ### 2. AI Agent Secret Configuration
-Configure `.env` in `src/telegrambot` (see **[Bot Guide](./src/telegrambot/README.md)**):
+Configure `.env` in `src/telegramagent` (see **[Bot Guide](./src/telegramagent/README.md)**):
 ```env
 TELEGRAM_BOT_TOKEN=...
 GEMINI_API_KEY=...

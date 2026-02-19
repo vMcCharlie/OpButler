@@ -14,7 +14,7 @@
         "index.ts",
         "abis.ts",
         "skills.ts",
-        "bot.ts"
+        "agent.ts"
     ],
     "exclude": [
         "node_modules"

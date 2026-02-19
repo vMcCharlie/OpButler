@@ -23,7 +23,7 @@ A premium interface that aggregates **Venus, Kinza, and Radiant**.
 
 Uses **Gemini 1.5 Flash** to provide natural-language risk assessments.
 
-![AI Analysis](../src/telegrambot/screenshots/analyze.png)
+![AI Analysis](../src/telegramagent/screenshots/analyze.png)
 
 ### Strategy Simulator (Risk Architecture)
 
