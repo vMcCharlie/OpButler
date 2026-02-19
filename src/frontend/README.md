@@ -6,16 +6,16 @@ The "Concierge" interface is built for speed, clarity, and "Good Vibes".
 
 ### 1. Unified Portfolio
 Aggregates your Net Worth and Health Factor across all integrated protocols (Venus, Kinza, Radiant).
-![Portfolio](../screenshots/portfolio.png)
+![Portfolio](./screenshots/portfolio.png)
 
 ### 2. High-Yield Lending
 Simplified Supply and Borrow interfaces for maximum usability.
-![Lend Earn](../screenshots/lend-earn.png)
-![Lend Borrow](../screenshots/lend-borrow.png)
+![Lend Earn](./screenshots/lend-earn.png)
+![Lend Borrow](./screenshots/lend-borrow.png)
 
 ### 3. Strategy Simulator
 Our "Smart Loop" builder allows users to project APY and simulate risk scenarios.
-![Strategy Builder](../screenshots/strategy-builder.png)
+![Strategy Builder](./screenshots/strategy-builder.png)
 
 ---
 
