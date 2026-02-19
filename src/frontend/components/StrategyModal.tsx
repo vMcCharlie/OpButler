@@ -170,8 +170,15 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
 
     // Check for insufficient balance
     const isInsufficient = useMemo(() => {
-        if (!walletBalanceFormatted || !amount) return false;
-        return parseFloat(amount) > parseFloat(walletBalanceFormatted);
+        if (!amount) return false;
+        // If walletBalanceFormatted is null (loading/error), we assume false to avoid flashing red.
+        // OR we could check if tokenBalanceData is defined?
+        // Let's stick to safe string parsing.
+        if (walletBalanceFormatted == null) return false;
+        const balance = parseFloat(walletBalanceFormatted);
+        const amt = parseFloat(amount);
+        if (isNaN(balance) || isNaN(amt)) return false;
+        return amt > balance;
     }, [walletBalanceFormatted, amount]);
 
     const decimals = isPayingWithBNB ? 18 : (tokenDecimals as number) || 18;
@@ -531,7 +538,7 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                                                 value={amount}
                                                 onChange={(e) => setAmount(e.target.value)}
                                                 placeholder={`e.g. 10`}
-                                                className="w-full h-12 px-4 rounded-xl border border-white/10 bg-white/5 text-white font-bold text-lg focus:border-[#CEFF00]/50 focus:outline-none focus:ring-1 focus:ring-[#CEFF00]/30 transition-colors placeholder:text-white/20"
+                                                className={`w-full h-12 px-4 rounded-xl border ${isInsufficient ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-[#CEFF00]/50'} bg-white/5 text-white font-bold text-lg focus:outline-none focus:ring-1 ${isInsufficient ? 'focus:ring-red-500/30' : 'focus:ring-[#CEFF00]/30'} transition-colors placeholder:text-white/20`}
                                             />
                                         </div>
                                         <div className="w-[120px] shrink-0">
@@ -550,34 +557,40 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                                                     ${principalUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                                 </span>
                                                 {isInsufficient && (
-                                                    <span className="text-[9px] font-bold text-red-500/80 uppercase tracking-wider">
+                                                    <span className="text-[9px] font-bold text-red-500 uppercase tracking-wider animate-pulse">
                                                         Insufficient {inputToken}
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
                                     )}
-                                    {address && walletBalanceFormatted && (
+                                    {address && (
                                         <div className="flex justify-between items-center px-1">
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Balance:</span>
                                             <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={() => {
-                                                        const bal = parseFloat(walletBalanceFormatted);
-                                                        setAmount((bal * 0.5).toFixed(6));
-                                                    }}
-                                                    className="text-[10px] font-bold text-muted-foreground hover:text-[#CEFF00] hover:underline cursor-pointer transition-colors"
-                                                >
-                                                    50%
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setAmount(truncateAmount(walletBalanceFormatted));
-                                                    }}
-                                                    className="text-[10px] font-bold text-[#CEFF00] hover:underline cursor-pointer"
-                                                >
-                                                    {truncateAmount(walletBalanceFormatted)} {inputToken} (Max)
-                                                </button>
+                                                {walletBalanceFormatted ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => {
+                                                                const bal = parseFloat(walletBalanceFormatted);
+                                                                setAmount((bal * 0.5).toFixed(6));
+                                                            }}
+                                                            className="text-[10px] font-bold text-muted-foreground hover:text-[#CEFF00] hover:underline cursor-pointer transition-colors"
+                                                        >
+                                                            50%
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setAmount(truncateAmount(walletBalanceFormatted));
+                                                            }}
+                                                            className="text-[10px] font-bold text-[#CEFF00] hover:underline cursor-pointer"
+                                                        >
+                                                            {truncateAmount(walletBalanceFormatted)} {inputToken} (Max)
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-muted-foreground animate-pulse">Loading...</span>
+                                                )}
                                             </div>
                                         </div>
                                     )}
