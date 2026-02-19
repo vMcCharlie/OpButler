@@ -10,5 +10,10 @@
     }
   ],
   "frontendUrl": "https://opbutler.xyz",
-  "notes": "1. **Leverage (Long)**: Call `leverageKinza(address inputToken, address supplyAsset, address borrowAsset, uint256 amount, uint256 flashAmount, uint256 borrowAmount, address pancakePair)`. Ensure you approve `inputToken` to the Vault first. The vault flash-swaps `borrowAmount` of `borrowAsset` for `supplyAsset`, adds `amount`, and supplies to Kinza.\n2. **Deleverage**: Call `deleverageKinza` to unwind. The vault withdraws collateral, flash-swaps enough to repay the debt, and returns the remaining collateral to you.\n3. **Venus**: Similar logic via `leverageVenus`, but custodial (Vault holds the position).\n4. **Frontend**: Easiest method. Go to `/lend/strategy`, connect wallet, select Strategy, and sign."
+  "notes": [
+    "1. **Leverage (Long)**: Call `leverageKinza(address inputToken, address supplyAsset, address borrowAsset, uint256 amount, uint256 flashAmount, uint256 borrowAmount, address pancakePair)`. Ensure you approve `inputToken` to the Vault first. The vault flash-swaps `borrowAmount` of `borrowAsset` for `supplyAsset`, adds `amount`, and supplies to Kinza.",
+    "2. **Deleverage**: Call `deleverageKinza` to unwind. The vault withdraws collateral, flash-swaps enough to repay the debt, and returns the remaining collateral to you.",
+    "3. **Venus**: Similar logic via `leverageVenus`, but custodial (Vault holds the position).",
+    "4. **Frontend**: Easiest method. Go to `/lend/strategy`, connect wallet, select Strategy, and sign."
+  ]
 }
