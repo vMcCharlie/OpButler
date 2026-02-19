@@ -168,6 +168,12 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
         return formatUnits(tokenBalanceData as bigint, tokenDecimals as number);
     }, [isPayingWithBNB, bnbBalanceData, tokenBalanceData, tokenDecimals]);
 
+    // Check for insufficient balance
+    const isInsufficient = useMemo(() => {
+        if (!walletBalanceFormatted || !amount) return false;
+        return parseFloat(amount) > parseFloat(walletBalanceFormatted);
+    }, [walletBalanceFormatted, amount]);
+
     const decimals = isPayingWithBNB ? 18 : (tokenDecimals as number) || 18;
 
     // Initialize from props
@@ -537,9 +543,18 @@ export function StrategyModal({ isOpen, onClose, initialData }: StrategyModalPro
                                         </div>
                                     </div>
                                     {principalUSD > 0 && (
-                                        <div className="flex justify-between items-center px-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">USD Value:</span>
-                                            <span className="text-[10px] font-bold text-white">${principalUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                        <div className="flex justify-between items-start px-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">USD Value:</span>
+                                            <div className="flex flex-col items-end">
+                                                <span className={`text-[10px] font-bold ${isInsufficient ? 'text-red-500' : 'text-white'}`}>
+                                                    ${principalUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                                </span>
+                                                {isInsufficient && (
+                                                    <span className="text-[9px] font-bold text-red-500/80 uppercase tracking-wider">
+                                                        Insufficient {inputToken}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                     {address && walletBalanceFormatted && (
